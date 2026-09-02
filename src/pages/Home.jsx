@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { DECKS, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
+import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
+import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
 import { Mic, MicOff, Volume2, VolumeX, RefreshCw, Sparkles } from "lucide-react";
@@ -10,6 +11,7 @@ export default function Home() {
   const [memory, setMemory] = useState(null);
   const [phase, setPhase] = useState("setup"); // setup | drawing | reading
   const [deck, setDeck] = useState(DECKS[0]);
+  const [blendDecks, setBlendDecks] = useState(false);
   const [spreadCategory, setSpreadCategory] = useState("General");
   const [spread, setSpread] = useState(SPREADS[0]);
   const [clarifyOn, setClarifyOn] = useState(false);
@@ -38,8 +40,9 @@ export default function Home() {
     })();
   }, []);
 
-  const categories = ["General", "Love", "Career", "Decision", "Yearly"];
+  const categories = ["General", "Love", "Career", "Decision", "Yearly", "Spiritual", "Custom"];
   const spreadsInCat = SPREADS.filter((s) => s.category === spreadCategory);
+  const activeDeck = blendDecks ? BLENDED_DECK : deck;
 
   // ---- Voice input (Web Speech API) ----
   const startListening = () => {
@@ -66,6 +69,7 @@ export default function Home() {
     if (!question.trim()) return;
     const drawn = drawSpread(spread).map((c) => ({
       ...c,
+      cardDeck: blendDecks ? DECKS[Math.floor(Math.random() * DECKS.length)] : deck,
       clarifiers: clarifyOn ? drawClarifiers(clarifyCount).map((x) => ({ ...x, card: x.card })) : [],
     }));
     setCards(drawn);
@@ -81,7 +85,7 @@ export default function Home() {
     setReading("");
     try {
       const payload = {
-        question, deck, spread,
+        question, deck: activeDeck, spread,
         cards: cards.map((c) => ({
           name: c.name, reversed: c.reversed, position: c.position,
           clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
@@ -120,7 +124,7 @@ export default function Home() {
       }
 
       await base44.entities.JournalEntry.create({
-        question, deck: deck.name, spread: spread.name,
+        question, deck: activeDeck.name, spread: spread.name,
         cards_drawn: cardData, interpretation: text, audio_url: savedAudio,
       });
 
@@ -218,17 +222,34 @@ export default function Home() {
 
           {/* Deck selection */}
           <div className="lux-card rounded-xl p-5 space-y-3">
-            <label className="text-xs uppercase tracking-widest text-gold-leaf/80">Choose Your Deck</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-widest text-gold-leaf/80">Choose Your Deck</label>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <span>Blend all decks</span>
+                <button onClick={() => setBlendDecks((v) => !v)}
+                  className={`w-10 h-5 rounded-full transition-all relative ${blendDecks ? "bg-red-800/60" : "bg-zinc-700"}`}
+                  style={{ border: "1px solid rgba(212,175,55,0.4)" }}>
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${blendDecks ? "left-5" : "left-0.5"}`}
+                    style={{ background: blendDecks ? "#d4af37" : "#a1a1aa" }} />
+                </button>
+              </label>
+            </div>
+            <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 transition-opacity ${blendDecks ? "opacity-40 pointer-events-none" : ""}`}>
               {DECKS.map((d) => (
-                <button key={d.id} onClick={() => setDeck(d)}
-                  className={`rounded-lg p-3 text-center transition-all ${deck.id === d.id ? "gold-pill-active" : "gold-pill"}`}>
+                <button key={d.id} onClick={() => { setDeck(d); setBlendDecks(false); }}
+                  className={`rounded-lg p-3 text-center transition-all ${!blendDecks && deck.id === d.id ? "gold-pill-active" : "gold-pill"}`}>
                   <div className="text-2xl" style={{ color: d.accent }}>{d.backGlyph}</div>
-                  <div className="text-xs font-serif mt-1" style={{ color: deck.id === d.id ? "#f5e6b8" : "#a8a29e" }}>{d.name}</div>
+                  <div className="text-xs font-serif mt-1" style={{ color: !blendDecks && deck.id === d.id ? "#f5e6b8" : "#a8a29e" }}>{d.name}</div>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground italic">{deck.description}</p>
+            {blendDecks && (
+              <div className="gold-pill-active rounded-lg p-3 text-center">
+                <div className="text-2xl" style={{ color: BLENDED_DECK.accent }}>{BLENDED_DECK.backGlyph}</div>
+                <div className="text-xs font-serif mt-1" style={{ color: "#f5e6b8" }}>Blended — all four decks, one reading</div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground italic">{activeDeck.description}</p>
           </div>
 
           {/* Spread selection */}
@@ -236,21 +257,25 @@ export default function Home() {
             <label className="text-xs uppercase tracking-widest text-gold-leaf/80">Choose Your Spread</label>
             <div className="flex flex-wrap gap-2">
               {categories.map((c) => (
-                <button key={c} onClick={() => { setSpreadCategory(c); setSpread(SPREADS.filter((s) => s.category === c)[0]); }}
+                <button key={c} onClick={() => { setSpreadCategory(c); const first = SPREADS.filter((s) => s.category === c)[0]; if (first) setSpread(first); }}
                   className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-widest transition-all ${
                     spreadCategory === c ? "gold-pill-active text-gold-leaf" : "gold-pill text-muted-foreground"
                   }`}>{c}</button>
               ))}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {spreadsInCat.map((s) => (
-                <button key={s.id} onClick={() => setSpread(s)}
-                  className={`rounded-lg p-3 text-left transition-all ${spread.id === s.id ? "gold-pill-active" : "gold-pill"}`}>
-                  <div className="text-sm font-serif" style={{ color: spread.id === s.id ? "#f5e6b8" : "#d4c8a8" }}>{s.name}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">{s.description}</div>
-                </button>
-              ))}
-            </div>
+            {spreadCategory === "Custom" ? (
+              <CustomSpreadBuilder onBuild={(s) => setSpread(s)} />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {spreadsInCat.map((s) => (
+                  <button key={s.id} onClick={() => setSpread(s)}
+                    className={`rounded-lg p-3 text-left transition-all ${spread.id === s.id ? "gold-pill-active" : "gold-pill"}`}>
+                    <div className="text-sm font-serif" style={{ color: spread.id === s.id ? "#f5e6b8" : "#d4c8a8" }}>{s.name}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{s.description}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Clarifiers */}
@@ -298,11 +323,11 @@ export default function Home() {
         <div className="space-y-6">
           <div className="flex flex-wrap justify-center gap-3">
             {cards.map((c, i) => (
-              <CardFace key={i} card={c} deck={deck} index={i} clarifiers={c.clarifiers} />
+              <CardFace key={i} card={c} deck={c.cardDeck || activeDeck} index={i} clarifiers={c.clarifiers} />
             ))}
           </div>
           <div className="text-center text-sm text-muted-foreground">
-            <p className="font-serif italic">{spread.name} · {deck.name}</p>
+            <p className="font-serif italic">{spread.name} · {activeDeck.name}</p>
             <p className="mt-1">"{question}"</p>
           </div>
           <div className="flex justify-center gap-3">
@@ -328,7 +353,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-2">
             {cards.map((c, i) => (
               <div key={i} className="text-center">
-                <CardFace card={c} deck={deck} index={i} revealed clarifiers={c.clarifiers} />
+                <CardFace card={c} deck={c.cardDeck || activeDeck} index={i} revealed clarifiers={c.clarifiers} />
               </div>
             ))}
           </div>
