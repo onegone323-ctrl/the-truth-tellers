@@ -4,7 +4,7 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
-import { Mic, MicOff, Volume2, VolumeX, RefreshCw, Sparkles } from "lucide-react";
+import { Mic, MicOff, RefreshCw, Sparkles } from "lucide-react";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -20,12 +20,8 @@ export default function Home() {
   const [cards, setCards] = useState([]);
   const [reading, setReading] = useState("");
   const [orbState, setOrbState] = useState("idle");
-  const [voiceMode, setVoiceMode] = useState(false);
   const [listening, setListening] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const audioRef = useRef(null);
   const recogRef = useRef(null);
 
   // Load user + memory
@@ -102,33 +98,18 @@ export default function Home() {
       const res = await base44.functions.invoke("generateReading", payload);
       const text = res?.data?.reading || "The Oracle is silent. Try again.";
       setReading(text);
-      setOrbState("speaking");
+      setOrbState("idle");
 
-      // Save journal + update memory (parallel)
       const cardData = cards.map((c) => ({
         name: c.name, reversed: c.reversed, position: c.position,
         clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
       }));
 
-      // Generate speech if voice mode
-      let savedAudio = null;
-      if (voiceMode) {
-        try {
-          const sp = await base44.functions.invoke("generateSpeech", { text, voice: "storm" });
-          savedAudio = sp?.data?.audio_url || null;
-          if (savedAudio) {
-            setAudioUrl(savedAudio);
-            setTimeout(() => audioRef.current?.play().catch(() => {}), 300);
-          }
-        } catch (e) { console.error("TTS failed", e); }
-      }
-
       await base44.entities.JournalEntry.create({
         question, deck: activeDeck.name, spread: spread.name,
-        cards_drawn: cardData, interpretation: text, audio_url: savedAudio,
+        cards_drawn: cardData, interpretation: text, audio_url: null,
       });
 
-      // Update memory
       const adviceSnippet = text.slice(-280);
       if (memory) {
         await base44.entities.OracleMemory.update(memory.id, {
@@ -158,11 +139,8 @@ export default function Home() {
     setBusy(false);
   };
 
-  const handleAudioEnded = () => { setSpeaking(false); setOrbState("idle"); };
-  const handleAudioPlay = () => { setSpeaking(true); setOrbState("speaking"); };
-
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setAudioUrl(null); setOrbState("idle"); setQuestion("");
+    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion("");
   };
 
   const greeting = memory?.user_name || user?.full_name
@@ -181,7 +159,7 @@ export default function Home() {
         </h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md">
           {phase === "setup" && `${greeting} Speak your question, choose your deck and spread, and let her read the cards.`}
-          {phase === "drawing" && "Tap each card to turn it. When you're ready, ask her to read."}
+          {phase === "drawing" && "The cards are dealing. Watch them reveal — then ask her to read."}
           {phase === "reading" && (busy ? "She's looking into the cards…" : "Listen. Or read. The truth is here.")}
         </p>
       </div>
@@ -207,16 +185,7 @@ export default function Home() {
                 {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 {listening ? "Listening…" : "Speak It"}
               </button>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <Volume2 className="w-4 h-4" />
-                <span>Voice mode</span>
-                <button onClick={() => setVoiceMode((v) => !v)}
-                  className={`w-10 h-5 rounded-full transition-all relative ${voiceMode ? "bg-red-800/60" : "bg-zinc-700"}`}
-                  style={{ border: "1px solid rgba(212,175,55,0.4)" }}>
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${voiceMode ? "left-5 bg-gold-leaf" : "left-0.5 bg-zinc-400"}`}
-                    style={{ background: voiceMode ? "#d4af37" : "#a1a1aa" }} />
-                </button>
-              </label>
+              <span className="text-[11px] text-muted-foreground italic">Or type your question above.</span>
             </div>
           </div>
 
@@ -334,7 +303,7 @@ export default function Home() {
         <div className="space-y-6">
           <div className="flex flex-wrap justify-center gap-3">
             {cards.map((c, i) => (
-              <CardFace key={i} card={c} deck={c.cardDeck || activeDeck} index={i} clarifiers={c.clarifiers} />
+              <CardFace key={i} card={c} deck={c.cardDeck || activeDeck} index={i} clarifiers={c.clarifiers} dealDelay={i * 350} />
             ))}
           </div>
           <div className="text-center text-sm text-muted-foreground">
@@ -380,11 +349,6 @@ export default function Home() {
               <p className="font-body text-foreground/90 leading-relaxed whitespace-pre-wrap text-[15px]">{reading}</p>
             )}
           </div>
-
-          {!busy && audioUrl && (
-            <audio ref={audioRef} src={audioUrl} controls onPlay={handleAudioPlay} onEnded={handleAudioEnded}
-              className="w-full" />
-          )}
 
           {!busy && (
             <div className="flex justify-center">
