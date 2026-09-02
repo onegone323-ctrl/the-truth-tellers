@@ -29,6 +29,15 @@
     "reading_count": {
       "type": "number",
       "default": 0
+    },
+    "daily_card": {
+      "type": "string"
+    },
+    "daily_reversed": {
+      "type": "boolean"
+    },
+    "daily_drawn_at": {
+      "type": "string"
     }
   },
   "required": [

@@ -4,6 +4,7 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
+import DailyCard from "@/components/DailyCard";
 import { Mic, MicOff, RefreshCw, Sparkles } from "lucide-react";
 
 export default function Home() {
@@ -169,6 +170,8 @@ export default function Home() {
       {/* SETUP PHASE */}
       {phase === "setup" && (
         <div className="space-y-8 max-w-2xl mx-auto">
+          <DailyCard memory={memory} setMemory={setMemory} userName={user?.full_name} />
+
           {/* Question + voice */}
           <div className="lux-card rounded-xl p-5 space-y-3">
             <label className="text-xs uppercase tracking-widest text-gold-leaf/80">Your Question</label>
