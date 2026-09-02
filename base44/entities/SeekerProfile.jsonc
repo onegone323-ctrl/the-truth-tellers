@@ -1,0 +1,56 @@
+{
+  "name": "SeekerProfile",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string"
+    },
+    "birthdate": {
+      "type": "string",
+      "format": "date"
+    },
+    "favorite_color": {
+      "type": "string"
+    },
+    "trigger": {
+      "type": "string"
+    },
+    "makes_happy": {
+      "type": "string"
+    },
+    "hard_memory": {
+      "type": "string"
+    },
+    "occupation": {
+      "type": "string"
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "full_name",
+    "birthdate",
+    "favorite_color",
+    "trigger",
+    "makes_happy",
+    "hard_memory",
+    "occupation",
+    "goals"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

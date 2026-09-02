@@ -5,11 +5,14 @@ import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
+import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import { Mic, MicOff, RefreshCw, Sparkles } from "lucide-react";
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [memory, setMemory] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [phase, setPhase] = useState("setup"); // setup | drawing | reading
   const [deck, setDeck] = useState(DECKS[0]);
   const [blendDecks, setBlendDecks] = useState(false);
@@ -33,7 +36,10 @@ export default function Home() {
         setUser(me);
         const mem = await base44.entities.OracleMemory.list("-updated_date", 1);
         if (mem && mem.length) setMemory(mem[0]);
+        const prof = await base44.entities.SeekerProfile.list("-updated_date", 1);
+        if (prof && prof.length) setProfile(prof[0]);
       } catch (e) { console.error(e); }
+      setProfileLoaded(true);
     })();
   }, []);
 
@@ -144,9 +150,28 @@ export default function Home() {
     setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion("");
   };
 
-  const greeting = memory?.user_name || user?.full_name
-    ? `Welcome back, ${memory?.user_name || user?.full_name.split(" ")[0]}.`
-    : "Welcome, seeker.";
+  const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
+  const greeting = seekerName ? `Welcome back, ${seekerName.split(" ")[0]}.` : "Welcome, seeker.";
+
+  if (!profileLoaded) {
+    return (
+      <div className="flex justify-center pt-16">
+        <div className="w-8 h-8 border-2 rounded-full animate-spin"
+          style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col items-center text-center pt-4">
+          <OracleOrb state="idle" size={160} />
+        </div>
+        <OnboardingQuestionnaire onComplete={setProfile} defaultName={user?.full_name || ""} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
