@@ -1,0 +1,71 @@
+{
+  "name": "JournalEntry",
+  "type": "object",
+  "properties": {
+    "question": {
+      "type": "string"
+    },
+    "deck": {
+      "type": "string"
+    },
+    "spread": {
+      "type": "string"
+    },
+    "cards_drawn": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "string"
+          },
+          "clarifiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reversed": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "interpretation": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "question",
+    "deck",
+    "spread",
+    "cards_drawn",
+    "interpretation"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

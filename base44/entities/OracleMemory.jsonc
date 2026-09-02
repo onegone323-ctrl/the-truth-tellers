@@ -1,0 +1,49 @@
+{
+  "name": "OracleMemory",
+  "type": "object",
+  "properties": {
+    "user_name": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "recurring_themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recurring_cards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "last_question": {
+      "type": "string"
+    },
+    "last_advice": {
+      "type": "string"
+    },
+    "reading_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "summary"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
