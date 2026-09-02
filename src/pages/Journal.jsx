@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import ReadingText from "@/components/ReadingText";
 import { Search, Trash2, Calendar } from "lucide-react";
 
 export default function Journal() {
@@ -111,7 +112,7 @@ export default function Journal() {
                 </div>
               ))}
             </div>
-            <p className="text-sm font-body text-foreground/90 whitespace-pre-wrap leading-relaxed">{selected.interpretation}</p>
+            <ReadingText text={selected.interpretation} />
             {selected.audio_url && (
               <audio controls src={selected.audio_url} className="w-full mt-4" />
             )}

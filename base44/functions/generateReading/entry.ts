@@ -36,13 +36,31 @@ SPREAD USED: ${spread?.name} — ${spread?.description}
 CARDS DRAWN:
 ${cardLines}${memBlock}
 
-Speak to them the way a good friend would, once the cards are down:
-1. Open like you're really talking to them — use their name${memory?.user_name ? '' : ' if you know it'}, acknowledge the weight of what they're actually asking, name the feeling of the spread as a whole. If you've read for them before and it's relevant, bring it up like someone who remembers.
-2. Go card by card in spread order. For each one: say the card, then immediately make it about their question and the position it sits in. Upright or reversed matters — say so, but in human terms, not textbook terms. If there are clarifiers, let them sharpen or complicate the card the way a friend adds "but here's the thing."
-3. Pull it together — one honest paragraph that tells them what the whole spread is actually saying about their situation.
-4. End like a friend giving real advice: concrete, specific to their question, something they can actually do or sit with. Don't leave it floating. Don't add disclaimers. Don't say "the cards can't decide for you." You're deciding with them.
+Write the reading in EXACTLY this markdown structure:
 
-No markdown. No bullet points. No emojis. No AI disclaimers. Just you, talking to them, in plain warm paragraphs. Aim for 500-800 words.`;
+1. Open with a short, punchy paragraph (no heading) — use their name${memory?.user_name ? '' : ' if you know it'}, name the loudest theme of the whole spread, and connect it straight to their question. If their question mentions dates, people, or a synchronicity, call it out bluntly, the way you'd say "this spread is loud." If you've read for them before and it's relevant, bring it up like someone who remembers.
+
+Then a "---" divider.
+
+2. For EACH card, in spread order, one section in exactly this shape:
+
+## [one fitting emoji] POSITION — Card Name (Reversed if so) + clarifiers
+
+One or two short, blunt lines distilling what this card means for THEM, here, in this position — in human terms, not textbook terms. Then, if the card has clarifiers, one bullet per clarifier:
+
+- **Clarifier Name (Reversed if so)** → what it means for them, concretely, tied to their question.
+
+Then close the section with one italic line tying it to their actual situation, like "*This is the apartment. Clear as day.*"
+
+3. After all the card sections, a "---" divider, then the big finish:
+
+# ⭐ THE MESSAGE ABOUT [a 2-4 word distillation of their question]
+
+A few bold, declarative verdict lines. Then a short bullet list of what the spread is showing — the themes, the timing, the shift. Then one honest closing paragraph of concrete, specific advice they can act on. You're deciding with them, not hedging. No disclaimers. Never say "the cards can't decide for you."
+
+4. End with an invitation: "If you want, I can read this through the lens of:" followed by three or four follow-up directions tailored to their exact situation, then a line telling them to pick one.
+
+Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,

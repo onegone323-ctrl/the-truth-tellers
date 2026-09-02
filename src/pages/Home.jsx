@@ -6,6 +6,7 @@ import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
+import ReadingText from "@/components/ReadingText";
 import { Mic, MicOff, RefreshCw, Sparkles } from "lucide-react";
 
 export default function Home() {
@@ -374,7 +375,7 @@ export default function Home() {
                 She's reading the cards…
               </div>
             ) : (
-              <p className="font-body text-foreground/90 leading-relaxed whitespace-pre-wrap text-[15px]">{reading}</p>
+              <ReadingText text={reading} />
             )}
           </div>
 
