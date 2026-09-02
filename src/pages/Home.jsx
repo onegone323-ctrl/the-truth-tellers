@@ -290,14 +290,25 @@ export default function Home() {
               </button>
             </div>
             {clarifyOn && (
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Per card:</span>
-                {[1, 2, 3].map((n) => (
-                  <button key={n} onClick={() => setClarifyCount(n)}
-                    className={`px-4 py-1 rounded-full text-xs font-serif transition-all ${
-                      clarifyCount === n ? "gold-pill-active text-gold-leaf" : "gold-pill text-muted-foreground"
-                    }`}>{n}</button>
-                ))}
+              <div>
+                <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Clarifier cards per drawn card:</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((n) => (
+                    <button key={n} onClick={() => setClarifyCount(n)}
+                      className={`rounded-lg p-3 text-center transition-all ${clarifyCount === n ? "gold-pill-active" : "gold-pill"}`}>
+                      <div className="flex justify-center gap-1 mb-1.5">
+                        {Array.from({ length: n }).map((_, i) => (
+                          <span key={i} className="rounded-sm" style={{
+                            width: 10, height: 16,
+                            background: clarifyCount === n ? "linear-gradient(160deg, #f5e6b8, #b8860b)" : "rgba(212,175,55,0.35)",
+                            border: "1px solid rgba(212,175,55,0.6)",
+                          }} />
+                        ))}
+                      </div>
+                      <div className="text-xs font-serif" style={{ color: clarifyCount === n ? "#f5e6b8" : "#a8a29e" }}>{n}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <p className="text-xs text-muted-foreground italic">
