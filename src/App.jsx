@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Journal from '@/pages/Journal';
+import Timeline from '@/pages/Timeline';
 import Cards from '@/pages/Cards';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/timeline" element={<Timeline />} />
           <Route path="/cards" element={<Cards />} />
         </Route>
       </Route>
