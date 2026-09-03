@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { secrets } from 'base44:runtime';
 
 // The Oracle generates a full tarot reading. Voice: warm, blunt, direct, no fluff.
 export default async function(req) {
@@ -62,12 +63,25 @@ A few bold, declarative verdict lines. Then a short bullet list of what the spre
 
 Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt,
-      model: 'claude_sonnet_4_6',
-    });
+    const apiKey = secrets.get('GEMINI_API_KEY');
+    const geminiRes = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.95, maxOutputTokens: 4096 },
+        }),
+      }
+    );
 
-    const text = typeof result === 'string' ? result : result?.response || result?.text || JSON.stringify(result);
+    const data = await geminiRes.json();
+    if (!geminiRes.ok) {
+      return Response.json({ error: data?.error?.message || 'Gemini API request failed' }, { status: 502 });
+    }
+
+    const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
 
     return Response.json({ reading: text });
   } catch (error) {
