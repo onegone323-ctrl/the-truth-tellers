@@ -3,7 +3,8 @@ import { secrets } from 'base44:runtime';
 
 // The Oracle speaks — ElevenLabs TTS for the reading.
 const VOICES = {
-  sarah: 'EXAVITQu4vr4xnSDxMaL', // mature, reassuring, confident — the Oracle's voice
+  oracle: 'FGY2WhTYpPnrIDTdsKH5', // Laura — sassy, quirky, warm-blunt: the Oracle's voice
+  sarah: 'EXAVITQu4vr4xnSDxMaL', // mature, reassuring alternative
   lily: 'pFZP5JQG7iQjIQuC4Bku', // velvety, theatrical alternative
 };
 
@@ -19,7 +20,7 @@ export default async function(req) {
 
     // Cap length to keep cost bounded.
     const clipped = text.slice(0, 4000);
-    const voiceId = VOICES[voice] || VOICES.sarah;
+    const voiceId = VOICES[voice] || VOICES.oracle;
 
     const res = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
@@ -32,7 +33,9 @@ export default async function(req) {
         body: JSON.stringify({
           text: clipped,
           model_id: 'eleven_multilingual_v2',
-          voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.5 },
+          // Expressive settings: lower stability + higher style lets her deliver
+          // the blunt asides and warm moments with real attitude.
+          voice_settings: { stability: 0.35, similarity_boost: 0.85, style: 0.6, use_speaker_boost: true },
         }),
       }
     );
