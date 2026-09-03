@@ -64,22 +64,30 @@ A few bold, declarative verdict lines. Then a short bullet list of what the spre
 Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
     const apiKey = secrets.get('GEMINI_API_KEY');
-    const geminiRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.95, maxOutputTokens: 4096 },
-        }),
-      }
-    );
+    const geminiBody = JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.95, maxOutputTokens: 2500 },
+    });
 
-    const data = await geminiRes.json();
-    if (!geminiRes.ok) {
-      return Response.json({ error: data?.error?.message || 'Gemini API request failed' }, { status: 502 });
+    // Retry once — Google's edge intermittently times out on long generations.
+    let geminiRes;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      geminiRes = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: geminiBody,
+        }
+      );
+      if (geminiRes.ok) break;
     }
+
+    const raw = await geminiRes.text();
+    if (!geminiRes.ok) {
+      return Response.json({ error: 'Gemini API: ' + raw.slice(0, 300) }, { status: 502 });
+    }
+    const data = JSON.parse(raw);
 
     const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
 

@@ -7,7 +7,8 @@ import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import ReadingText from "@/components/ReadingText";
-import { Mic, MicOff, RefreshCw, Sparkles } from "lucide-react";
+import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
+import { toSpokenText } from "@/lib/speechText";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -27,7 +28,15 @@ export default function Home() {
   const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [audioData, setAudioData] = useState(null);
   const recogRef = useRef(null);
+  const audioRef = useRef(null);
+
+  // Start the Oracle's voice as soon as the audio arrives
+  useEffect(() => {
+    if (audioData) audioRef.current?.play().catch(() => {});
+  }, [audioData]);
 
   // Load user + memory
   useEffect(() => {
@@ -147,8 +156,24 @@ export default function Home() {
     setBusy(false);
   };
 
+  // ---- Oracle voice (ElevenLabs) ----
+  const handleSpeak = async () => {
+    if (!reading || voiceBusy) return;
+    setVoiceBusy(true);
+    setOrbState("thinking");
+    try {
+      const res = await base44.functions.invoke("generateSpeech", { text: toSpokenText(reading) });
+      setAudioData(res?.data?.audio || null);
+      setOrbState("speaking");
+    } catch (e) {
+      console.error(e);
+      setOrbState("idle");
+    }
+    setVoiceBusy(false);
+  };
+
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion("");
+    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion(""); setAudioData(null);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -380,7 +405,21 @@ export default function Home() {
           </div>
 
           {!busy && (
-            <div className="flex justify-center">
+            <div className="flex flex-wrap justify-center gap-3">
+              {audioData && (
+                <audio ref={audioRef} src={audioData} autoPlay onEnded={() => setOrbState("idle")} className="hidden" />
+              )}
+              <button onClick={handleSpeak} disabled={voiceBusy || orbState === "speaking"}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(160deg, rgba(120,20,30,0.7), rgba(60,10,15,0.9))",
+                  border: "1px solid rgba(212,175,55,0.6)",
+                  color: "#f5e6b8",
+                  boxShadow: "0 0 20px rgba(192,57,43,0.3)",
+                }}>
+                <Volume2 className="w-3.5 h-3.5" />
+                {voiceBusy ? "Summoning…" : orbState === "speaking" ? "She Speaks…" : "Hear Her Speak"}
+              </button>
               <button onClick={reset}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest">
                 <RefreshCw className="w-3.5 h-3.5" /> Another Reading

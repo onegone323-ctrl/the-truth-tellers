@@ -1,6 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { secrets } from 'base44:runtime';
 
-// The Oracle speaks — expressive TTS for the reading.
+// The Oracle speaks — ElevenLabs TTS for the reading.
+const VOICES = {
+  sarah: 'EXAVITQu4vr4xnSDxMaL', // mature, reassuring, confident — the Oracle's voice
+  lily: 'pFZP5JQG7iQjIQuC4Bku', // velvety, theatrical alternative
+};
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -13,13 +19,35 @@ export default async function(req) {
 
     // Cap length to keep cost bounded.
     const clipped = text.slice(0, 4000);
+    const voiceId = VOICES[voice] || VOICES.sarah;
 
-    const result = await base44.asServiceRole.integrations.Core.GenerateSpeech({
-      text: clipped,
-      voice: voice || 'storm',
-    });
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': secrets.get('ELEVENLABS_API_KEY'),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: clipped,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.5 },
+        }),
+      }
+    );
 
-    return Response.json({ audio_url: result?.url || result?.audio_url || result });
+    if (!res.ok) {
+      const err = await res.text();
+      return Response.json({ error: 'ElevenLabs: ' + err.slice(0, 300) }, { status: 502 });
+    }
+
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return Response.json({ audio: 'data:audio/mpeg;base64,' + btoa(binary) });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
