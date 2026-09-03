@@ -66,7 +66,10 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
     const apiKey = secrets.get('GEMINI_API_KEY');
     const geminiBody = JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.95, maxOutputTokens: 2500 },
+      // Thinking tokens share this budget with the visible reading — the old
+      // 2500 cap let the model's hidden reasoning eat most of it and cut the
+      // reading to a fraction of its length (finishReason MAX_TOKENS).
+      generationConfig: { temperature: 0.95, maxOutputTokens: 8192 },
     });
 
     // Retry once — Google's edge intermittently times out on long generations.
