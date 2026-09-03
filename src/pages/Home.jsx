@@ -6,7 +6,6 @@ import OracleOrb from "@/components/OracleOrb";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
-import ReadingText from "@/components/ReadingText";
 import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import CaptionScroll from "@/components/CaptionScroll";
@@ -220,19 +219,20 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      {/* Hero / Orb */}
+      {/* Hero / Orb — during the reading she takes the whole stage below */}
       <div className="flex flex-col items-center text-center pt-4">
-        <OracleOrb state={orbState} size={200} />
+        {phase !== "reading" && <OracleOrb state={orbState} size={200} />}
         <h1 className="font-display text-3xl sm:text-4xl text-gold-leaf uppercase tracking-[0.2em] mt-6">
           {phase === "setup" && "Consult the Oracle"}
           {phase === "drawing" && "The Cards Are Drawn"}
           {phase === "reading" && "She Speaks"}
         </h1>
-        <p className="text-muted-foreground mt-2 font-body text-sm max-w-md">
-          {phase === "setup" && `${greeting} Speak your question, choose your deck and spread, and let her read the cards.`}
-          {phase === "drawing" && "The cards are dealing. Watch them reveal — then ask her to read."}
-          {phase === "reading" && (busy ? "She's looking into the cards…" : "Listen. Or read. The truth is here.")}
-        </p>
+        {phase !== "reading" && (
+          <p className="text-muted-foreground mt-2 font-body text-sm max-w-md">
+            {phase === "setup" && `${greeting} Speak your question, choose your deck and spread, and let her read the cards.`}
+            {phase === "drawing" && "The cards are dealing. Watch them reveal — then ask her to read."}
+          </p>
+        )}
       </div>
 
       <hr className="gold-hairline" />
@@ -400,44 +400,37 @@ export default function Home() {
         </div>
       )}
 
-      {/* READING PHASE */}
+      {/* READING PHASE — she takes the stage: the orb rises and spins while
+          she reads, then she speaks and her words roll along the bottom.
+          No cards, no text on screen — pure voice. */}
       {phase === "reading" && (
-        <div className="space-y-6 max-w-2xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-2">
-            {cards.map((c, i) => (
-              <div key={i} className="text-center">
-                <CardFace card={c} deck={c.cardDeck || activeDeck} index={i} revealed clarifiers={c.clarifiers} />
-              </div>
-            ))}
+        <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
+          <div style={{ animation: "orbRise 0.9s ease-out both" }}>
+            <OracleOrb state={orbState} size={300} />
           </div>
-          <hr className="gold-hairline" />
-          <div className="lux-card rounded-xl p-6">
-            {busy ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-3"
-                  style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
-                She's reading the cards…
-              </div>
-            ) : (
-              <ReadingText text={reading} />
-            )}
-          </div>
+          <p className="text-muted-foreground font-body text-sm max-w-md">
+            {busy || voiceBusy
+              ? "She's looking into the cards…"
+              : orbState === "speaking"
+              ? "Listen. The truth is in her voice."
+              : "Her words are yours to keep."}
+          </p>
 
-          {!busy && (
+          {audioData && (
+            <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
+          )}
+
+          {!busy && !voiceBusy && orbState !== "speaking" && (
             <div className="flex flex-wrap justify-center gap-3">
-              {audioData && (
-                <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
-              )}
-              <button onClick={() => speak(reading)} disabled={voiceBusy || orbState === "speaking"}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+              <button onClick={() => speak(reading)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition-all"
                 style={{
                   background: "linear-gradient(160deg, rgba(120,20,30,0.7), rgba(60,10,15,0.9))",
                   border: "1px solid rgba(212,175,55,0.6)",
                   color: "#f5e6b8",
                   boxShadow: "0 0 20px rgba(192,57,43,0.3)",
                 }}>
-                <Volume2 className="w-3.5 h-3.5" />
-                {voiceBusy ? "Summoning…" : orbState === "speaking" ? "She Speaks…" : "Hear Her Speak"}
+                <Volume2 className="w-3.5 h-3.5" /> Hear Her Again
               </button>
               <button onClick={reset}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest">
@@ -445,6 +438,13 @@ export default function Home() {
               </button>
             </div>
           )}
+
+          <style>{`
+            @keyframes orbRise {
+              from { transform: translateY(60px) scale(0.85); opacity: 0; }
+              to { transform: translateY(0) scale(1); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
       <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
