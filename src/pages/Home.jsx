@@ -10,6 +10,7 @@ import ReadingText from "@/components/ReadingText";
 import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import CaptionScroll from "@/components/CaptionScroll";
+import AmbientSound from "@/components/AmbientSound";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -212,6 +213,7 @@ export default function Home() {
           <OracleOrb state="idle" size={160} />
         </div>
         <OnboardingQuestionnaire onComplete={setProfile} defaultName={user?.full_name || ""} />
+        <AmbientSound />
       </div>
     );
   }
@@ -446,6 +448,7 @@ export default function Home() {
         </div>
       )}
       <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
+      <AmbientSound />
     </div>
   );
 }
