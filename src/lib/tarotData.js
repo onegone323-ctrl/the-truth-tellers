@@ -33,6 +33,38 @@ export const DECKS = [
     accent: "#b8860b",
     backGlyph: "✶",
   },
+  {
+    id: "isis",
+    name: "Isis",
+    tradition: "Temple of Isis",
+    description: "The great goddess deck — throne and veil, moon magic, and hermetic Egypt.",
+    accent: "#4fb3bf",
+    backGlyph: "𓋹",
+  },
+  {
+    id: "golden-dawn",
+    name: "Golden Dawn",
+    tradition: "Hermetic Order of the Golden Dawn",
+    description: "Ceremonial magic — Kabbalah, astrology, and the esoteric Rosy Cross.",
+    accent: "#f0c75e",
+    backGlyph: "✸",
+  },
+  {
+    id: "wildwood",
+    name: "Wildwood",
+    tradition: "Wildwood / Greenwood",
+    description: "Primal forest tarot — seasons, archetypes, and the green world beneath.",
+    accent: "#7da05a",
+    backGlyph: "❧",
+  },
+  {
+    id: "deviant-moon",
+    name: "Deviant Moon",
+    tradition: "Deviant Moon Tarot",
+    description: "Gothic shadow tarot — moonlit figures, honest edges, no softening.",
+    accent: "#c3ccd4",
+    backGlyph: "☾",
+  },
 ];
 
 // When the seeker blends the decks, each card carries whichever tradition speaks loudest.
