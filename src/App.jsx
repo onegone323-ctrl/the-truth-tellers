@@ -1,3 +1,4 @@
+import React from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -10,7 +11,9 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Journal from '@/pages/Journal';
-import Timeline from '@/pages/Timeline';
+// The Timeline page pulls in heavy chart libraries — load it on demand so the
+// rest of the app renders without them.
+const Timeline = React.lazy(() => import('@/pages/Timeline'));
 import Cards from '@/pages/Cards';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -52,7 +55,16 @@ const AuthenticatedApp = () => {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
-          <Route path="/timeline" element={<Timeline />} />
+          <Route path="/timeline" element={
+            <React.Suspense fallback={
+              <div className="flex justify-center pt-16">
+                <div className="w-8 h-8 border-2 rounded-full animate-spin"
+                  style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
+              </div>
+            }>
+              <Timeline />
+            </React.Suspense>
+          } />
           <Route path="/cards" element={<Cards />} />
         </Route>
       </Route>

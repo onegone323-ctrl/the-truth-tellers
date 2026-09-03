@@ -4,6 +4,11 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Force these deps through the pre-bundle step — without an explicit entry the
+  // optimizer can skip them and the dev server 504s on their .vite/deps files.
+  optimizeDeps: {
+    include: ['recharts', 'date-fns'],
+  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
