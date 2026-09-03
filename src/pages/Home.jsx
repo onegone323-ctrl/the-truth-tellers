@@ -9,6 +9,7 @@ import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import ReadingText from "@/components/ReadingText";
 import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
+import CaptionScroll from "@/components/CaptionScroll";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -30,6 +31,8 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [audioData, setAudioData] = useState(null);
+  const [captionText, setCaptionText] = useState("");
+  const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
   const audioRef = useRef(null);
 
@@ -149,6 +152,9 @@ export default function Home() {
         });
         setMemory(created);
       }
+
+      // She speaks the moment the reading lands — no second summons needed.
+      speak(text);
     } catch (e) {
       console.error(e);
       setReading("The veil thickened. The Oracle could not speak — try again.");
@@ -157,12 +163,15 @@ export default function Home() {
   };
 
   // ---- Oracle voice (ElevenLabs) ----
-  const handleSpeak = async () => {
-    if (!reading || voiceBusy) return;
+  const speak = async (sourceText) => {
+    if (!sourceText || voiceBusy) return;
     setVoiceBusy(true);
     setOrbState("thinking");
+    setCaptionProgress(0);
+    const spoken = toSpokenText(sourceText);
+    setCaptionText(spoken);
     try {
-      const res = await base44.functions.invoke("generateSpeech", { text: toSpokenText(reading) });
+      const res = await base44.functions.invoke("generateSpeech", { text: spoken });
       setAudioData(res?.data?.audio || null);
       setOrbState("speaking");
     } catch (e) {
@@ -172,8 +181,16 @@ export default function Home() {
     setVoiceBusy(false);
   };
 
+  // Words roll with her voice: track playback position for the caption scroll.
+  const handleTimeUpdate = () => {
+    const a = audioRef.current;
+    if (a && a.duration && Number.isFinite(a.duration)) {
+      setCaptionProgress(Math.min(1, a.currentTime / a.duration));
+    }
+  };
+
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion(""); setAudioData(null);
+    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion(""); setAudioData(null); setCaptionText(""); setCaptionProgress(0);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -407,9 +424,9 @@ export default function Home() {
           {!busy && (
             <div className="flex flex-wrap justify-center gap-3">
               {audioData && (
-                <audio ref={audioRef} src={audioData} autoPlay onEnded={() => setOrbState("idle")} className="hidden" />
+                <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
               )}
-              <button onClick={handleSpeak} disabled={voiceBusy || orbState === "speaking"}
+              <button onClick={() => speak(reading)} disabled={voiceBusy || orbState === "speaking"}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition-all disabled:opacity-50"
                 style={{
                   background: "linear-gradient(160deg, rgba(120,20,30,0.7), rgba(60,10,15,0.9))",
@@ -428,6 +445,7 @@ export default function Home() {
           )}
         </div>
       )}
+      <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
     </div>
   );
 }
