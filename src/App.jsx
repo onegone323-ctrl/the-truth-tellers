@@ -15,6 +15,7 @@ import Journal from '@/pages/Journal';
 // rest of the app renders without them.
 const Timeline = React.lazy(() => import('@/pages/Timeline'));
 import Cards from '@/pages/Cards';
+import PullRequests from '@/pages/PullRequests';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
             </React.Suspense>
           } />
           <Route path="/cards" element={<Cards />} />
+          <Route path="/pulls" element={<PullRequests />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
