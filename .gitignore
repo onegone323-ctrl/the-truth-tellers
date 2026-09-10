@@ -1,0 +1,62 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env*.example
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# .NET
+bin/
+obj/
+.vs/
+.vscode/
+*.dll
+*.exe
+*.pdb
+launchSettings.json
+
+# Azure
+.azure/
+azure.env
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+.cache/
+
+# Secrets
+secrets.json
