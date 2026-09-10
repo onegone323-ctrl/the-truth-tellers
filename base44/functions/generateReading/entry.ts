@@ -71,21 +71,21 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Copilot is not configured — missing Azure OpenAI key, endpoint, or deployment.' }, { status: 500 });
     }
 
+    // Foundry-style resource: the deployment is chosen in the request body,
+    // and the endpoint may already carry the full chat path.
+    const chatUrl = endpoint.endsWith('/chat/completions') ? endpoint : `${endpoint}/chat/completions`;
+
     // One retry: the Azure edge occasionally times out on long generations.
     let aiRes;
     for (let attempt = 0; attempt < 2; attempt++) {
-      aiRes = await fetch(
-        `${endpoint}/openai/deployments/${deployment}/chat/completions?api-version=2024-10-21`,
-        {
-          method: 'POST',
-          headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.95,
-            max_tokens: 8192,
-          }),
-        }
-      );
+      aiRes = await fetch(chatUrl, {
+        method: 'POST',
+        headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: deployment,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
       if (aiRes.ok) break;
     }
 
