@@ -66,7 +66,8 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
     // Copilot's engine: her readings now come from your Azure OpenAI deployment.
     const apiKey = secrets.get('AZURE_OPENAI_API_KEY');
     const endpoint = (secrets.get('AZURE_OPENAI_ENDPOINT') || '').replace(/\/+$/, '');
-    const deployment = secrets.get('AZURE_OPENAI_DEPLOYMENT');
+    // Deployment name on the Azure AI Foundry resource (confirmed live: "whitney").
+    const deployment = 'whitney';
     if (!apiKey || !endpoint || !deployment) {
       return Response.json({ error: 'Copilot is not configured — missing Azure OpenAI key, endpoint, or deployment.' }, { status: 500 });
     }
