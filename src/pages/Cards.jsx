@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { CARDS } from "@/lib/tarotData";
 import { Search, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const SUIT_GLYPH = { Wands: "♣", Cups: "♥", Swords: "♠", Pentacles: "♦", Major: "✶" };
 
 export default function Cards() {
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
 
   const categories = ["All", "Major", "Wands", "Cups", "Swords", "Pentacles"];
   const list = CARDS.filter((c) => {
@@ -45,7 +46,7 @@ export default function Cards() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {list.map((c) => (
-          <button key={c.name} onClick={() => setSelected(c)}
+          <button key={c.name} onClick={() => navigate(`/cards/${encodeURIComponent(c.name)}`)}
             className="lux-card rounded-lg p-3 text-left hover:scale-[1.03] transition-transform">
             <div className="flex items-center justify-between">
               <span style={{ color: "#d4af37", fontSize: 18 }}>{SUIT_GLYPH[c.arcana === "Major" ? "Major" : c.suit]}</span>
@@ -59,41 +60,6 @@ export default function Cards() {
         ))}
       </div>
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}
-          onClick={() => setSelected(null)}>
-          <div className="lux-card rounded-xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <span style={{ color: "#d4af37", fontSize: 32 }}>{SUIT_GLYPH[selected.arcana === "Major" ? "Major" : selected.suit]}</span>
-              <div>
-                <h2 className="font-display text-2xl text-gold-leaf">{selected.name}</h2>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  {selected.arcana === "Major" ? "Major Arcana" : `${selected.suit} · ${selected.element}`}
-                </p>
-              </div>
-            </div>
-            <hr className="gold-hairline my-3" />
-            <div className="space-y-3 text-sm">
-              <div>
-                <div className="text-gold-leaf text-xs uppercase tracking-widest mb-1">Upright</div>
-                <p className="text-foreground/90 font-body">{selected.upright}</p>
-              </div>
-              <div>
-                <div className="uppercase tracking-widest mb-1 text-xs" style={{ color: "#c0392b" }}>Reversed</div>
-                <p className="text-foreground/80 font-body">{selected.reversed}</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {selected.keywords.map((k) => (
-                  <span key={k} className="text-[10px] px-2 py-0.5 rounded-full gold-pill text-muted-foreground">{k}</span>
-                ))}
-              </div>
-            </div>
-            <button onClick={() => setSelected(null)} className="mt-5 w-full py-2 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest hover:gold-pill-active transition-all">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

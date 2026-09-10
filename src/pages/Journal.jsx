@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import ReadingText from "@/components/ReadingText";
-import { Search, Trash2, Calendar } from "lucide-react";
+import { Search, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Journal() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -21,12 +21,6 @@ export default function Journal() {
   };
 
   useEffect(() => { load(); }, []);
-
-  const handleDelete = async (id) => {
-    await base44.entities.JournalEntry.delete(id);
-    setEntries((p) => p.filter((e) => e.id !== id));
-    setSelected(null);
-  };
 
   const filtered = query
     ? entries.filter((e) =>
@@ -61,7 +55,7 @@ export default function Journal() {
       ) : (
         <div className="space-y-3">
           {filtered.map((e) => (
-            <button key={e.id} onClick={() => setSelected(e)}
+            <button key={e.id} onClick={() => navigate(`/journal/${e.id}`)}
               className="lux-card rounded-xl p-4 w-full text-left hover:scale-[1.01] transition-transform">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -84,44 +78,6 @@ export default function Journal() {
         </div>
       )}
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ background: "rgba(0,0,0,0.88)" }}
-          onClick={() => setSelected(null)}>
-          <div className="lux-card rounded-xl p-6 max-w-2xl w-full my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3" />{fmtDate(selected.created_date)}
-                </div>
-                <h2 className="font-serif text-xl text-gold-leaf mt-1">"{selected.question}"</h2>
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground mt-1">{selected.deck} · {selected.spread}</p>
-              </div>
-              <button onClick={() => handleDelete(selected.id)}
-                className="p-2 rounded-full text-muted-foreground hover:text-red-400 transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-            <hr className="gold-hairline my-3" />
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {(selected.cards_drawn || []).map((c, i) => (
-                <div key={i} className="text-center">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full gold-pill text-muted-foreground block">
-                    {c.name}{c.reversed ? " R" : ""}
-                  </span>
-                  <span className="text-[8px] text-muted-foreground/60">{c.position}</span>
-                </div>
-              ))}
-            </div>
-            <ReadingText text={selected.interpretation} />
-            {selected.audio_url && (
-              <audio controls src={selected.audio_url} className="w-full mt-4" />
-            )}
-            <button onClick={() => setSelected(null)} className="mt-5 w-full py-2 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest hover:opacity-80 transition-all">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

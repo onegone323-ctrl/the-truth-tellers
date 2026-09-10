@@ -15,6 +15,8 @@ import Journal from '@/pages/Journal';
 // rest of the app renders without them.
 const Timeline = React.lazy(() => import('@/pages/Timeline'));
 import Cards from '@/pages/Cards';
+import CardDetail from '@/pages/CardDetail';
+import JournalDetail from '@/pages/JournalDetail';
 import PullRequests from '@/pages/PullRequests';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -56,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/journal/:id" element={<JournalDetail />} />
           <Route path="/timeline" element={
             <React.Suspense fallback={
               <div className="flex justify-center pt-16">
@@ -67,6 +70,7 @@ const AuthenticatedApp = () => {
             </React.Suspense>
           } />
           <Route path="/cards" element={<Cards />} />
+          <Route path="/cards/:name" element={<CardDetail />} />
           <Route path="/pulls" element={<PullRequests />} />
         </Route>
       </Route>
