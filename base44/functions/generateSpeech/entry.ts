@@ -43,9 +43,8 @@ export default async function(req) {
 
     const voiceId = VOICES[voice] || VOICES.oracle;
     const chunks = chunkText(text);
-    const audioParts = [];
 
-    for (const chunk of chunks) {
+    const synthChunk = async (chunk) => {
       const res = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_64`,
         {
@@ -65,9 +64,18 @@ export default async function(req) {
       );
       if (!res.ok) {
         const err = await res.text();
-        return Response.json({ error: 'ElevenLabs: ' + err.slice(0, 300) }, { status: 502 });
+        throw new Error('ElevenLabs: ' + err.slice(0, 300));
       }
-      audioParts.push(new Uint8Array(await res.arrayBuffer()));
+      return new Uint8Array(await res.arrayBuffer());
+    };
+
+    // Chunks are independent — voicing them all at once means the full reading
+    // is ready in roughly one chunk's time instead of the sum of all of them.
+    let audioParts;
+    try {
+      audioParts = await Promise.all(chunks.map(synthChunk));
+    } catch (e) {
+      return Response.json({ error: e.message }, { status: 502 });
     }
 
     const merged = new Uint8Array(audioParts.reduce((n, p) => n + p.length, 0));
