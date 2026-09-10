@@ -63,36 +63,42 @@ A few bold, declarative verdict lines. Then a short bullet list of what the spre
 
 Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
-    const apiKey = secrets.get('AZURE_OPENAI_API_KEY');
-    const endpoint = secrets.get('AZURE_OPENAI_ENDPOINT');
-    const deployment = secrets.get('AZURE_OPENAI_DEPLOYMENT');
+    const apiKey = secrets.get('GEMINI_API_KEY');
+    // Disabling hidden reasoning entirely: a tarot reading doesn't need it, and
+    // it was the bulk of the ~60s the seeker waits in silence. If this model
+    // rejects the flag, fall back to the plain call.
+    let disableThinking = true;
 
-    // Microsoft's engine — the same Azure OpenAI models that power Copilot.
-    // One retry for the edge's intermittent timeouts on long generations.
-    let aiRes;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      aiRes = await fetch(
-        `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2024-10-21`,
+    // Retries: one for a rejected thinking flag, one for Google's edge
+    // intermittently timing out on long generations.
+    let geminiRes;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      geminiRes = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
         {
           method: 'POST',
-          headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
           body: JSON.stringify({
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.95,
-            max_tokens: 8192,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.95,
+              maxOutputTokens: 8192,
+              ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+            },
           }),
         }
       );
-      if (aiRes.ok) break;
+      if (geminiRes.ok) break;
+      if (geminiRes.status === 400 && disableThinking) { disableThinking = false; continue; }
     }
 
-    const raw = await aiRes.text();
-    if (!aiRes.ok) {
-      return Response.json({ error: 'Copilot API: ' + raw.slice(0, 300) }, { status: 502 });
+    const raw = await geminiRes.text();
+    if (!geminiRes.ok) {
+      return Response.json({ error: 'Gemini API: ' + raw.slice(0, 300) }, { status: 502 });
     }
     const data = JSON.parse(raw);
 
-    const text = data?.choices?.[0]?.message?.content || '';
+    const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
 
     return Response.json({ reading: text });
   } catch (error) {
