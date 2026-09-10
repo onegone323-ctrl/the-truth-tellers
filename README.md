@@ -1,4 +1,4 @@
-# ADPOV Copilot Unified
+# THE TRUTH TELLER
 
 A unified full-stack copilot application combining a Base44 React frontend with an Azure Cosmos DB + .NET backend, powered by GitHub Copilot and Azure OpenAI.
 
