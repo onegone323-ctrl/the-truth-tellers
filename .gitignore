@@ -60,3 +60,4 @@ temp/
 
 # Secrets
 secrets.json
+base44/.app.jsonc
