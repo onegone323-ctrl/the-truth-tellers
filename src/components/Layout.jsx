@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { BookOpen, Layers, Sparkles, TrendingUp, LogOut } from "lucide-react";
+import { BookOpen, Layers, Sparkles, TrendingUp, LogOut, Plug } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import Starfield from "@/components/Starfield";
 
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/timeline", label: "Timeline", icon: TrendingUp },
   { to: "/cards", label: "Cards", icon: Layers },
+  { to: "/connect", label: "Connect", icon: Plug },
 ];
 
 export default function Layout() {
