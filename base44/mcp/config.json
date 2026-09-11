@@ -1,0 +1,69 @@
+{
+  "auth": "oauth",
+  "tools": {
+    "functions": [
+      {
+        "name": "generate_tarot_reading",
+        "title": "Generate Tarot Reading",
+        "description": "Asks the Oracle for a full tarot reading. Provide the seeker's question, the spread (name and description), and the drawn cards (each with name, upright/reversed state, and spread position; optional clarifier cards with name and reversed flag). The deck defaults to Rider-Waite when deck is omitted. Returns the Oracle's full reading as formatted markdown text.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "The seeker's question for the Oracle."
+            },
+            "deck": {
+              "type": "object",
+              "description": "The tarot deck used, e.g. { \"name\": \"Rider-Waite\", \"tradition\": \"Rider-Waite-Smith\" }. Optional.",
+              "properties": {
+                "name": { "type": "string" },
+                "tradition": { "type": "string" }
+              }
+            },
+            "spread": {
+              "type": "object",
+              "description": "The spread being read, e.g. { \"name\": \"Three Card\", \"description\": \"Past, present, future\" }.",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" }
+              },
+              "required": ["name", "description"]
+            },
+            "cards": {
+              "type": "array",
+              "description": "The drawn cards in spread order. Each card: name, reversed (boolean), position (its spread position), and optional clarifiers (array of { name, reversed }).",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "reversed": { "type": "boolean" },
+                  "position": { "type": "string" },
+                  "clarifiers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "reversed": { "type": "boolean" }
+                      },
+                      "required": ["name", "reversed"]
+                    }
+                  }
+                },
+                "required": ["name", "reversed", "position"]
+              }
+            }
+          },
+          "required": ["question", "spread", "cards"]
+        },
+        "handler": "generateReading",
+        "annotations": {
+          "read_only_hint": false,
+          "destructive_hint": false,
+          "idempotent_hint": false
+        }
+      }
+    ]
+  }
+}
