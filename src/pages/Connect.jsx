@@ -33,6 +33,36 @@ const CLIENTS = [
     ],
   },
   {
+    id: "vscode",
+    label: "VS Code",
+    steps: [
+      "Open VS Code with GitHub Copilot Chat installed.",
+      "Open the Command Palette and run \"MCP: Add Server\", then choose \"HTTP\".",
+      "Paste the server URL below and give it a name like \"truth-teller\".",
+      "When Copilot Chat shows a sign-in request on the account icon, approve it — VS Code opens this app's consent page in your browser.",
+    ],
+  },
+  {
+    id: "windsurf",
+    label: "Windsurf",
+    steps: [
+      "Open Windsurf and go to Settings, then MCP Servers.",
+      "Click \"Add MCP Server\" and choose Streamable HTTP.",
+      "Paste the server URL below and save.",
+      "Start a Cascade chat and approve the connection when Windsurf opens the consent page.",
+    ],
+  },
+  {
+    id: "gemini",
+    label: "Gemini CLI",
+    steps: [
+      "Open your Gemini CLI config file at ~/.gemini/settings.json (create it if it doesn't exist).",
+      "Add an \"mcpServers\" entry with an \"httpUrl\" set to the server URL below, e.g. { \"mcpServers\": { \"truth-teller\": { \"httpUrl\": \"<server url>\" } } }.",
+      "Save the file and restart Gemini CLI so the server loads.",
+      "On first use, approve the sign-in link it opens — that's this app's consent page.",
+    ],
+  },
+  {
     id: "custom",
     label: "Custom",
     steps: [
@@ -86,7 +116,7 @@ export default function Connect() {
           Connect Your Assistant
         </h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md mx-auto">
-          Let Claude, ChatGPT, Cursor, or any MCP client consult the Oracle on your behalf.
+          Let Claude, ChatGPT, Cursor, VS Code, Windsurf, Gemini, or any MCP client consult the Oracle on your behalf.
         </p>
       </div>
 
