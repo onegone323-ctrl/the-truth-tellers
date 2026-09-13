@@ -19,7 +19,8 @@ export default async function(req) {
     ? ` Clarifiers: ${c.clarifiers.map(x => x.name + (x.reversed ? ' (reversed)' : '')).join(', ')}.`
     : '';
   const dk = c.deck_tradition ? ` Drawn from the ${c.deck_name} deck (${c.deck_tradition}) — read this card through that tradition's symbolism.` : '';
-  return `${i + 1}. Position: "${c.position}". Card: ${c.name}${c.reversed ? ' (REVERSED)' : ' (upright)'}.${cl}${dk}`;
+  const dt = c.deck_title ? ` In this deck the card is called "${c.deck_title}" — SAY THAT NAME OUT LOUD when you introduce it, then note it is the ${c.name} in the standard deck.` : '';
+  return `${i + 1}. Position: "${c.position}". Card: ${c.name}${c.reversed ? ' (REVERSED)' : ' (upright)'}.${cl}${dk}${dt}`;
 }).join('\n');
 
     const memBlock = memory?.summary

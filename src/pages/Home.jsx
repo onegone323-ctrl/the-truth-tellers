@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
+import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
 import OrbStage from "@/components/OrbStage";
@@ -107,6 +108,7 @@ export default function Home() {
           name: c.name, reversed: c.reversed, position: c.position,
           deck_name: (c.cardDeck || activeDeck).name,
           deck_tradition: (c.cardDeck || activeDeck).tradition,
+          deck_title: deckCardTitle((c.cardDeck || activeDeck).id, c.name),
           clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
         })),
         memory: memory ? {

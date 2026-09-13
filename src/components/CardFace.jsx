@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { deckCardTitle } from "@/lib/deckCardNames";
 
 // Luxury tarot card — deals itself onto the table, then auto-flips to reveal. No tapping.
 export default function CardFace({ card, deck, revealed = false, index = 0, clarifiers = [], dealDelay = 0 }) {
@@ -77,7 +78,15 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
               </div>
               <div className="mb-2 px-1">
                 <div className="text-[10px] font-serif leading-tight" style={{ color: "#f0e6d2" }}>
-                  {card?.name}{card?.reversed ? " (R)" : ""}
+                  {deckCardTitle(deck?.id, card?.name) || card?.name}{card?.reversed ? " (R)" : ""}
+                </div>
+                {deckCardTitle(deck?.id, card?.name) && (
+                  <div className="text-[7px] leading-tight mt-0.5" style={{ color: "#9b937f" }}>
+                    {card?.name}
+                  </div>
+                )}
+                <div className="text-[7px] uppercase tracking-[0.15em] mt-0.5" style={{ color: accent, opacity: 0.8 }}>
+                  {deck?.name}
                 </div>
               </div>
             </div>
@@ -100,7 +109,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 }}>
                 <span style={{ fontSize: 14, color: accent }}>{c.card?.arcana === "Major" ? "✶" : "•"}</span>
                 <div className="text-[6px] font-serif leading-tight mt-0.5" style={{ color: "#d4c8a8" }}>
-                  {c.name}{c.reversed ? " (R)" : ""}
+                  {deckCardTitle(deck?.id, c.name) || c.name}{c.reversed ? " (R)" : ""}
                 </div>
               </div>
             </div>
