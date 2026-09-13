@@ -63,40 +63,33 @@ A few bold, declarative verdict lines. Then a short bullet list of what the spre
 
 Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
-    // Copilot's engine: her readings now come from your Azure OpenAI deployment.
-    const apiKey = secrets.get('AZURE_OPENAI_API_KEY');
-    const endpoint = (secrets.get('AZURE_OPENAI_ENDPOINT') || '').replace(/\/+$/, '');
-    // Deployment name on the Azure AI Foundry resource (confirmed live: "whitney").
-    const deployment = 'whitney';
-    if (!apiKey || !endpoint || !deployment) {
-      return Response.json({ error: 'Copilot is not configured — missing Azure OpenAI key, endpoint, or deployment.' }, { status: 500 });
+    // Her readings come from Claude (Anthropic).
+    const apiKey = secrets.get('clude_api_key');
+    if (!apiKey) {
+      return Response.json({ error: 'Claude is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Foundry-style resource: the deployment is chosen in the request body,
-    // and the endpoint may already carry the full chat path.
-    const chatUrl = endpoint.endsWith('/chat/completions') ? endpoint : `${endpoint}/chat/completions`;
-
-    // One retry: the Azure edge occasionally times out on long generations.
-    let aiRes;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      aiRes = await fetch(chatUrl, {
-        method: 'POST',
-        headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: deployment,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      if (aiRes.ok) break;
-    }
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
 
     const raw = await aiRes.text();
     if (!aiRes.ok) {
-      return Response.json({ error: 'Copilot API: ' + raw.slice(0, 300) }, { status: 502 });
+      return Response.json({ error: 'Claude API: ' + raw.slice(0, 300) }, { status: 502 });
     }
     const data = JSON.parse(raw);
 
-    const text = data?.choices?.[0]?.message?.content || '';
+    const text = (data?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || '';
 
     return Response.json({ reading: text });
   } catch (error) {
