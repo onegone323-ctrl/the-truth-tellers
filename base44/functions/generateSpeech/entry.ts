@@ -50,7 +50,7 @@ export default async function(req) {
         {
           method: 'POST',
           headers: {
-            'xi-api-key': secrets.get('ELEVENLABS_API_KEY'),
+            'xi-api-key': secrets.get('elevenlabs'),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
