@@ -60,7 +60,7 @@ export default function Layout() {
             <SettingsIcon className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>
           </Link>
-          <button onClick={handleLogout} className="neo-navlink" title="Sign out" aria-label="Sign out">
+          <button onClick={handleLogout} className="neo-navlink inline-flex items-center" title="Sign out" aria-label="Sign out">
             <ArrowUpRight className="w-4 h-4" />
           </button>
         </nav>
