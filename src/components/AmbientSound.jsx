@@ -25,7 +25,9 @@ export default function AmbientSound() {
     <button
       onClick={toggle}
       title={enabled ? "Silence the ambience" : "Play the ambience"}
-      className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-full text-[10px] uppercase tracking-widest transition-all"
+      aria-label={enabled ? "Silence the ambience" : "Play the ambience"}
+      aria-pressed={enabled}
+      className="fixed right-4 z-40 flex items-center justify-center gap-2 min-w-[44px] min-h-[44px] px-3 py-2 rounded-full text-sm uppercase tracking-widest transition-all bottom-[calc(80px_+_env(safe-area-inset-bottom))] sm:bottom-[calc(16px_+_env(safe-area-inset-bottom))]"
       style={{
         background: "rgba(0,0,0,0.72)",
         border: "1px solid rgba(212,175,55,0.45)",
@@ -34,7 +36,7 @@ export default function AmbientSound() {
         backdropFilter: "blur(6px)",
       }}
     >
-      {enabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+      {enabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
       <span className="hidden sm:inline">{enabled ? "Ambience On" : "Ambience Off"}</span>
     </button>
   );

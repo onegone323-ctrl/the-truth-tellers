@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { alignmentOf, recurringCards, growthSeries, alignmentSeries } from "@/lib/timelineStats";
@@ -6,16 +6,17 @@ import AlignmentTrendChart from "@/components/timeline/AlignmentTrendChart";
 import RecurringCardsChart from "@/components/timeline/RecurringCardsChart";
 import ReadingGrowthChart from "@/components/timeline/ReadingGrowthChart";
 import TimelineList from "@/components/timeline/TimelineList";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Timeline() {
   const [entries, setEntries] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      const list = await base44.entities.JournalEntry.list("-created_date", 500);
-      setEntries(list || []);
-    })();
+  const load = useCallback(async () => {
+    const list = await base44.entities.JournalEntry.list("-created_date", 500);
+    setEntries(list || []);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   if (entries === null) {
     return (
@@ -28,16 +29,18 @@ export default function Timeline() {
 
   if (!entries.length) {
     return (
-      <div className="text-center py-16 space-y-4">
+      <PullToRefresh onRefresh={load}>
+      <div className="text-center py-16 space-y-4 overscroll-none">
         <div className="text-5xl" style={{ color: "#d4af37", textShadow: "0 0 20px rgba(212,175,55,0.5)" }}>✶</div>
         <h2 className="font-display text-2xl text-gold-leaf uppercase tracking-[0.2em]">The Thread Is Empty</h2>
         <p className="text-muted-foreground text-sm max-w-sm mx-auto">
           Your journey hasn't been written yet. Sit with the Oracle for your first reading, and this timeline will begin to trace your path.
         </p>
-        <Link to="/" className="gold-pill inline-block px-6 py-2.5 rounded-full text-xs uppercase tracking-widest text-gold-leaf">
+        <Link to="/" className="gold-pill inline-flex items-center px-6 py-2.5 min-h-[44px] rounded-full text-sm uppercase tracking-widest text-gold-leaf">
           Consult the Oracle
         </Link>
       </div>
+      </PullToRefresh>
     );
   }
 
@@ -58,7 +61,8 @@ export default function Timeline() {
   ];
 
   return (
-    <div className="space-y-8">
+    <PullToRefresh onRefresh={load}>
+    <div className="space-y-8 overscroll-none">
       <div className="text-center pt-4">
         <h1 className="font-display text-3xl sm:text-4xl text-gold-leaf uppercase tracking-[0.2em]">Your Journey</h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md mx-auto">
@@ -69,7 +73,7 @@ export default function Timeline() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {stats.map((s) => (
           <div key={s.label} className="lux-card rounded-xl p-4 text-center">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{s.label}</div>
+            <div className="text-sm uppercase tracking-widest text-muted-foreground">{s.label}</div>
             <div className="font-display text-lg sm:text-xl text-gold-leaf mt-1.5 leading-tight">{s.value}</div>
           </div>
         ))}
@@ -88,5 +92,6 @@ export default function Timeline() {
         <TimelineList entries={chronological} />
       </div>
     </div>
+    </PullToRefresh>
   );
 }

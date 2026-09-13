@@ -57,6 +57,33 @@
     @apply bg-background text-foreground font-body;
     background-color: #000000;
   }
+
+  /* iOS: no rubber-band bounce on the shell */
+  html, body {
+    overscroll-behavior: none;
+  }
+
+  /* Controls only — never reading/article content */
+  button, [role="button"], .neo-navlink, .tab-link, .neo-pill, .neo-tile, .neo-toggle,
+  .neo-count, .neo-spread-tile, .neo-button, .gold-pill, .gold-pill-active {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Visible keyboard/switch focus on custom card + list buttons */
+  button:focus-visible, a:focus-visible, .lux-card:focus-visible, .neo-tile:focus-visible,
+  .neo-spread-tile:focus-visible, .tab-link:focus-visible {
+    outline: 2px solid rgba(0,229,255,.85);
+    outline-offset: 2px;
+  }
+}
+
+/* Small screens / reduced motion: drop the always-on decorative overlays */
+@media (prefers-reduced-motion: reduce), (max-width: 767px) {
+  .obsidian-page::after { display: none; }
+  .neo-panel::after { display: none; }
 }
 
 @layer utilities {
@@ -135,7 +162,7 @@
     pointer-events: none;
   }
   .neo-label {
-    position: relative; color: #d4af37; font-size: 12px; letter-spacing: 3px;
+    position: relative; color: #d4af37; font-size: 14px; letter-spacing: 3px;
     text-transform: uppercase; font-weight: 500;
   }
   .neo-field {
@@ -152,7 +179,7 @@
     border: 1px solid #d4af37;
     background: linear-gradient(100deg, #6f4d0b, #d4af37, #7b2cff);
     color: #050505; text-transform: uppercase; letter-spacing: 3px;
-    font-size: 11px; padding: 13px 19px; font-weight: 700;
+    font-size: 14px; padding: 13px 19px; font-weight: 700; min-height: 44px;
   }
   .neo-button:hover, .neo-button:focus-visible { box-shadow: 0 0 24px rgba(212,175,55,.55); filter: brightness(1.15); }
   .neo-button:active { transform: translateY(1px); }
@@ -162,7 +189,7 @@
     cursor: pointer; transition: .25s;
     padding: 10px 5px; text-align: center;
     border: 1px solid rgba(212,175,55,.45);
-    background: rgba(10,8,13,.8); color: #c7bda4; font-size: 10px;
+    background: rgba(10,8,13,.8); color: #c7bda4; font-size: 14px; min-height: 44px;
   }
   .neo-tile:hover, .neo-tile:focus-visible, .neo-tile.is-active {
     border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,.25); color: #00e5ff;
@@ -175,8 +202,8 @@
   .neo-pill {
     cursor: pointer; transition: .25s;
     border: 1px solid rgba(212,175,55,.42); background: rgba(12,9,17,.85);
-    color: #938b78; padding: 8px 13px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: 1.5px; font-size: 10px;
+    color: #938b78; padding: 8px 13px; border-radius: 20px; min-height: 44px;
+    text-transform: uppercase; letter-spacing: 1.5px; font-size: 14px;
   }
   .neo-pill:hover, .neo-pill:focus-visible, .neo-pill.is-active {
     color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 14px rgba(0,229,255,.22);
@@ -193,7 +220,7 @@
   .neo-count {
     cursor: pointer; transition: .25s; flex: 1;
     background: rgba(11,8,17,.85); border: 1px solid rgba(212,175,55,.4);
-    padding: 10px; text-align: center; color: #d4af37; font-size: 13px;
+    padding: 10px; text-align: center; color: #d4af37; font-size: 14px; min-height: 44px;
   }
   .neo-count:hover, .neo-count:focus-visible, .neo-count.is-active {
     border-color: #00e5ff; box-shadow: 0 0 14px rgba(0,229,255,.22);
@@ -203,6 +230,8 @@
     width: 42px; height: 21px; border-radius: 20px;
     border: 1px solid #7b2cff; background: #21143e; position: relative;
   }
+  /* invisible 44px hit area around the small toggle */
+  .neo-toggle::after { content: ""; position: absolute; inset: -12px; }
   .neo-toggle > i {
     display: block; width: 15px; height: 15px; border-radius: 50%;
     background: #00e5ff; position: absolute; left: 3px; top: 2px;
@@ -213,7 +242,8 @@
 
   .neo-navlink {
     color: #9c947f; text-decoration: none; text-transform: uppercase;
-    font-size: 10px; letter-spacing: 2px; padding: 10px 13px;
+    font-size: 14px; letter-spacing: 2px; padding: 10px 13px; min-height: 44px;
+    display: inline-flex; align-items: center;
     border: 1px solid transparent; transition: .25s; cursor: pointer;
   }
   .neo-navlink:hover, .neo-navlink:focus-visible, .neo-navlink.is-active {
@@ -229,8 +259,8 @@
     color: #f3e6b8; font-size: 58px; line-height: 1.02; letter-spacing: 9px;
     text-transform: uppercase; font-weight: 300; text-shadow: 0 0 24px rgba(212,175,55,.25);
   }
-  .neo-eyebrow { color: #00e5ff; font-size: 10px; letter-spacing: 5px; text-transform: uppercase; }
-  .neo-note { color: #827b6d; font-size: 11px; font-style: italic; }
+  .neo-eyebrow { color: #00e5ff; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; }
+  .neo-note { color: #827b6d; font-size: 14px; font-style: italic; }
 
   .enter { animation: materialize .85s ease both; }
   .delay1 { animation-delay: .18s; }

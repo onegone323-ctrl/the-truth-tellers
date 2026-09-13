@@ -19,6 +19,7 @@ import CardDetail from '@/pages/CardDetail';
 import JournalDetail from '@/pages/JournalDetail';
 import PullRequests from '@/pages/PullRequests';
 import Connect from '@/pages/Connect';
+import Settings from '@/pages/Settings';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
           <Route path="/cards/:name" element={<CardDetail />} />
           <Route path="/pulls" element={<PullRequests />} />
           <Route path="/connect" element={<Connect />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Journal() {
   const [entries, setEntries] = useState([]);
@@ -31,7 +32,8 @@ export default function Journal() {
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={load}>
+    <div className="space-y-6 overscroll-none">
       <div className="text-center">
         <h1 className="font-display text-4xl text-gold-leaf uppercase tracking-[0.2em]">The Journal</h1>
         <p className="text-muted-foreground mt-2 font-body">Every reading the Oracle has given you — kept in her book.</p>
@@ -41,7 +43,7 @@ export default function Journal() {
       <div className="relative max-w-md mx-auto">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your readings…"
-          className="w-full pl-10 pr-4 py-2.5 rounded-full bg-black/60 text-sm outline-none"
+          className="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-full bg-black/60 text-sm outline-none"
           style={{ border: "1px solid rgba(212,175,55,0.3)" }} />
       </div>
 
@@ -58,20 +60,20 @@ export default function Journal() {
             <button key={e.id} onClick={() => navigate(`/journal/${e.id}`)}
               className="lux-card rounded-xl p-4 w-full text-left hover:scale-[1.01] transition-transform">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
                   {fmtDate(e.created_date)}
                 </div>
-                <span className="text-[10px] uppercase tracking-widest text-gold-leaf/70">{e.spread}</span>
+                <span className="text-sm uppercase tracking-widest text-gold-leaf/70">{e.spread}</span>
               </div>
               <p className="mt-2 font-serif text-base text-foreground/90 line-clamp-2">"{e.question}"</p>
               <div className="flex flex-wrap gap-1 mt-2">
                 {(e.cards_drawn || []).slice(0, 6).map((c, i) => (
-                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-full gold-pill text-muted-foreground">
+                  <span key={i} className="text-sm px-2.5 py-1 rounded-full gold-pill text-muted-foreground">
                     {c.name}{c.reversed ? " R" : ""}
                   </span>
                 ))}
-                {(e.cards_drawn || []).length > 6 && <span className="text-[10px] text-muted-foreground">+{(e.cards_drawn || []).length - 6}</span>}
+                {(e.cards_drawn || []).length > 6 && <span className="text-sm text-muted-foreground">+{(e.cards_drawn || []).length - 6}</span>}
               </div>
             </button>
           ))}
@@ -79,5 +81,6 @@ export default function Journal() {
       )}
 
     </div>
+    </PullToRefresh>
   );
 }

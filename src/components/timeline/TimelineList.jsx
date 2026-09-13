@@ -27,10 +27,10 @@ export default function TimelineList({ entries }) {
                 }} />
               <div className="lux-card rounded-xl p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <span className="text-sm uppercase tracking-widest text-muted-foreground">
                     {idx + 1} · {format(parseISO(e.created_date), "MMM d, yyyy")}
                   </span>
-                  <span className="px-3 py-0.5 rounded-full text-[10px] uppercase tracking-widest"
+                  <span className="px-3 py-0.5 rounded-full text-sm uppercase tracking-widest"
                     style={{
                       border: `1px solid ${badge.color}99`,
                       color: badge.color,
@@ -43,19 +43,19 @@ export default function TimelineList({ entries }) {
                 <p className="font-serif text-base sm:text-lg mt-2" style={{ color: "#f0e6d2" }}>
                   “{e.question}”
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1 italic">
+                <p className="text-sm text-muted-foreground mt-1 italic">
                   {e.spread} · {e.deck}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {(e.cards_drawn || []).map((c, i) => (
-                    <span key={i} className="gold-pill px-2 py-0.5 rounded-full text-[10px]"
+                    <span key={i} className="gold-pill px-2.5 py-1 rounded-full text-sm"
                       style={{ color: c.reversed ? "#e8a9a9" : "#d4c8a8" }}>
                       {c.name}{c.reversed ? " (R)" : ""}
                     </span>
                   ))}
                 </div>
                 <button onClick={() => setOpenId(isOpen ? null : e.id)}
-                  className="mt-3 flex items-center gap-1 text-[11px] uppercase tracking-widest text-gold-leaf/80 hover:text-gold-leaf transition-colors">
+                  className="mt-3 flex items-center gap-1 min-h-[44px] text-sm uppercase tracking-widest text-gold-leaf/80 hover:text-gold-leaf transition-colors">
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                   {isOpen ? "Close Her Words" : "Her Words"}
                 </button>

@@ -5,8 +5,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 export default function ReadingGrowthChart({ data }) {
   return (
     <div className="lux-card rounded-xl p-4 sm:p-5">
-      <div className="text-xs uppercase tracking-widest text-gold-leaf/80 mb-1">Your Growth</div>
-      <p className="text-[11px] text-muted-foreground mb-3">
+      <div className="text-sm uppercase tracking-widest text-gold-leaf/80 mb-1">Your Growth</div>
+      <p className="text-sm text-muted-foreground mb-3">
         Total readings accumulated, month by month. A rising line means you keep showing up.
       </p>
       <ResponsiveContainer width="100%" height={220}>
@@ -18,10 +18,10 @@ export default function ReadingGrowthChart({ data }) {
             </linearGradient>
           </defs>
           <CartesianGrid stroke="rgba(212,175,55,0.08)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: "#a8a29e", fontSize: 10 }} stroke="rgba(212,175,55,0.2)" />
-          <YAxis allowDecimals={false} tick={{ fill: "#a8a29e", fontSize: 10 }} stroke="rgba(212,175,55,0.2)" />
+          <XAxis dataKey="label" tick={{ fill: "#a8a29e", fontSize: 14 }} stroke="rgba(212,175,55,0.2)" />
+          <YAxis allowDecimals={false} tick={{ fill: "#a8a29e", fontSize: 14 }} stroke="rgba(212,175,55,0.2)" />
           <Tooltip
-            contentStyle={{ background: "#0a0a0f", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 8, fontSize: 12 }}
+            contentStyle={{ background: "#0a0a0f", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 8, fontSize: 14 }}
             labelStyle={{ color: "#d4af37" }}
             formatter={(value, name) => (name === "cumulative" ? [value, "Total readings"] : [value, "Readings that month"])}
           />

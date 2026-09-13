@@ -1,10 +1,13 @@
 import React, { useMemo } from "react";
+import useLiteMotion from "@/hooks/useLiteMotion";
 
 // Animated starfield + drifting gold particles + nebula glow.
+// On phones / reduced-motion: fewer stars, no rising particle layer.
 export default function Starfield() {
+  const lite = useLiteMotion();
   const stars = useMemo(
     () =>
-      Array.from({ length: 90 }, () => ({
+      Array.from({ length: lite ? 30 : 90 }, () => ({
         top: Math.random() * 100,
         left: Math.random() * 100,
         size: Math.random() * 2 + 0.5,
@@ -12,17 +15,17 @@ export default function Starfield() {
         duration: Math.random() * 4 + 3,
         gold: Math.random() < 0.25,
       })),
-    []
+    [lite]
   );
   const particles = useMemo(
     () =>
-      Array.from({ length: 14 }, () => ({
+      Array.from({ length: lite ? 0 : 14 }, () => ({
         left: Math.random() * 100,
         delay: Math.random() * 12,
         duration: Math.random() * 10 + 12,
         size: Math.random() * 3 + 1.5,
       })),
-    []
+    [lite]
   );
 
   return (

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { GitPullRequest, ExternalLink, RefreshCw } from "lucide-react";
+import PullToRefresh from "@/components/PullToRefresh";
 
 const REPOS = ["ADPOV-MEDIA-ENT/the-truth-teller", "ADPOV-MEDIA-ENT/THE-ORACLE"];
 
@@ -33,7 +34,8 @@ export default function PullRequests() {
   const fmt = (d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={() => load(repo)}>
+    <div className="space-y-6 overscroll-none">
       <div className="text-center">
         <h1 className="font-display text-4xl text-gold-leaf uppercase tracking-[0.2em]">The Codex</h1>
         <p className="text-muted-foreground mt-2 font-body">Pull requests across the Oracle codebase.</p>
@@ -44,7 +46,7 @@ export default function PullRequests() {
         <div className="flex flex-wrap gap-2">
           {REPOS.map((r) => (
             <button key={r} onClick={() => setRepo(r)}
-              className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-widest transition-all ${
+              className={`px-3 py-1.5 min-h-[44px] rounded-full text-sm uppercase tracking-widest transition-all ${
                 repo === r ? "gold-pill-active text-gold-leaf" : "gold-pill text-muted-foreground"
               }`}>
               {r.split("/")[1]}
@@ -52,8 +54,8 @@ export default function PullRequests() {
           ))}
         </div>
         <button onClick={() => load(repo)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest">
-          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Refresh
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-full gold-pill text-gold-leaf text-sm uppercase tracking-widest">
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
       </div>
 
@@ -78,9 +80,9 @@ export default function PullRequests() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-serif text-foreground/90 truncate">#{p.number} · {p.title}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-widest ${s.pill}`}>{s.label}</span>
+                    <span className={`text-sm px-2 py-0.5 rounded-full border uppercase tracking-widest ${s.pill}`}>{s.label}</span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     {p.author} · {p.branch} · updated {fmt(p.updated)} · {p.comments} comments
                   </div>
                 </div>
@@ -91,5 +93,6 @@ export default function PullRequests() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
