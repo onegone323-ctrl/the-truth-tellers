@@ -19,7 +19,7 @@ export default function Home() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [phase, setPhase] = useState("setup"); // setup | drawing | reading
   const [deck, setDeck] = useState(DECKS[0]);
-  const [blendDecks, setBlendDecks] = useState(false);
+  const [blendDecks, setBlendDecks] = useState(true);
   const [spreadCategory, setSpreadCategory] = useState("General");
   const [spread, setSpread] = useState(SPREADS[0]);
   const [clarifyOn, setClarifyOn] = useState(false);
@@ -105,6 +105,8 @@ export default function Home() {
         question, deck: activeDeck, spread,
         cards: cards.map((c) => ({
           name: c.name, reversed: c.reversed, position: c.position,
+          deck_name: (c.cardDeck || activeDeck).name,
+          deck_tradition: (c.cardDeck || activeDeck).tradition,
           clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
         })),
         memory: memory ? {

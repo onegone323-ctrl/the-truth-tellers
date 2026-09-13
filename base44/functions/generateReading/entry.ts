@@ -18,7 +18,8 @@ export default async function(req) {
   const cl = (c.clarifiers && c.clarifiers.length)
     ? ` Clarifiers: ${c.clarifiers.map(x => x.name + (x.reversed ? ' (reversed)' : '')).join(', ')}.`
     : '';
-  return `${i + 1}. Position: "${c.position}". Card: ${c.name}${c.reversed ? ' (REVERSED)' : ' (upright)'}.${cl}`;
+  const dk = c.deck_tradition ? ` Drawn from the ${c.deck_name} deck (${c.deck_tradition}) — read this card through that tradition's symbolism.` : '';
+  return `${i + 1}. Position: "${c.position}". Card: ${c.name}${c.reversed ? ' (REVERSED)' : ' (upright)'}.${cl}${dk}`;
 }).join('\n');
 
     const memBlock = memory?.summary
@@ -33,6 +34,7 @@ You have deep, accurate knowledge of all 78 tarot cards — upright and reversed
 
 THE SEEKER'S QUESTION: "${question}"
 DECK USED: ${deck?.name || 'Rider-Waite'} (${deck?.tradition || ''})
+NOTE ON DECKS: these cards may come from different traditions blended into one spread. Where a card names its deck, interpret it in that deck's own symbolic language (Rider-Waite imagery, Thoth alchemy, Egyptian/Isis gods and hermetics, Marseille woodcut starkness, Golden Dawn Kabbalah and astrology, Wildwood seasons and animal archetypes, Deviant Moon shadow imagery) and name that flavor out loud when it sharpens the message.
 SPREAD USED: ${spread?.name} — ${spread?.description}
 CARDS DRAWN:
 ${cardLines}${memBlock}
