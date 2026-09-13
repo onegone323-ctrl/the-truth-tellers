@@ -57,10 +57,10 @@ export default function DailyCard({ memory, setMemory, userName }) {
   };
 
   return (
-    <div className="lux-card rounded-xl p-6 max-w-xl mx-auto">
-      <div className="text-center">
-        <label className="text-xs uppercase tracking-widest text-gold-leaf/80">Today's Card</label>
-        <p className="text-[11px] text-muted-foreground italic mt-1">
+    <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(34,15,58,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
+      <div>
+        <label className="block" style={{ color: "#00e5ff", fontSize: 11, letterSpacing: 3, textTransform: "uppercase" }}>Today's Card</label>
+        <p className="mt-2.5 italic" style={{ color: "#a9a18f", fontSize: 13 }}>
           {fresh
             ? "One card a day. Come back when the window resets."
             : "A single card for quick daily guidance — free once every 24 hours."}
@@ -88,27 +88,12 @@ export default function DailyCard({ memory, setMemory, userName }) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4 mt-4">
-          <div className="rounded-lg flex items-center justify-center"
-            style={{
-              width: 110, height: 180,
-              background: "linear-gradient(145deg, #1a0306, #3a0810 50%, #1a0306)",
-              border: "1.5px solid #d4af37",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.7), 0 0 12px rgba(212,175,55,0.2)",
-            }}>
-            <span style={{ fontSize: 40, color: "#d4af37", opacity: 0.8 }}>✦</span>
-          </div>
-          <button onClick={drawDaily} disabled={busy}
-            className="px-8 py-2.5 rounded-full text-xs uppercase tracking-[0.2em] font-display transition-all disabled:opacity-40"
-            style={{
-              background: "linear-gradient(160deg, rgba(120,20,30,0.7), rgba(60,10,15,0.9))",
-              border: "1px solid rgba(212,175,55,0.6)",
-              color: "#f5e6b8",
-              boxShadow: "0 0 20px rgba(192,57,43,0.3)",
-            }}>
-            <Sparkles className="w-4 h-4 inline mr-2" />
+        <div className="flex items-center justify-between gap-6 mt-4">
+          <button onClick={drawDaily} disabled={busy} className="neo-button flex items-center gap-2 px-8">
+            <Sparkles className="w-4 h-4" />
             {busy ? "Drawing…" : "Draw Today's Card"}
           </button>
+          <span style={{ fontSize: 66, color: "#d4af37", textShadow: "0 0 25px #d4af37", animation: "breathe 4s ease-in-out infinite" }}>✦</span>
         </div>
       )}
     </div>
