@@ -47,7 +47,9 @@ Then a "---" divider.
 
 2. For EACH card, in spread order, one section in exactly this shape:
 
-## [one fitting emoji] POSITION — Card Name (Reversed if so) + clarifiers
+## [one fitting emoji] POSITION — Card Name (Reversed if so) · Deck Name + clarifiers
+
+Always name the deck the card came from, and if that tradition calls the card something else, say BOTH names — e.g. "Justice, which the Thoth deck calls Adjustment", "Judgement, the Aeon in Thoth", "The Hierophant — Osiris in the Isis deck", "The Wheel of Fortune, the Wheel of Karma in the Egyptian deck", "The Hermit, the Woodward in Wildwood". Say it out loud in the body too, in plain speech, so someone only listening still hears which deck this card is from and what that deck calls it. When the deck's version of the card carries different imagery or a different emphasis than Rider-Waite, name that difference in one short line.
 
 One or two short, blunt lines distilling what this card means for THEM, here, in this position — in human terms, not textbook terms. Then, if the card has clarifiers, one bullet per clarifier:
 
