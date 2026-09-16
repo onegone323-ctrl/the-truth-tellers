@@ -68,33 +68,49 @@ A few bold, declarative verdict lines. Then a short bullet list of what the spre
 
 Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
 
-    // Her readings come from Claude (Anthropic).
-    const apiKey = secrets.get('clude_api_key');
+    // Keep the provider credential server-side in Base44 secrets.
+    const apiKey = secrets.get('perplexity_api_key');
     if (!apiKey) {
-      return Response.json({ error: 'Claude is not configured — missing API key.' }, { status: 500 });
+      return Response.json({ error: 'Perplexity is not configured — missing API key.' }, { status: 500 });
     }
 
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 2500,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    let aiRes;
+    try {
+      aiRes = await fetch('https://api.perplexity.ai/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          preset: 'pro-search',
+          input: [{ role: 'user', content: prompt }],
+          max_output_tokens: 2200,
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+    } catch (error) {
+      if (error?.name === 'TimeoutError') {
+        return Response.json({ error: 'Perplexity API timed out.' }, { status: 504 });
+      }
+      throw error;
+    }
 
     const raw = await aiRes.text();
     if (!aiRes.ok) {
-      return Response.json({ error: 'Claude API: ' + raw.slice(0, 300) }, { status: 502 });
+      return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 300) }, { status: 502 });
     }
-    const data = JSON.parse(raw);
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return Response.json({ error: 'Perplexity API returned invalid JSON.' }, { status: 502 });
+    }
 
-    const text = (data?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('') || '';
+    const text = data?.output_text;
+    if (typeof text !== 'string' || !text.trim()) {
+      return Response.json({ error: 'Perplexity API returned no reading content.' }, { status: 502 });
+    }
 
     return Response.json({ reading: text });
   } catch (error) {

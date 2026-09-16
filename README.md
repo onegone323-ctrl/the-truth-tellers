@@ -60,6 +60,10 @@ VITE_BASE44_APP_BASE_URL=https://your-app.base44.app
 
 When you use `base44 dev`, the command injects the local Base44 values for you, so `.env.local` is mainly needed for frontend-only workflows.
 
+## Backend AI secret
+
+The `generateReading` backend function calls Perplexity's Responses API server-side. Add a Base44 secret named `perplexity_api_key` in the app environment; do not put this key in `.env.local` or frontend code. It uses the `pro-search` preset with a 2,200-token cap and a 45-second upstream timeout. `pro-search` is the preset that enables Perplexity search behavior; no separate `web_search` tool entry is needed for this request. Search can increase latency, so the function waits for the complete response and keeps the existing JSON `{ reading }` contract; streaming would require a client/API contract change.
+
 ## Publish Your Changes
 
 After pushing your changes to git, open the Base44 dashboard and publish the app:
