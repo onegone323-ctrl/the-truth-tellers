@@ -1,0 +1,3 @@
+[submodule "perplexity-py"]
+	path = perplexity-py
+	url = https://github.com/perplexityai/perplexity-py.git
