@@ -28,6 +28,7 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [cards, setCards] = useState([]);
   const [reading, setReading] = useState("");
+  const [readingError, setReadingError] = useState("");
   const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -101,6 +102,7 @@ export default function Home() {
     setOrbState("thinking");
     setBusy(true);
     setReading("");
+    setReadingError("");
     try {
       const payload = {
         question, deck: activeDeck, spread,
@@ -121,48 +123,61 @@ export default function Home() {
         } : null,
       };
       const res = await base44.functions.invoke("generateReading", payload);
-      const text = res?.data?.reading || "The Oracle is silent. Try again.";
+      const text = res?.data?.reading;
+      if (typeof text !== "string" || !text.trim()) {
+        throw new Error("The reading service returned no reading.");
+      }
       setReading(text);
       setOrbState("idle");
 
-      const cardData = cards.map((c) => ({
-        name: c.name, reversed: c.reversed, position: c.position,
-        clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
-      }));
+      try {
+        const cardData = cards.map((c) => ({
+          name: c.name, reversed: c.reversed, position: c.position,
+          clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
+        }));
 
-      await base44.entities.JournalEntry.create({
-        question, deck: activeDeck.name, spread: spread.name,
-        cards_drawn: cardData, interpretation: text, audio_url: null,
-      });
+        await base44.entities.JournalEntry.create({
+          question, deck: activeDeck.name, spread: spread.name,
+          cards_drawn: cardData, interpretation: text, audio_url: null,
+        });
 
-      const adviceSnippet = text.slice(-280);
-      if (memory) {
-        await base44.entities.OracleMemory.update(memory.id, {
-          summary: text.slice(0, 600),
-          last_question: question,
-          last_advice: adviceSnippet,
-          reading_count: (memory.reading_count || 0) + 1,
-          user_name: memory.user_name || user?.full_name || "",
-          recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
-        });
-      } else {
-        const created = await base44.entities.OracleMemory.create({
-          user_name: user?.full_name || "",
-          summary: text.slice(0, 600),
-          recurring_themes: [spread.category],
-          recurring_cards: cards.map((c) => c.name).slice(0, 12),
-          last_question: question,
-          last_advice: adviceSnippet,
-          reading_count: 1,
-        });
-        setMemory(created);
+        const adviceSnippet = text.slice(-280);
+        if (memory) {
+          await base44.entities.OracleMemory.update(memory.id, {
+            summary: text.slice(0, 600),
+            last_question: question,
+            last_advice: adviceSnippet,
+            reading_count: (memory.reading_count || 0) + 1,
+            user_name: memory.user_name || user?.full_name || "",
+            recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
+          });
+        } else {
+          const created = await base44.entities.OracleMemory.create({
+            user_name: user?.full_name || "",
+            summary: text.slice(0, 600),
+            recurring_themes: [spread.category],
+            recurring_cards: cards.map((c) => c.name).slice(0, 12),
+            last_question: question,
+            last_advice: adviceSnippet,
+            reading_count: 1,
+          });
+          setMemory(created);
+        }
+      } catch (persistenceError) {
+        console.error("Reading succeeded but could not be saved.", persistenceError);
       }
 
       // She speaks the moment the reading lands — no second summons needed.
       speak(text);
     } catch (e) {
       console.error(e);
-      setReading("The veil thickened. The Oracle could not speak — try again.");
+      const message = e?.response?.data?.error || e?.message || "";
+      setReadingError(
+        /timed out|timeout/i.test(message)
+          ? "The reading took too long to arrive. No reading was generated — try again."
+          : "The reading couldn't be completed. No reading was generated — try again."
+      );
+      setOrbState("idle");
     }
     setBusy(false);
   };
@@ -195,7 +210,7 @@ export default function Home() {
   };
 
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setOrbState("idle"); setQuestion(""); setAudioData(null); setCaptionText(""); setCaptionProgress(0);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setAudioData(null); setCaptionText(""); setCaptionProgress(0);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -387,18 +402,27 @@ export default function Home() {
             <OracleOrb state={orbState} size={300} />
           </div>
           <p className="text-muted-foreground font-body text-sm max-w-md">
-            {busy || voiceBusy
+            {readingError
+              ? readingError
+              : busy || voiceBusy
               ? "She's looking into the cards…"
               : orbState === "speaking"
               ? "Listen. The truth is in her voice."
               : "Her words are yours to keep."}
           </p>
 
+          {readingError && !busy && (
+            <div className="flex flex-wrap justify-center gap-3">
+              <button onClick={handleRead} className="neo-button px-6">Try This Reading Again</button>
+              <button onClick={reset} className="neo-pill px-6 py-2.5">Another Reading</button>
+            </div>
+          )}
+
           {audioData && (
             <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
           )}
 
-          {!busy && !voiceBusy && orbState !== "speaking" && (
+          {!readingError && !busy && !voiceBusy && orbState !== "speaking" && (
             <div className="flex flex-wrap justify-center gap-3">
               <button onClick={() => speak(reading)}
                 className="neo-button flex items-center gap-2 px-6">
