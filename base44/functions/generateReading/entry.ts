@@ -137,57 +137,81 @@ export default async function(req) {
     }
 
     // Perplexity's Sonar chat-completions endpoint has been migrated to the
-    // Agent API. We call /v1/agent (also aliased at /v1/responses).
+    // Agent API at POST /v1/agent. The Oracle reads cards from prompt only
+    // — no `tools` array, no web search.
     //
-    // The Oracle reads cards — she doesn't need to search the web for each
-    // reading — so we deliberately DON'T pass a `tools` array. The model
-    // answers from the prompt only.
+    // Multi-provider fallback chain: if a model is overloaded (429) or
+    // returns a 5xx, we walk to the next model in the list. The Agent API
+    // does NOT accept a model array (returns 400), so we loop client-side.
+    const modelChain = [
+      'openai/gpt-5.6-sol',
+      'anthropic/claude-sonnet-5',
+      'google/gemini-3.8-flash',
+    ];
+
+    const oracleInstructions =
+      "You are The Oracle — a firm, personal, direct life coach who reads tarot. " +
+      "Follow the user's formatting rules EXACTLY. Use the position names from the spread " +
+      "as your section headers. Do NOT create per-card sub-headings. Do NOT cite sources. " +
+      "Do NOT reference web pages. Do NOT include AI disclaimers. Produce ONLY the reading " +
+      "in the exact structure specified. Do not use any tools; answer entirely from the prompt.";
+
     let aiRes;
-    try {
-      aiRes = await fetch('https://api.perplexity.ai/v1/agent', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Fallback chain: if the first model is overloaded (429) or fails,
-          // Perplexity automatically tries the next one. Order picks three
-          // strong creative-writing models from three different providers
-          // so a single-provider outage never breaks the Oracle.
-          model: [
-            'openai/gpt-5.6-sol',
-            'anthropic/claude-sonnet-5',
-            'google/gemini-3.8-flash',
-          ],
-          instructions:
-            "You are The Oracle — a firm, personal, direct life coach who reads tarot. " +
-            "Follow the user's formatting rules EXACTLY. Use the position names from the spread " +
-            "as your section headers. Do NOT create per-card sub-headings. Do NOT cite sources. " +
-            "Do NOT reference web pages. Do NOT include AI disclaimers. Produce ONLY the reading " +
-            "in the exact structure specified. Do not use any tools; answer entirely from the prompt.",
-          input: prompt,
-          max_output_tokens: 2400,
-          temperature: 0.85,
-        }),
-        signal: AbortSignal.timeout(60000),
-      });
-    } catch (error) {
-      if (error?.name === 'TimeoutError') {
-        return Response.json({ error: 'Perplexity API timed out.' }, { status: 504 });
+    let data;
+    let lastErrorDetail = '';
+    let usedModel = '';
+    for (const modelId of modelChain) {
+      try {
+        aiRes = await fetch('https://api.perplexity.ai/v1/agent', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: modelId,
+            instructions: oracleInstructions,
+            input: prompt,
+            max_output_tokens: 2400,
+            temperature: 0.85,
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+      } catch (error) {
+        if (error?.name === 'TimeoutError') {
+          lastErrorDetail = `${modelId} timed out`;
+          continue; // try next model
+        }
+        throw error;
       }
-      throw error;
+
+      const raw = await aiRes.text();
+      if (!aiRes.ok) {
+        // Retriable failures: overloaded (429) or any 5xx from the provider.
+        // Non-retriable: 400 invalid_request, 401 auth, 402 billing, 404 model.
+        lastErrorDetail = `${modelId} -> ${aiRes.status}: ${raw.slice(0, 300)}`;
+        if (aiRes.status === 429 || aiRes.status >= 500) {
+          continue; // try next model
+        }
+        // Non-retriable: surface immediately.
+        return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
+      }
+
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        lastErrorDetail = `${modelId} returned invalid JSON`;
+        continue; // try next model
+      }
+
+      usedModel = modelId;
+      break; // got a good response
     }
 
-    const raw = await aiRes.text();
-    if (!aiRes.ok) {
-      return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
-    }
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return Response.json({ error: 'Perplexity API returned invalid JSON.' }, { status: 502 });
+    if (!data) {
+      return Response.json({
+        error: 'All Perplexity models failed. Last: ' + lastErrorDetail.slice(0, 400),
+      }, { status: 502 });
     }
 
     // Agent API response shape: data.output is an array of typed items. The
