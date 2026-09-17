@@ -151,7 +151,15 @@ export default async function(req) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openai/gpt-5.6-sol',
+          // Fallback chain: if the first model is overloaded (429) or fails,
+          // Perplexity automatically tries the next one. Order picks three
+          // strong creative-writing models from three different providers
+          // so a single-provider outage never breaks the Oracle.
+          model: [
+            'openai/gpt-5.6-sol',
+            'anthropic/claude-sonnet-5',
+            'google/gemini-3.8-flash',
+          ],
           instructions:
             "You are The Oracle — a firm, personal, direct life coach who reads tarot. " +
             "Follow the user's formatting rules EXACTLY. Use the position names from the spread " +
