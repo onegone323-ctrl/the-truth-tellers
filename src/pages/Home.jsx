@@ -181,11 +181,21 @@ export default function Home() {
       speak(text);
     } catch (e) {
       console.error(e);
-      const message = e?.response?.data?.error || e?.message || "";
+      // Surface the actual server-side error so we can see what's failing
+      // (missing API key, 401, rate-limit, timeout, etc.). The Base44 SDK
+      // packs the function's JSON error body into a few different shapes
+      // depending on how it hit — dig for whichever one has the real message.
+      const detail =
+        e?.response?.data?.error ||
+        e?.response?.data?.detail ||
+        (typeof e?.response?.data === "string" ? e.response.data : "") ||
+        e?.data?.error ||
+        e?.message ||
+        String(e || "unknown error");
       setReadingError(
-        /timed out|timeout/i.test(message)
-          ? "The reading took too long to arrive. No reading was generated — try again."
-          : "The reading couldn't be completed. No reading was generated — try again."
+        /timed out|timeout/i.test(detail)
+          ? `The reading took too long to arrive — try again. (${detail})`
+          : `The reading couldn't be completed — try again. Reason: ${detail}`
       );
       setOrbState("idle");
     }
