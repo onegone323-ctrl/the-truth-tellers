@@ -74,34 +74,31 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Perplexity is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Use the stable /chat/completions endpoint with the Sonar model family.
+    // Perplexity's Sonar chat-completions endpoint has been migrated to the
+    // Agent API. We call /v1/agent (also aliased at /v1/responses).
+    //
     // The Oracle reads cards — she doesn't need to search the web for each
-    // reading — so we ask for search_mode: 'academic' with a low recency to
-    // keep the model focused on the prompt content instead of web results.
+    // reading — so we deliberately DON'T pass a `tools` array. The model
+    // answers from the prompt only.
     let aiRes;
     try {
-      aiRes = await fetch('https://api.perplexity.ai/chat/completions', {
+      aiRes = await fetch('https://api.perplexity.ai/v1/agent', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar-pro',
-          messages: [
-            {
-              role: 'system',
-              content:
-                "You are The Oracle — the sharpest, most honest friend the seeker has. " +
-                "Follow the user's instructions exactly. Do NOT cite sources, do NOT reference " +
-                "web pages, and do NOT include disclaimers about being an AI. Produce ONLY " +
-                "the reading in the exact markdown structure the user specifies.",
-            },
-            { role: 'user', content: prompt },
-          ],
+          model: 'openai/gpt-5.6-sol',
+          instructions:
+            "You are The Oracle — the sharpest, most honest friend the seeker has. " +
+            "Follow the user's instructions exactly. Do NOT cite sources, do NOT reference " +
+            "web pages, and do NOT include disclaimers about being an AI. Produce ONLY " +
+            "the reading in the exact markdown structure the user specifies. Do not use " +
+            "any tools; answer entirely from the prompt.",
+          input: prompt,
+          max_output_tokens: 2400,
           temperature: 0.85,
-          max_tokens: 2400,
-          top_p: 0.95,
         }),
         signal: AbortSignal.timeout(60000),
       });
@@ -123,9 +120,28 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Perplexity API returned invalid JSON.' }, { status: 502 });
     }
 
-    // /chat/completions shape: data.choices[0].message.content
-    const text = data?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string' || !text.trim()) {
+    // Agent API response shape: data.output is an array of typed items. The
+    // model's answer is a `message` item whose `content` array contains one
+    // or more `output_text` blocks. Concatenate all text blocks across all
+    // message items so we never miss a piece of the reading.
+    let text = '';
+    if (Array.isArray(data?.output)) {
+      for (const item of data.output) {
+        if (item?.type === 'message' && Array.isArray(item.content)) {
+          for (const block of item.content) {
+            if (block?.type === 'output_text' && typeof block.text === 'string') {
+              text += block.text;
+            }
+          }
+        }
+      }
+    }
+    // Fallback: some SDK-shaped responses expose output_text directly.
+    if (!text && typeof data?.output_text === 'string') {
+      text = data.output_text;
+    }
+
+    if (!text.trim()) {
       return Response.json({
         error: 'Perplexity API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
       }, { status: 502 });
