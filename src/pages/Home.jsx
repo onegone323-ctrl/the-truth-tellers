@@ -38,6 +38,8 @@ export default function Home() {
   const recogRef = useRef(null);
   const utteranceRef = useRef(null);
   const captionTimerRef = useRef(null);
+  const keepAliveRef = useRef(null);
+  const speechCancelledRef = useRef(false);
 
   // Stop any in-flight speech synthesis on unmount so the Oracle never keeps
   // talking after the seeker leaves the page.
@@ -47,6 +49,7 @@ export default function Home() {
         window.speechSynthesis.cancel();
       }
       if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+      if (keepAliveRef.current) clearInterval(keepAliveRef.current);
     };
   }, []);
 
@@ -226,15 +229,37 @@ export default function Home() {
         || voices[0];
   };
 
+  // Speak the reading, immune to Chrome's known SpeechSynthesis bugs.
+  //
+  // Chrome has TWO documented bugs that break long-form speech:
+  //   1. Utterances longer than ~200–300 chars get silently truncated.
+  //   2. After ~15 seconds of continuous speech, the synth engine goes
+  //      silent even though the utterance is still 'pending'.
+  //
+  // Fixes:
+  //   - Split into sentence-sized chunks (~200 chars each).
+  //   - Feed chunks ONE AT A TIME, not all-queued-upfront. Each chunk's
+  //     onend triggers the next chunk's speak() call. This keeps only
+  //     one utterance in the queue at any moment, which Chrome handles
+  //     reliably.
+  //   - Every 10 seconds, tick a pause/resume cycle to reset Chrome's
+  //     internal 15-second silence timer.
+  //   - speechCancelledRef guards against a new speak() while a previous
+  //     serial chain is still stepping — it stops the old chain cold.
   const speak = (sourceText) => {
     if (!sourceText) return;
     const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
     if (!synth) {
-      // No speech synthesis available — still show the caption scroll silently.
       setCaptionText(toSpokenText(sourceText));
       setOrbState("idle");
       return;
     }
+
+    // Cancel any prior run cleanly.
+    speechCancelledRef.current = true;
+    synth.cancel();
+    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
 
     setVoiceBusy(true);
     setOrbState("speaking");
@@ -242,69 +267,92 @@ export default function Home() {
     const spoken = toSpokenText(sourceText);
     setCaptionText(spoken);
 
-    // Cancel anything already speaking.
-    synth.cancel();
-
     const doSpeak = () => {
-      // Break the reading into sentence-sized chunks. Chrome silently
-      // truncates any single utterance longer than ~200-300 characters, so
-      // long readings need to be split — otherwise she stops mid-sentence.
+      // Clear the cancel flag now that we're starting this run.
+      speechCancelledRef.current = false;
+
+      // Chunk the reading at sentence boundaries. Keep each chunk under
+      // ~200 chars to stay well below Chrome's truncation threshold.
       const chunks = [];
       const sentenceRe = /[^.!?\n]+[.!?]+[\s]*|[^.!?\n]+$/g;
       const raw = spoken.match(sentenceRe) || [spoken];
       let buf = "";
       for (const s of raw) {
-        if ((buf + s).length > 220 && buf) { chunks.push(buf.trim()); buf = s; }
+        if ((buf + s).length > 200 && buf) { chunks.push(buf.trim()); buf = s; }
         else buf += s;
       }
       if (buf.trim()) chunks.push(buf.trim());
+      if (!chunks.length) {
+        setOrbState("idle");
+        setVoiceBusy(false);
+        return;
+      }
 
       const voice = pickOracleVoice();
 
-      // Drive the caption scroll off elapsed speaking time — approximate
-      // the reading duration from ~14 characters per second.
+      // Drive the caption scroll off elapsed speaking time.
       const estMs = Math.max(4000, (spoken.length / 14) * 1000);
       const start = Date.now();
-      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
       captionTimerRef.current = setInterval(() => {
         const p = Math.min(1, (Date.now() - start) / estMs);
         setCaptionProgress(p);
       }, 100);
 
-      // Queue every chunk as its own utterance. Only the LAST one flips
-      // state back to idle when it ends.
-      chunks.forEach((chunk, i) => {
+      // Chrome keepalive: every 10s, pause/resume to reset the 15s bug.
+      keepAliveRef.current = setInterval(() => {
+        if (speechCancelledRef.current) return;
+        if (synth.speaking) {
+          try { synth.pause(); synth.resume(); } catch { /* ignore */ }
+        }
+      }, 10000);
+
+      // Serial chunk playback. Each chunk's onend fires the next one.
+      let idx = 0;
+      const speakNext = () => {
+        if (speechCancelledRef.current) return;
+        if (idx >= chunks.length) {
+          if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+          if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+          setCaptionProgress(1);
+          setOrbState("idle");
+          setVoiceBusy(false);
+          utteranceRef.current = null;
+          return;
+        }
+        const chunk = chunks[idx++];
         const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.rate = 1.02;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
         if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
-        if (i === chunks.length - 1) {
-          utterance.onend = () => {
-            if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-            setCaptionProgress(1);
-            setOrbState("idle");
-            setVoiceBusy(false);
-            utteranceRef.current = null;
-          };
-          utterance.onerror = (e) => {
-            console.error("Speech synthesis error:", e);
-            if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-            setOrbState("idle");
-            setVoiceBusy(false);
-            utteranceRef.current = null;
-          };
-          utteranceRef.current = utterance;
-        }
+        utterance.onend = () => {
+          if (speechCancelledRef.current) return;
+          // Tiny gap between chunks so the synth engine settles before
+          // the next speak() — Chrome occasionally drops back-to-back
+          // utterances that fire in the same microtask.
+          setTimeout(speakNext, 60);
+        };
+        utterance.onerror = (e) => {
+          // 'canceled' errors are expected when we cancel a run — ignore.
+          if (e?.error === "canceled" || e?.error === "interrupted") return;
+          console.error("Speech synthesis error:", e);
+          // Try to keep going on other errors — don't abandon the reading.
+          setTimeout(speakNext, 60);
+        };
+        utteranceRef.current = utterance;
         synth.speak(utterance);
-      });
+      };
 
-      // Chrome bug workaround: if no utterance starts within 250ms, the
-      // synthesizer is stuck (autoplay policy blocked it). Reset it so the
-      // next user-gesture-driven call can succeed.
+      speakNext();
+
+      // Autoplay-policy diagnostic: if the first chunk hasn't started
+      // within 400ms, the browser blocked us. Reset UI.
       setTimeout(() => {
+        if (speechCancelledRef.current) return;
         if (!synth.speaking && !synth.pending) {
-          console.warn("speechSynthesis appears blocked — likely autoplay policy. User must click the speak button.");
+          console.warn("speechSynthesis appears blocked — autoplay policy. Ask user to click Hear Her Voice.");
+          if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+          if (keepAliveRef.current) clearInterval(keepAliveRef.current);
           setOrbState("idle");
           setVoiceBusy(false);
         }
@@ -312,10 +360,8 @@ export default function Home() {
     };
 
     if (!synth.getVoices().length) {
-      // Wait one tick for voices to populate, then speak.
       const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
       synth.addEventListener("voiceschanged", handler);
-      // Fallback: fire anyway after 500ms in case the event never lands.
       setTimeout(() => { if (!utteranceRef.current) doSpeak(); }, 500);
     } else {
       doSpeak();
@@ -323,10 +369,12 @@ export default function Home() {
   };
 
   const reset = () => {
+    speechCancelledRef.current = true;
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
     if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
     setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
