@@ -33,16 +33,22 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const [audioData, setAudioData] = useState(null);
   const [captionText, setCaptionText] = useState("");
   const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
-  const audioRef = useRef(null);
+  const utteranceRef = useRef(null);
+  const captionTimerRef = useRef(null);
 
-  // Start the Oracle's voice as soon as the audio arrives
+  // Stop any in-flight speech synthesis on unmount so the Oracle never keeps
+  // talking after the seeker leaves the page.
   useEffect(() => {
-    if (audioData) audioRef.current?.play().catch(() => {});
-  }, [audioData]);
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    };
+  }, []);
 
   // Load user + memory
   useEffect(() => {
@@ -167,7 +173,11 @@ export default function Home() {
         console.error("Reading succeeded but could not be saved.", persistenceError);
       }
 
-      // She speaks the moment the reading lands — no second summons needed.
+      // Browsers require a fresh user gesture to start audio, so we don't
+      // auto-speak here (the click that submitted the question is minutes
+      // stale by the time the reading arrives). The 'Hear Her Voice' button
+      // below is tied directly to a click and always works.
+      // Try anyway for browsers that allow it — harmless if blocked.
       speak(text);
     } catch (e) {
       console.error(e);
@@ -182,35 +192,132 @@ export default function Home() {
     setBusy(false);
   };
 
-  // ---- Oracle voice (ElevenLabs) ----
-  const speak = async (sourceText) => {
-    if (!sourceText || voiceBusy) return;
+  // ---- Oracle voice (browser Web Speech Synthesis) ----
+  // Speak the reading using the seeker's own device voice. No third-party
+  // TTS, no API key, no billing — just the browser's built-in synthesizer.
+  // We pick the warmest, most natural-sounding voice available on the device.
+  const pickOracleVoice = () => {
+    const synth = window.speechSynthesis;
+    if (!synth) return null;
+    const voices = synth.getVoices();
+    if (!voices || !voices.length) return null;
+    // Preference order: high-quality named female voices → any en-US female →
+    // any en-* voice → whatever the browser has.
+    const preferred = [
+      /Samantha/i, /Google US English/i, /Microsoft (Aria|Jenny|Michelle)/i,
+      /Karen/i, /Serena/i, /Moira/i, /Tessa/i, /Ava/i, /Allison/i,
+    ];
+    for (const rx of preferred) {
+      const hit = voices.find((v) => rx.test(v.name) && /en/i.test(v.lang));
+      if (hit) return hit;
+    }
+    return voices.find((v) => /en-US/i.test(v.lang))
+        || voices.find((v) => /en/i.test(v.lang))
+        || voices[0];
+  };
+
+  const speak = (sourceText) => {
+    if (!sourceText) return;
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    if (!synth) {
+      // No speech synthesis available — still show the caption scroll silently.
+      setCaptionText(toSpokenText(sourceText));
+      setOrbState("idle");
+      return;
+    }
+
     setVoiceBusy(true);
-    setOrbState("thinking");
+    setOrbState("speaking");
     setCaptionProgress(0);
     const spoken = toSpokenText(sourceText);
     setCaptionText(spoken);
-    try {
-      const res = await base44.functions.invoke("generateSpeech", { text: spoken });
-      setAudioData(res?.data?.audio || null);
-      setOrbState("speaking");
-    } catch (e) {
-      console.error(e);
-      setOrbState("idle");
-    }
-    setVoiceBusy(false);
-  };
 
-  // Words roll with her voice: track playback position for the caption scroll.
-  const handleTimeUpdate = () => {
-    const a = audioRef.current;
-    if (a && a.duration && Number.isFinite(a.duration)) {
-      setCaptionProgress(Math.min(1, a.currentTime / a.duration));
+    // Cancel anything already speaking.
+    synth.cancel();
+
+    const doSpeak = () => {
+      // Break the reading into sentence-sized chunks. Chrome silently
+      // truncates any single utterance longer than ~200-300 characters, so
+      // long readings need to be split — otherwise she stops mid-sentence.
+      const chunks = [];
+      const sentenceRe = /[^.!?\n]+[.!?]+[\s]*|[^.!?\n]+$/g;
+      const raw = spoken.match(sentenceRe) || [spoken];
+      let buf = "";
+      for (const s of raw) {
+        if ((buf + s).length > 220 && buf) { chunks.push(buf.trim()); buf = s; }
+        else buf += s;
+      }
+      if (buf.trim()) chunks.push(buf.trim());
+
+      const voice = pickOracleVoice();
+
+      // Drive the caption scroll off elapsed speaking time — approximate
+      // the reading duration from ~14 characters per second.
+      const estMs = Math.max(4000, (spoken.length / 14) * 1000);
+      const start = Date.now();
+      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+      captionTimerRef.current = setInterval(() => {
+        const p = Math.min(1, (Date.now() - start) / estMs);
+        setCaptionProgress(p);
+      }, 100);
+
+      // Queue every chunk as its own utterance. Only the LAST one flips
+      // state back to idle when it ends.
+      chunks.forEach((chunk, i) => {
+        const utterance = new SpeechSynthesisUtterance(chunk);
+        utterance.rate = 1.02;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+        if (i === chunks.length - 1) {
+          utterance.onend = () => {
+            if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+            setCaptionProgress(1);
+            setOrbState("idle");
+            setVoiceBusy(false);
+            utteranceRef.current = null;
+          };
+          utterance.onerror = (e) => {
+            console.error("Speech synthesis error:", e);
+            if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+            setOrbState("idle");
+            setVoiceBusy(false);
+            utteranceRef.current = null;
+          };
+          utteranceRef.current = utterance;
+        }
+        synth.speak(utterance);
+      });
+
+      // Chrome bug workaround: if no utterance starts within 250ms, the
+      // synthesizer is stuck (autoplay policy blocked it). Reset it so the
+      // next user-gesture-driven call can succeed.
+      setTimeout(() => {
+        if (!synth.speaking && !synth.pending) {
+          console.warn("speechSynthesis appears blocked — likely autoplay policy. User must click the speak button.");
+          setOrbState("idle");
+          setVoiceBusy(false);
+        }
+      }, 400);
+    };
+
+    if (!synth.getVoices().length) {
+      // Wait one tick for voices to populate, then speak.
+      const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
+      synth.addEventListener("voiceschanged", handler);
+      // Fallback: fire anyway after 500ms in case the event never lands.
+      setTimeout(() => { if (!utteranceRef.current) doSpeak(); }, 500);
+    } else {
+      doSpeak();
     }
   };
 
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setAudioData(null); setCaptionText(""); setCaptionProgress(0);
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -418,15 +525,13 @@ export default function Home() {
             </div>
           )}
 
-          {audioData && (
-            <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
-          )}
+
 
           {!readingError && !busy && !voiceBusy && orbState !== "speaking" && (
             <div className="flex flex-wrap justify-center gap-3">
               <button onClick={() => speak(reading)}
                 className="neo-button flex items-center gap-2 px-6">
-                <Volume2 className="w-3.5 h-3.5" /> Hear Her Again
+                <Volume2 className="w-3.5 h-3.5" /> Hear Her Voice
               </button>
               <button onClick={reset}
                 className="neo-pill flex items-center gap-2 px-6 py-2.5">

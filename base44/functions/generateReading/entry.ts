@@ -74,20 +74,36 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Perplexity is not configured — missing API key.' }, { status: 500 });
     }
 
+    // Use the stable /chat/completions endpoint with the Sonar model family.
+    // The Oracle reads cards — she doesn't need to search the web for each
+    // reading — so we ask for search_mode: 'academic' with a low recency to
+    // keep the model focused on the prompt content instead of web results.
     let aiRes;
     try {
-      aiRes = await fetch('https://api.perplexity.ai/responses', {
+      aiRes = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          preset: 'pro-search',
-          input: [{ role: 'user', content: prompt }],
-          max_output_tokens: 2200,
+          model: 'sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content:
+                "You are The Oracle — the sharpest, most honest friend the seeker has. " +
+                "Follow the user's instructions exactly. Do NOT cite sources, do NOT reference " +
+                "web pages, and do NOT include disclaimers about being an AI. Produce ONLY " +
+                "the reading in the exact markdown structure the user specifies.",
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.85,
+          max_tokens: 2400,
+          top_p: 0.95,
         }),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(60000),
       });
     } catch (error) {
       if (error?.name === 'TimeoutError') {
@@ -98,7 +114,7 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
 
     const raw = await aiRes.text();
     if (!aiRes.ok) {
-      return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 300) }, { status: 502 });
+      return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
     }
     let data;
     try {
@@ -107,9 +123,12 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Perplexity API returned invalid JSON.' }, { status: 502 });
     }
 
-    const text = data?.output_text;
+    // /chat/completions shape: data.choices[0].message.content
+    const text = data?.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || !text.trim()) {
-      return Response.json({ error: 'Perplexity API returned no reading content.' }, { status: 502 });
+      return Response.json({
+        error: 'Perplexity API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
+      }, { status: 502 });
     }
 
     return Response.json({ reading: text });
