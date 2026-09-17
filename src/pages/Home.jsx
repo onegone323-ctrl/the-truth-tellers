@@ -39,17 +39,34 @@ export default function Home() {
   const utteranceRef = useRef(null);
   const captionTimerRef = useRef(null);
   const keepAliveRef = useRef(null);
+  const watchdogRef = useRef(null);
   const speechCancelledRef = useRef(false);
+
+  // Kick the browser to load its voice list eagerly on mount. Some browsers
+  // (Chrome desktop especially) only populate getVoices() AFTER the first
+  // call, which means the first utterance can go out with no voice attached
+  // and be silently dropped. Doing it here means voices are ready by the
+  // time the seeker submits their reading.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    // Fire once now, then again when voices change.
+    window.speechSynthesis.getVoices();
+    const onVoices = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", onVoices);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", onVoices);
+  }, []);
 
   // Stop any in-flight speech synthesis on unmount so the Oracle never keeps
   // talking after the seeker leaves the page.
   useEffect(() => {
     return () => {
+      speechCancelledRef.current = true;
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
       if (captionTimerRef.current) clearInterval(captionTimerRef.current);
       if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
     };
   }, []);
 
@@ -298,18 +315,41 @@ export default function Home() {
         setCaptionProgress(p);
       }, 100);
 
-      // Chrome keepalive: every 10s, pause/resume to reset the 15s bug.
+      // Chrome keepalive: every 5s poke the engine to defeat the 15s
+      // silence bug. We DON'T pause/resume blindly — doing that when the
+      // synth is already paused (e.g. user switched tabs) locks it. So we
+      // only tick when it's actively speaking AND not paused.
       keepAliveRef.current = setInterval(() => {
         if (speechCancelledRef.current) return;
-        if (synth.speaking) {
-          try { synth.pause(); synth.resume(); } catch { /* ignore */ }
+        if (synth.speaking && !synth.paused) {
+          try {
+            synth.pause();
+            synth.resume();
+          } catch { /* ignore */ }
         }
-      }, 10000);
+      }, 5000);
 
-      // Serial chunk playback. Each chunk's onend fires the next one.
+      // Serial chunk playback with a per-chunk watchdog. Each chunk's
+      // onend fires the next one. If a chunk never fires onend within
+      // its expected duration + 5s buffer, we assume Chrome dropped it
+      // silently and advance manually.
       let idx = 0;
+      const armWatchdog = (chunkText) => {
+        if (watchdogRef.current) clearTimeout(watchdogRef.current);
+        // Assume ~14 chars/sec speaking rate, plus a 5s safety buffer.
+        const estMs = Math.max(3000, (chunkText.length / 14) * 1000 + 5000);
+        watchdogRef.current = setTimeout(() => {
+          if (speechCancelledRef.current) return;
+          console.warn("Speech watchdog fired — chunk didn't complete, advancing:", chunkText.slice(0, 60));
+          // Force cancel the stuck utterance and move on.
+          try { synth.cancel(); } catch { /* ignore */ }
+          setTimeout(speakNext, 100);
+        }, estMs);
+      };
+
       const speakNext = () => {
         if (speechCancelledRef.current) return;
+        if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
         if (idx >= chunks.length) {
           if (captionTimerRef.current) clearInterval(captionTimerRef.current);
           if (keepAliveRef.current) clearInterval(keepAliveRef.current);
@@ -327,20 +367,27 @@ export default function Home() {
         if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
         utterance.onend = () => {
           if (speechCancelledRef.current) return;
+          if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
           // Tiny gap between chunks so the synth engine settles before
           // the next speak() — Chrome occasionally drops back-to-back
           // utterances that fire in the same microtask.
-          setTimeout(speakNext, 60);
+          setTimeout(speakNext, 80);
         };
         utterance.onerror = (e) => {
           // 'canceled' errors are expected when we cancel a run — ignore.
           if (e?.error === "canceled" || e?.error === "interrupted") return;
-          console.error("Speech synthesis error:", e);
-          // Try to keep going on other errors — don't abandon the reading.
-          setTimeout(speakNext, 60);
+          console.error("Speech synthesis error on chunk:", chunk.slice(0, 60), e);
+          if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
+          // Keep going on other errors — don't abandon the reading.
+          setTimeout(speakNext, 100);
         };
         utteranceRef.current = utterance;
+        // Belt-and-suspenders: an idle synth can be resurrected by a fresh
+        // cancel() right before speak(). Some Chrome versions need this on
+        // subsequent utterances.
+        try { synth.resume(); } catch { /* ignore */ }
         synth.speak(utterance);
+        armWatchdog(chunk);
       };
 
       speakNext();
@@ -375,6 +422,7 @@ export default function Home() {
     }
     if (captionTimerRef.current) clearInterval(captionTimerRef.current);
     if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
     setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
