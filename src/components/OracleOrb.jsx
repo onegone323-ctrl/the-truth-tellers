@@ -37,7 +37,7 @@ export default function OracleOrb({ state = "idle", size = 215 }) {
           className="absolute rounded-full"
           style={{
             inset: size * 0.056,
-            border: "1px solid rgba(0,229,255,0.7)",
+            border: "1px solid var(--gold-leaf)",
             background: "linear-gradient(130deg, transparent 35%, rgba(0,229,255,.3), transparent 62%)",
             animation: "sheen 4s ease-in-out infinite",
           }}

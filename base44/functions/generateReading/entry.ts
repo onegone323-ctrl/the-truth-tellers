@@ -14,59 +14,121 @@ export default async function(req) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
 
-    const cardLines = cards.map((c, i) => {
-  const cl = (c.clarifiers && c.clarifiers.length)
-    ? ` Clarifiers: ${c.clarifiers.map(x => x.name + (x.reversed ? ' (reversed)' : '')).join(', ')}.`
-    : '';
-  const dk = c.deck_tradition ? ` Drawn from the ${c.deck_name} deck (${c.deck_tradition}) — read this card through that tradition's symbolism.` : '';
-  const dt = c.deck_title ? ` In this deck the card is called "${c.deck_title}" — SAY THAT NAME OUT LOUD when you introduce it, then note it is the ${c.name} in the standard deck.` : '';
-  return `${i + 1}. Position: "${c.position}". Card: ${c.name}${c.reversed ? ' (REVERSED)' : ' (upright)'}.${cl}${dk}${dt}`;
-}).join('\n');
+    // Build a compact one-liner per position so the model can format each
+    // section with the cards bundled on a single line (no per-card headings).
+    const positionLines = cards.map((c, i) => {
+      const rev = c.reversed ? ' (R)' : '';
+      const clar = (c.clarifiers && c.clarifiers.length)
+        ? ' · ' + c.clarifiers.map(x => `${x.name}${x.reversed ? ' (R)' : ''}`).join(' · ')
+        : '';
+      const deckHint = c.deck_title && c.deck_title !== c.name
+        ? ` [in ${c.deck_name || 'this deck'} called "${c.deck_title}"]`
+        : '';
+      return `${i + 1}. POSITION: "${c.position}"  CARDS: ${c.name}${rev}${clar}${deckHint}`;
+    }).join('\n');
 
+    // Memory block — everything the Oracle should already know about this seeker.
     const memBlock = memory?.summary
-      ? `\n\nWHAT YOU ALREADY KNOW ABOUT THIS SEEKER:\nName: ${memory.user_name || 'unknown'}\nPrior summary: ${memory.summary}\nRecurring themes: ${(memory.recurring_themes || []).join(', ') || 'none yet'}\nLast question they asked: ${memory.last_question || 'none'}\nLast advice you gave: ${memory.last_advice || 'none'}\nReadings so far: ${memory.reading_count || 0}\nUse this memory naturally — reference it if relevant, don't force it.`
+      ? [
+          '',
+          'WHAT YOU ALREADY KNOW ABOUT THIS SEEKER (USE THIS — reference it naturally):',
+          `- Name/title: ${memory.user_name || 'unknown'}`,
+          `- Prior context: ${memory.summary}`,
+          `- Recurring themes: ${(memory.recurring_themes || []).join(', ') || 'none yet'}`,
+          `- Last question they asked you: ${memory.last_question || 'none'}`,
+          `- Last advice you gave: ${memory.last_advice || 'none'}`,
+          `- Total readings so far: ${memory.reading_count || 0}`,
+          '',
+        ].join('\n')
       : '';
 
-    const prompt = `You are The Oracle — but you don't sound like a fortune teller. You sound like the sharpest, most honest friend this person has. You know them. You care about them. And you refuse to bullshit them. You talk the way a real person talks to someone they love: plain words, contractions, short sentences, the occasional laugh or pointed pause. You're warm. You're direct. You call things what they are. You don't hide behind mystical language, you don't hedge, and you never give generic card-of-the-day meanings that could apply to anyone on earth.
+    const honorific = memory?.user_name || 'my friend';
 
-THIS IS ABOUT THEM, SPECIFICALLY. Their question isn't a prompt — it's a real thing happening in their real life, and every single card you lay down has to speak directly to that. Don't explain what a card "traditionally means" in a vacuum; the moment you name a card, connect it to their actual situation, their actual feelings, the actual choice in front of them. If they asked about a job, talk about the job. If they asked about a person, talk about the person. If they asked about themselves, talk about them. The cards are a mirror held up to their question — not a lecture on symbolism.
+    // A short glyph pool the Oracle can pick from for each position header.
+    // Every section gets ONE glyph, and no glyph repeats within a reading.
+    const glyphPool = '❧ ☀ ✦ ✶ 𓋹 ☾ ⚡ ♆ ✧ ☿ ⚔ ✵ ❂ ☘ ◈';
 
-You have deep, accurate knowledge of all 78 tarot cards — upright and reversed meanings, symbolism, numerology, elements, astrology — and you use that knowledge quietly, in service of this person, not to show off. For each card you make clear what it means here, now, for them.
-
-THE SEEKER'S QUESTION: "${question}"
-DECK USED: ${deck?.name || 'Rider-Waite'} (${deck?.tradition || ''})
-NOTE ON DECKS: these cards may come from different traditions blended into one spread. Where a card names its deck, interpret it in that deck's own symbolic language (Rider-Waite imagery, Thoth alchemy, Egyptian/Isis gods and hermetics, Marseille woodcut starkness, Golden Dawn Kabbalah and astrology, Wildwood seasons and animal archetypes, Deviant Moon shadow imagery) and name that flavor out loud when it sharpens the message.
-SPREAD USED: ${spread?.name} — ${spread?.description}
-CARDS DRAWN:
-${cardLines}${memBlock}
-
-Write the reading in EXACTLY this markdown structure:
-
-1. Open with a short, punchy paragraph (no heading) — use their name${memory?.user_name ? '' : ' if you know it'}, name the loudest theme of the whole spread, and connect it straight to their question. If their question mentions dates, people, or a synchronicity, call it out bluntly, the way you'd say "this spread is loud." If you've read for them before and it's relevant, bring it up like someone who remembers.
-
-Then a "---" divider.
-
-2. For EACH card, in spread order, one section in exactly this shape:
-
-## [one fitting emoji] POSITION — Card Name (Reversed if so) · Deck Name + clarifiers
-
-Always name the deck the card came from, and if that tradition calls the card something else, say BOTH names — e.g. "Justice, which the Thoth deck calls Adjustment", "Judgement, the Aeon in Thoth", "The Hierophant — Osiris in the Isis deck", "The Wheel of Fortune, the Wheel of Karma in the Egyptian deck", "The Hermit, the Woodward in Wildwood". Say it out loud in the body too, in plain speech, so someone only listening still hears which deck this card is from and what that deck calls it. When the deck's version of the card carries different imagery or a different emphasis than Rider-Waite, name that difference in one short line.
-
-One or two short, blunt lines distilling what this card means for THEM, here, in this position — in human terms, not textbook terms. Then, if the card has clarifiers, one bullet per clarifier:
-
-- **Clarifier Name (Reversed if so)** → what it means for them, concretely, tied to their question.
-
-Then close the section with one italic line tying it to their actual situation, like "*This is the apartment. Clear as day.*"
-
-3. After all the card sections, a "---" divider, then the big finish:
-
-# ⭐ THE MESSAGE ABOUT [a 2-4 word distillation of their question]
-
-A few bold, declarative verdict lines. Then a short bullet list of what the spread is showing — the themes, the timing, the shift. Then one honest closing paragraph of concrete, specific advice they can act on. You're deciding with them, not hedging. No disclaimers. Never say "the cards can't decide for you."
-
-4. End with an invitation: "If you want, I can read this through the lens of:" followed by three or four follow-up directions tailored to their exact situation, then a line telling them to pick one.
-
-Voice and format rules: contractions, short sentences, the occasional wry aside, bold on the lines that matter. Markdown headings, bold, italic, and bullets are REQUIRED — this is a rich formatted reading, not plain paragraphs. Emojis only in the position headings. No AI disclaimers. Never cruel. Aim for 600-900 words.`;
+    const prompt = [
+      "You are The Oracle. You read tarot the way a great life coach reads a room — direct, personal, firm, unafraid to be blunt. You are NOT a mystical fortune teller. You do not hedge, do not stall, do not pad. You know this person. You remember what they told you. You call them by name or title. You tell them the truth in the fewest words that will land.",
+      "",
+      "============================================================",
+      "HARD FORMAT RULES — FOLLOW EXACTLY. Deviating is a failure.",
+      "============================================================",
+      "",
+      "STRUCTURE (in this exact order):",
+      "",
+      `1. OPENING PARAGRAPH, NO HEADING. 2–4 short sentences. Start by addressing them by name ("${honorific}…"). State what this reading is ACTUALLY about — the specific thing in their life this spread is speaking to. Name it concretely, not abstractly. Say one line about the tone of the message ("clear, sharp, and honest" / "hard, necessary, freeing" / etc.). If a memory detail grounds the reading (their app, their goal, their situation, a person in their life), NAME it explicitly.`,
+      "",
+      "2. Then ONE section per position in the spread, IN SPREAD ORDER. The section header MUST use the position's own name from the spread — not a generic label. So a Past/Present/Future spread produces sections named PAST, PRESENT, FUTURE. A Celtic Cross produces sections named HEART OF THE MATTER, THE CHALLENGE, THE FOUNDATION, THE RECENT PAST, THE CROWN, THE NEAR FUTURE, YOURSELF, YOUR ENVIRONMENT, HOPES AND FEARS, THE OUTCOME — in that order. A custom spread uses whatever names the user chose. Never invent extra positions.",
+      "",
+      "   Each position section MUST follow this EXACT shape:",
+      "",
+      `   [GLYPH] POSITION NAME (all caps)`,
+      `   Card Name · Card Name · Card Name`,
+      `   [Lead-in sentence like "This is what's really happening here:" or "This is the real obstacle:"]`,
+      `   - Bullet: 8–16 words, blunt, personal, tied to THEIR actual life`,
+      `   - Bullet`,
+      `   - Bullet`,
+      `   - Bullet`,
+      `   **Translation:** [one line that turns the abstract into the concrete for them]`,
+      "",
+      `   RULES for each section:`,
+      `   - Pick ONE glyph from this pool for the header: ${glyphPool}. Do NOT reuse a glyph within the same reading.`,
+      `   - The card line bundles the position card AND its clarifiers, dot-separated, marking reversed as "(R)". Do NOT create per-card sub-headings.`,
+      `   - Bullets are 8–16 words max. No paragraphs inside sections.`,
+      `   - Do NOT explain any card's traditional meaning. Only what it means for THEM right now, in this position, tied to their question.`,
+      `   - The bullets should MAP to the specific cards, but stated as life truths, not card meanings. If a position has one card and three clarifiers, that's 4 bullets. If it has one card and no clarifiers, that's 1–2 bullets.`,
+      `   - "Translation:" is MANDATORY as the last line of every section. It is what makes the reading LAND.`,
+      "",
+      "3. After the LAST position section, a \"---\" divider, then this exact verdict block:",
+      "",
+      "   ⭐ THE DIRECT ANSWER",
+      "",
+      "   Ask and answer 4–6 question/answer pairs about the seeker's ACTUAL question, from multiple angles. Each pair looks like:",
+      "     **Will X happen?**",
+      "     [Verdict word] — [one short qualifying line].",
+      "",
+      "   Verdict words: Yes, No, Partially, Not yet, Eventually, Absolutely. The FINAL pair MUST be:",
+      "     **What is the universe saying?**",
+      "     [3–6 word distillation.] [Firm imperative like \"Finish it. Polish it. Launch it. Stop doubting.\"]",
+      "",
+      `4. Then the follow-up invitation, EXACTLY this shape (fill in bracketed parts):`,
+      "",
+      `   If you want, ${honorific}, I can pull a [named spread]:`,
+      `   "[one-line description of what that spread would answer]"`,
+      "",
+      `   Or a [named spread]:`,
+      `   "[one-line description]"`,
+      "",
+      `   Just tell me the direction.`,
+      "",
+      "============================================================",
+      "VOICE RULES — non-negotiable",
+      "============================================================",
+      "",
+      `- Address them by name ("${honorific}") at LEAST twice — once in the opening, once in the follow-up.`,
+      "- Speak like a firm life coach. Direct, blunt, loving, even a little rude when the truth demands it. Never cruel. Never mystical.",
+      "- Every bullet must be about THEM. If a bullet could apply to a stranger on the street, rewrite it or delete it.",
+      "- USE THE MEMORY. If you know their app name, their goal, a person they mentioned, what they asked last time — REFERENCE IT NATURALLY. The whole point of memory is you sound like someone who's been paying attention.",
+      "- No AI disclaimers. No \"the cards suggest.\" State the truth as the truth.",
+      "- No tarot lectures. No numerology. No symbolism explainers. Skip it all. The reading is about their LIFE, not about tarot.",
+      "- Length target: 350–650 words total. Compact and dense. Every line earns its space.",
+      "",
+      "============================================================",
+      "CONTEXT",
+      "============================================================",
+      "",
+      `THE SEEKER: ${honorific}`,
+      `THEIR QUESTION: "${question}"`,
+      `DECK: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''}`,
+      `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
+      "",
+      "CARDS DRAWN (use these EXACT position names as your section headers, in this order):",
+      positionLines,
+      memBlock,
+      "",
+      `Now write the reading. Do NOT restate these instructions. Do NOT preface. Begin directly with the opening paragraph addressed to ${honorific}.`,
+    ].join('\n');
 
     // Keep the provider credential server-side in Base44 secrets.
     const apiKey = secrets.get('perplexity_api_key');
@@ -74,42 +136,109 @@ Voice and format rules: contractions, short sentences, the occasional wry aside,
       return Response.json({ error: 'Perplexity is not configured — missing API key.' }, { status: 500 });
     }
 
+    // Perplexity's Sonar chat-completions endpoint has been migrated to the
+    // Agent API at POST /v1/agent. The Oracle reads cards from prompt only
+    // — no `tools` array, no web search.
+    //
+    // Multi-provider fallback chain: if a model is overloaded (429) or
+    // returns a 5xx, we walk to the next model in the list. The Agent API
+    // does NOT accept a model array (returns 400), so we loop client-side.
+    const modelChain = [
+      'openai/gpt-5.6-sol',
+      'anthropic/claude-sonnet-5',
+      'google/gemini-3.8-flash',
+    ];
+
+    const oracleInstructions =
+      "You are The Oracle — a firm, personal, direct life coach who reads tarot. " +
+      "Follow the user's formatting rules EXACTLY. Use the position names from the spread " +
+      "as your section headers. Do NOT create per-card sub-headings. Do NOT cite sources. " +
+      "Do NOT reference web pages. Do NOT include AI disclaimers. Produce ONLY the reading " +
+      "in the exact structure specified. Do not use any tools; answer entirely from the prompt.";
+
     let aiRes;
-    try {
-      aiRes = await fetch('https://api.perplexity.ai/responses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          preset: 'pro-search',
-          input: [{ role: 'user', content: prompt }],
-          max_output_tokens: 2200,
-        }),
-        signal: AbortSignal.timeout(45000),
-      });
-    } catch (error) {
-      if (error?.name === 'TimeoutError') {
-        return Response.json({ error: 'Perplexity API timed out.' }, { status: 504 });
-      }
-      throw error;
-    }
-
-    const raw = await aiRes.text();
-    if (!aiRes.ok) {
-      return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 300) }, { status: 502 });
-    }
     let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return Response.json({ error: 'Perplexity API returned invalid JSON.' }, { status: 502 });
+    let lastErrorDetail = '';
+    let usedModel = '';
+    for (const modelId of modelChain) {
+      try {
+        aiRes = await fetch('https://api.perplexity.ai/v1/agent', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: modelId,
+            instructions: oracleInstructions,
+            input: prompt,
+            max_output_tokens: 2400,
+            temperature: 0.85,
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+      } catch (error) {
+        if (error?.name === 'TimeoutError') {
+          lastErrorDetail = `${modelId} timed out`;
+          continue; // try next model
+        }
+        throw error;
+      }
+
+      const raw = await aiRes.text();
+      if (!aiRes.ok) {
+        // Retriable failures: overloaded (429) or any 5xx from the provider.
+        // Non-retriable: 400 invalid_request, 401 auth, 402 billing, 404 model.
+        lastErrorDetail = `${modelId} -> ${aiRes.status}: ${raw.slice(0, 300)}`;
+        if (aiRes.status === 429 || aiRes.status >= 500) {
+          continue; // try next model
+        }
+        // Non-retriable: surface immediately.
+        return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
+      }
+
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        lastErrorDetail = `${modelId} returned invalid JSON`;
+        continue; // try next model
+      }
+
+      usedModel = modelId;
+      break; // got a good response
     }
 
-    const text = data?.output_text;
-    if (typeof text !== 'string' || !text.trim()) {
-      return Response.json({ error: 'Perplexity API returned no reading content.' }, { status: 502 });
+    if (!data) {
+      return Response.json({
+        error: 'All Perplexity models failed. Last: ' + lastErrorDetail.slice(0, 400),
+      }, { status: 502 });
+    }
+
+    // Agent API response shape: data.output is an array of typed items. The
+    // model's answer is a `message` item whose `content` array contains one
+    // or more `output_text` blocks. Concatenate all text blocks across all
+    // message items so we never miss a piece of the reading.
+    let text = '';
+    if (Array.isArray(data?.output)) {
+      for (const item of data.output) {
+        if (item?.type === 'message' && Array.isArray(item.content)) {
+          for (const block of item.content) {
+            if (block?.type === 'output_text' && typeof block.text === 'string') {
+              text += block.text;
+            }
+          }
+        }
+      }
+    }
+    // Fallback: some SDK-shaped responses expose output_text directly.
+    if (!text && typeof data?.output_text === 'string') {
+      text = data.output_text;
+    }
+
+    if (!text.trim()) {
+      return Response.json({
+        error: 'Perplexity API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
+      }, { status: 502 });
     }
 
     return Response.json({ reading: text });

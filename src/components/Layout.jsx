@@ -22,15 +22,15 @@ export default function Layout() {
   };
 
   return (
-    <div className="obsidian-page min-h-screen overflow-x-hidden text-foreground" style={{ background: "#050505", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="obsidian-page min-h-screen overflow-x-hidden text-foreground" style={{ background: "var(--void-deep)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <Starfield />
       <header
         className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-[54px]"
         style={{
           minHeight: 82,
           paddingTop: "max(env(safe-area-inset-top), 0px)",
-          borderBottom: "1px solid rgba(212,175,55,0.35)",
-          background: "rgba(5,5,5,0.8)",
+          borderBottom: "1px solid var(--neo-border)",
+          background: "var(--surface-glass)",
           backdropFilter: "blur(18px)",
           animation: "materialize .8s ease both",
         }}
@@ -39,7 +39,7 @@ export default function Layout() {
           <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
           <span
             style={{
-              color: "#d4af37",
+              color: "var(--gold-leaf)",
               fontSize: 18,
               letterSpacing: 4,
               textTransform: "uppercase",

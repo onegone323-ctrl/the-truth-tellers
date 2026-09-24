@@ -33,16 +33,42 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const [audioData, setAudioData] = useState(null);
   const [captionText, setCaptionText] = useState("");
   const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
-  const audioRef = useRef(null);
+  const utteranceRef = useRef(null);
+  const captionTimerRef = useRef(null);
+  const keepAliveRef = useRef(null);
+  const watchdogRef = useRef(null);
+  const speechCancelledRef = useRef(false);
 
-  // Start the Oracle's voice as soon as the audio arrives
+  // Kick the browser to load its voice list eagerly on mount. Some browsers
+  // (Chrome desktop especially) only populate getVoices() AFTER the first
+  // call, which means the first utterance can go out with no voice attached
+  // and be silently dropped. Doing it here means voices are ready by the
+  // time the seeker submits their reading.
   useEffect(() => {
-    if (audioData) audioRef.current?.play().catch(() => {});
-  }, [audioData]);
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    // Fire once now, then again when voices change.
+    window.speechSynthesis.getVoices();
+    const onVoices = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", onVoices);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", onVoices);
+  }, []);
+
+  // Stop any in-flight speech synthesis on unmount so the Oracle never keeps
+  // talking after the seeker leaves the page.
+  useEffect(() => {
+    return () => {
+      speechCancelledRef.current = true;
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+      if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    };
+  }, []);
 
   // Load user + memory
   useEffect(() => {
@@ -167,50 +193,237 @@ export default function Home() {
         console.error("Reading succeeded but could not be saved.", persistenceError);
       }
 
-      // She speaks the moment the reading lands — no second summons needed.
+      // Browsers require a fresh user gesture to start audio, so we don't
+      // auto-speak here (the click that submitted the question is minutes
+      // stale by the time the reading arrives). The 'Hear Her Voice' button
+      // below is tied directly to a click and always works.
+      // Try anyway for browsers that allow it — harmless if blocked.
       speak(text);
     } catch (e) {
       console.error(e);
-      const message = e?.response?.data?.error || e?.message || "";
+      // Surface the actual server-side error so we can see what's failing
+      // (missing API key, 401, rate-limit, timeout, etc.). The Base44 SDK
+      // packs the function's JSON error body into a few different shapes
+      // depending on how it hit — dig for whichever one has the real message.
+      const detail =
+        e?.response?.data?.error ||
+        e?.response?.data?.detail ||
+        (typeof e?.response?.data === "string" ? e.response.data : "") ||
+        e?.data?.error ||
+        e?.message ||
+        String(e || "unknown error");
       setReadingError(
-        /timed out|timeout/i.test(message)
-          ? "The reading took too long to arrive. No reading was generated — try again."
-          : "The reading couldn't be completed. No reading was generated — try again."
+        /timed out|timeout/i.test(detail)
+          ? `The reading took too long to arrive — try again. (${detail})`
+          : `The reading couldn't be completed — try again. Reason: ${detail}`
       );
       setOrbState("idle");
     }
     setBusy(false);
   };
 
-  // ---- Oracle voice (ElevenLabs) ----
-  const speak = async (sourceText) => {
-    if (!sourceText || voiceBusy) return;
+  // ---- Oracle voice (browser Web Speech Synthesis) ----
+  // Speak the reading using the seeker's own device voice. No third-party
+  // TTS, no API key, no billing — just the browser's built-in synthesizer.
+  // We pick the warmest, most natural-sounding voice available on the device.
+  const pickOracleVoice = () => {
+    const synth = window.speechSynthesis;
+    if (!synth) return null;
+    const voices = synth.getVoices();
+    if (!voices || !voices.length) return null;
+    // Preference order: high-quality named female voices → any en-US female →
+    // any en-* voice → whatever the browser has.
+    const preferred = [
+      /Samantha/i, /Google US English/i, /Microsoft (Aria|Jenny|Michelle)/i,
+      /Karen/i, /Serena/i, /Moira/i, /Tessa/i, /Ava/i, /Allison/i,
+    ];
+    for (const rx of preferred) {
+      const hit = voices.find((v) => rx.test(v.name) && /en/i.test(v.lang));
+      if (hit) return hit;
+    }
+    return voices.find((v) => /en-US/i.test(v.lang))
+        || voices.find((v) => /en/i.test(v.lang))
+        || voices[0];
+  };
+
+  // Speak the reading, immune to Chrome's known SpeechSynthesis bugs.
+  //
+  // Chrome has TWO documented bugs that break long-form speech:
+  //   1. Utterances longer than ~200–300 chars get silently truncated.
+  //   2. After ~15 seconds of continuous speech, the synth engine goes
+  //      silent even though the utterance is still 'pending'.
+  //
+  // Fixes:
+  //   - Split into sentence-sized chunks (~200 chars each).
+  //   - Feed chunks ONE AT A TIME, not all-queued-upfront. Each chunk's
+  //     onend triggers the next chunk's speak() call. This keeps only
+  //     one utterance in the queue at any moment, which Chrome handles
+  //     reliably.
+  //   - Every 10 seconds, tick a pause/resume cycle to reset Chrome's
+  //     internal 15-second silence timer.
+  //   - speechCancelledRef guards against a new speak() while a previous
+  //     serial chain is still stepping — it stops the old chain cold.
+  const speak = (sourceText) => {
+    if (!sourceText) return;
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    if (!synth) {
+      setCaptionText(toSpokenText(sourceText));
+      setOrbState("idle");
+      return;
+    }
+
+    // Cancel any prior run cleanly.
+    speechCancelledRef.current = true;
+    synth.cancel();
+    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+
     setVoiceBusy(true);
-    setOrbState("thinking");
+    setOrbState("speaking");
     setCaptionProgress(0);
     const spoken = toSpokenText(sourceText);
     setCaptionText(spoken);
-    try {
-      const res = await base44.functions.invoke("generateSpeech", { text: spoken });
-      setAudioData(res?.data?.audio || null);
-      setOrbState("speaking");
-    } catch (e) {
-      console.error(e);
-      setOrbState("idle");
-    }
-    setVoiceBusy(false);
-  };
 
-  // Words roll with her voice: track playback position for the caption scroll.
-  const handleTimeUpdate = () => {
-    const a = audioRef.current;
-    if (a && a.duration && Number.isFinite(a.duration)) {
-      setCaptionProgress(Math.min(1, a.currentTime / a.duration));
+    const doSpeak = () => {
+      // Clear the cancel flag now that we're starting this run.
+      speechCancelledRef.current = false;
+
+      // Chunk the reading at sentence boundaries. Keep each chunk under
+      // ~200 chars to stay well below Chrome's truncation threshold.
+      const chunks = [];
+      const sentenceRe = /[^.!?\n]+[.!?]+[\s]*|[^.!?\n]+$/g;
+      const raw = spoken.match(sentenceRe) || [spoken];
+      let buf = "";
+      for (const s of raw) {
+        if ((buf + s).length > 200 && buf) { chunks.push(buf.trim()); buf = s; }
+        else buf += s;
+      }
+      if (buf.trim()) chunks.push(buf.trim());
+      if (!chunks.length) {
+        setOrbState("idle");
+        setVoiceBusy(false);
+        return;
+      }
+
+      const voice = pickOracleVoice();
+
+      // Drive the caption scroll off elapsed speaking time.
+      const estMs = Math.max(4000, (spoken.length / 14) * 1000);
+      const start = Date.now();
+      captionTimerRef.current = setInterval(() => {
+        const p = Math.min(1, (Date.now() - start) / estMs);
+        setCaptionProgress(p);
+      }, 100);
+
+      // Chrome keepalive: every 5s poke the engine to defeat the 15s
+      // silence bug. We DON'T pause/resume blindly — doing that when the
+      // synth is already paused (e.g. user switched tabs) locks it. So we
+      // only tick when it's actively speaking AND not paused.
+      keepAliveRef.current = setInterval(() => {
+        if (speechCancelledRef.current) return;
+        if (synth.speaking && !synth.paused) {
+          try {
+            synth.pause();
+            synth.resume();
+          } catch { /* ignore */ }
+        }
+      }, 5000);
+
+      // Serial chunk playback with a per-chunk watchdog. Each chunk's
+      // onend fires the next one. If a chunk never fires onend within
+      // its expected duration + 5s buffer, we assume Chrome dropped it
+      // silently and advance manually.
+      let idx = 0;
+      const armWatchdog = (chunkText) => {
+        if (watchdogRef.current) clearTimeout(watchdogRef.current);
+        // Assume ~14 chars/sec speaking rate, plus a 5s safety buffer.
+        const estMs = Math.max(3000, (chunkText.length / 14) * 1000 + 5000);
+        watchdogRef.current = setTimeout(() => {
+          if (speechCancelledRef.current) return;
+          console.warn("Speech watchdog fired — chunk didn't complete, advancing:", chunkText.slice(0, 60));
+          // Force cancel the stuck utterance and move on.
+          try { synth.cancel(); } catch { /* ignore */ }
+          setTimeout(speakNext, 100);
+        }, estMs);
+      };
+
+      const speakNext = () => {
+        if (speechCancelledRef.current) return;
+        if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
+        if (idx >= chunks.length) {
+          if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+          if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+          setCaptionProgress(1);
+          setOrbState("idle");
+          setVoiceBusy(false);
+          utteranceRef.current = null;
+          return;
+        }
+        const chunk = chunks[idx++];
+        const utterance = new SpeechSynthesisUtterance(chunk);
+        utterance.rate = 1.02;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+        utterance.onend = () => {
+          if (speechCancelledRef.current) return;
+          if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
+          // Tiny gap between chunks so the synth engine settles before
+          // the next speak() — Chrome occasionally drops back-to-back
+          // utterances that fire in the same microtask.
+          setTimeout(speakNext, 80);
+        };
+        utterance.onerror = (e) => {
+          // 'canceled' errors are expected when we cancel a run — ignore.
+          if (e?.error === "canceled" || e?.error === "interrupted") return;
+          console.error("Speech synthesis error on chunk:", chunk.slice(0, 60), e);
+          if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
+          // Keep going on other errors — don't abandon the reading.
+          setTimeout(speakNext, 100);
+        };
+        utteranceRef.current = utterance;
+        // Belt-and-suspenders: an idle synth can be resurrected by a fresh
+        // cancel() right before speak(). Some Chrome versions need this on
+        // subsequent utterances.
+        try { synth.resume(); } catch { /* ignore */ }
+        synth.speak(utterance);
+        armWatchdog(chunk);
+      };
+
+      speakNext();
+
+      // Autoplay-policy diagnostic: if the first chunk hasn't started
+      // within 400ms, the browser blocked us. Reset UI.
+      setTimeout(() => {
+        if (speechCancelledRef.current) return;
+        if (!synth.speaking && !synth.pending) {
+          console.warn("speechSynthesis appears blocked — autoplay policy. Ask user to click Hear Her Voice.");
+          if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+          if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+          setOrbState("idle");
+          setVoiceBusy(false);
+        }
+      }, 400);
+    };
+
+    if (!synth.getVoices().length) {
+      const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
+      synth.addEventListener("voiceschanged", handler);
+      setTimeout(() => { if (!utteranceRef.current) doSpeak(); }, 500);
+    } else {
+      doSpeak();
     }
   };
 
   const reset = () => {
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setAudioData(null); setCaptionText(""); setCaptionProgress(0);
+    speechCancelledRef.current = true;
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -294,7 +507,9 @@ export default function Home() {
                 <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 11 }}>
                   Blend all decks
                   <button onClick={() => setBlendDecks((v) => !v)}
+                    type="button"
                     aria-label="Blend all decks"
+                    aria-pressed={blendDecks}
                     className={`neo-toggle ${blendDecks ? "on" : ""}`}><i /></button>
                 </span>
               </div>
@@ -347,7 +562,9 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Clarification Cards</h2>
                 <button onClick={() => setClarifyOn((v) => !v)}
+                  type="button"
                   aria-label="Clarification Cards"
+                  aria-pressed={clarifyOn}
                   className={`neo-toggle ${clarifyOn ? "on" : ""}`}><i /></button>
               </div>
               {clarifyOn && (
@@ -418,15 +635,13 @@ export default function Home() {
             </div>
           )}
 
-          {audioData && (
-            <audio ref={audioRef} src={audioData} autoPlay onTimeUpdate={handleTimeUpdate} onEnded={() => setOrbState("idle")} className="hidden" />
-          )}
+
 
           {!readingError && !busy && !voiceBusy && orbState !== "speaking" && (
             <div className="flex flex-wrap justify-center gap-3">
               <button onClick={() => speak(reading)}
                 className="neo-button flex items-center gap-2 px-6">
-                <Volume2 className="w-3.5 h-3.5" /> Hear Her Again
+                <Volume2 className="w-3.5 h-3.5" /> Hear Her Voice
               </button>
               <button onClick={reset}
                 className="neo-pill flex items-center gap-2 px-6 py-2.5">

@@ -37,10 +37,11 @@ export default function DailyCard({ memory, setMemory, userName }) {
       daily_reversed: reversed,
       daily_drawn_at: new Date().toISOString(),
     };
+    const previous = memory;
     try {
       if (memory) {
-        await base44.entities.OracleMemory.update(memory.id, fields);
         setMemory({ ...memory, ...fields });
+        await base44.entities.OracleMemory.update(memory.id, fields);
       } else {
         const created = await base44.entities.OracleMemory.create({
           user_name: userName || "",
@@ -52,6 +53,7 @@ export default function DailyCard({ memory, setMemory, userName }) {
       setJustDrawn(true);
     } catch (e) {
       console.error(e);
+      setMemory(previous);
     }
     setBusy(false);
   };
