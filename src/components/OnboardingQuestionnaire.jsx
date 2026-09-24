@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Sparkles } from "lucide-react";
+import OccultDatePicker from "@/components/OccultDatePicker";
 
 // First-visit questionnaire — the Oracle wants to know who she's reading for.
 export default function OnboardingQuestionnaire({ onComplete, defaultName = "" }) {
@@ -73,8 +74,12 @@ export default function OnboardingQuestionnaire({ onComplete, defaultName = "" }
           </div>
           <div>
             <label className={labelCls}>Birthdate</label>
-            <input name="birthdate" type="date" className={cls} style={{ ...style, colorScheme: "dark" }}
-              value={form.birthdate} onChange={(e) => set("birthdate", e.target.value)} />
+            <OccultDatePicker
+              name="birthdate"
+              label="Birthdate"
+              value={form.birthdate}
+              onChange={(v) => set("birthdate", v)}
+            />
           </div>
           <div>
             <label className={labelCls}>Favorite Color</label>

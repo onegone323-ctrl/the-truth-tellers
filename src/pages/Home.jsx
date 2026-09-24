@@ -507,7 +507,9 @@ export default function Home() {
                 <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 11 }}>
                   Blend all decks
                   <button onClick={() => setBlendDecks((v) => !v)}
+                    type="button"
                     aria-label="Blend all decks"
+                    aria-pressed={blendDecks}
                     className={`neo-toggle ${blendDecks ? "on" : ""}`}><i /></button>
                 </span>
               </div>
@@ -560,7 +562,9 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Clarification Cards</h2>
                 <button onClick={() => setClarifyOn((v) => !v)}
+                  type="button"
                   aria-label="Clarification Cards"
+                  aria-pressed={clarifyOn}
                   className={`neo-toggle ${clarifyOn ? "on" : ""}`}><i /></button>
               </div>
               {clarifyOn && (

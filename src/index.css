@@ -41,7 +41,73 @@
     --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 43 60% 40%;
     --sidebar-ring: 43 74% 58%;
+
+    --void: #0a0a0f;
+    --void-deep: #050505;
+    --gold-leaf: #d4af37;
+    --ivory: #f0e6d2;
+    --blood: #8b1a2b;
+    --surface-glass: rgba(5, 5, 5, 0.8);
+    --surface-glass-strong: rgba(5, 5, 5, 0.92);
+    --star-color: rgba(255, 255, 255, 0.85);
+    --orb-glow: rgba(212, 175, 55, 0.22);
+    --neo-border: rgba(212, 175, 55, 0.35);
+    --neo-ink: #f2e8c9;
+    --neo-muted: #827b6d;
+    --neo-panel-bg: linear-gradient(140deg, rgba(21,19,25,.88), rgba(5,5,7,.93));
+    --neo-field-bg: rgba(0,0,0,.65);
   }
+
+  :root.light {
+    --background: 36 33% 94%;
+    --foreground: 240 14% 8%;
+    --card: 36 28% 90%;
+    --card-foreground: 240 14% 8%;
+    --popover: 36 28% 92%;
+    --popover-foreground: 240 14% 8%;
+    --primary: 43 65% 48%;
+    --primary-foreground: 240 14% 8%;
+    --secondary: 348 18% 22%;
+    --secondary-foreground: 36 33% 94%;
+    --muted: 36 18% 86%;
+    --muted-foreground: 240 8% 32%;
+    --accent: 348 65% 32%;
+    --accent-foreground: 36 33% 96%;
+    --destructive: 348 72% 38%;
+    --destructive-foreground: 36 33% 96%;
+    --border: 43 45% 42%;
+    --input: 36 20% 88%;
+    --ring: 43 65% 48%;
+    --chart-1: 348 65% 40%;
+    --chart-2: 43 65% 48%;
+    --chart-3: 280 40% 42%;
+    --chart-4: 200 55% 40%;
+    --chart-5: 30 70% 42%;
+    --sidebar-background: 36 28% 91%;
+    --sidebar-foreground: 240 14% 8%;
+    --sidebar-primary: 43 65% 48%;
+    --sidebar-primary-foreground: 240 14% 8%;
+    --sidebar-accent: 348 65% 32%;
+    --sidebar-accent-foreground: 36 33% 96%;
+    --sidebar-border: 43 40% 48%;
+    --sidebar-ring: 43 65% 48%;
+
+    --void: #f0e6d2;
+    --void-deep: #e8dcc4;
+    --gold-leaf: #b8962e;
+    --ivory: #1a1410;
+    --blood: #8b1a2b;
+    --surface-glass: rgba(240, 230, 210, 0.78);
+    --surface-glass-strong: rgba(232, 220, 196, 0.92);
+    --star-color: rgba(180, 140, 40, 0.45);
+    --orb-glow: rgba(184, 150, 46, 0.28);
+    --neo-border: rgba(184, 150, 46, 0.45);
+    --neo-ink: #2a2218;
+    --neo-muted: #5c5346;
+    --neo-panel-bg: linear-gradient(140deg, rgba(245,236,220,.92), rgba(232,220,196,.94));
+    --neo-field-bg: rgba(240,230,210,.72);
+  }
+
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
@@ -55,7 +121,7 @@
 
   body {
     @apply bg-background text-foreground font-body;
-    background-color: #000000;
+    background-color: hsl(var(--background));
   }
 
   /* iOS: no rubber-band bounce on the shell */
@@ -148,8 +214,8 @@
   /* beveled glass panel with cyan inner hairline + scanline sweep */
   .neo-panel {
     position: relative; min-width: 0; padding: 27px;
-    border: 1px solid rgba(212,175,55,.43);
-    background: linear-gradient(140deg, rgba(21,19,25,.88), rgba(5,5,7,.93));
+    border: 1px solid var(--neo-border);
+    background: var(--neo-panel-bg);
     box-shadow: 0 15px 36px rgba(0,0,0,.5), inset 0 0 28px rgba(123,44,255,.05);
     clip-path: polygon(0 13px,13px 0,calc(100% - 13px) 0,100% 13px,100% calc(100% - 13px),calc(100% - 13px) 100%,13px 100%,0 calc(100% - 13px));
     animation: materialize .8s ease both;
@@ -166,13 +232,13 @@
     pointer-events: none;
   }
   .neo-label {
-    position: relative; color: #d4af37; font-size: 14px; letter-spacing: 3px;
+    position: relative; color: var(--gold-leaf); font-size: 14px; letter-spacing: 3px;
     text-transform: uppercase; font-weight: 500;
   }
   .neo-field {
     width: 100%; resize: none;
-    border: 1px solid rgba(123,44,255,.65);
-    background: rgba(0,0,0,.65); color: #f2e8c9; padding: 15px;
+    border: 1px solid var(--neo-border);
+    background: var(--neo-field-bg); color: var(--neo-ink); padding: 15px;
     font: 14px system-ui; outline: none; transition: .25s;
   }
   .neo-field::placeholder { color: #756d61; }
@@ -264,7 +330,7 @@
     text-transform: uppercase; font-weight: 300; text-shadow: 0 0 24px rgba(212,175,55,.25);
   }
   .neo-eyebrow { color: #00e5ff; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; }
-  .neo-note { color: #827b6d; font-size: 14px; font-style: italic; }
+  .neo-note { color: var(--neo-muted); font-size: 14px; font-style: italic; }
 
   .enter { animation: materialize .85s ease both; }
   .delay1 { animation-delay: .18s; }

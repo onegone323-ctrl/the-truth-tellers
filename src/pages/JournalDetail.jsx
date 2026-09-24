@@ -4,6 +4,7 @@ import ReadingText from "@/components/ReadingText";
 import { Trash2, Calendar, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import useGoBack from "@/hooks/useGoBack";
+import { toast } from "@/components/ui/use-toast";
 
 export default function JournalDetail() {
   const { id } = useParams();
@@ -26,8 +27,19 @@ export default function JournalDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    await base44.entities.JournalEntry.delete(id);
     navigate("/journal");
+    toast({ title: "Entry released", description: "Removed from the journal." });
+    try {
+      await base44.entities.JournalEntry.delete(id);
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Could not delete",
+        description: "The entry is still here.",
+        variant: "destructive",
+      });
+      navigate(`/journal/${id}`);
+    }
   };
 
   const fmtDate = (d) =>
