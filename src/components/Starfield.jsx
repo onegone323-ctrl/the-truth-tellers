@@ -42,7 +42,7 @@ export default function Starfield() {
           style={{
             top: `${s.top}%`, left: `${s.left}%`,
             width: `${s.size}px`, height: `${s.size}px`,
-            background: s.gold ? "#f5d77a" : "#fff",
+            background: s.gold ? "var(--gold-leaf)" : "var(--star-color)",
             boxShadow: s.gold ? "0 0 6px 1px rgba(245,215,122,0.8)" : "0 0 4px 1px rgba(255,255,255,0.7)",
             animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite alternate`,
           }} />
@@ -54,7 +54,7 @@ export default function Starfield() {
           style={{
             left: `${p.left}%`,
             width: `${p.size}px`, height: `${p.size}px`,
-            background: "rgba(212,175,55,0.7)",
+            background: "var(--gold-leaf)",
             boxShadow: "0 0 8px 2px rgba(212,175,55,0.5)",
             animation: `rise ${p.duration}s linear ${p.delay}s infinite`,
           }} />

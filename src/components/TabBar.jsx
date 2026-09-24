@@ -32,8 +32,8 @@ export default function TabBar() {
       className="sm:hidden fixed inset-x-0 bottom-0 z-50 flex items-stretch"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(5,5,5,0.92)",
-        borderTop: "1px solid rgba(212,175,55,0.35)",
+        background: "var(--surface-glass-strong)",
+        borderTop: "1px solid var(--neo-border)",
         backdropFilter: "blur(18px)",
       }}
     >
