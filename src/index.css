@@ -119,6 +119,13 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    color-scheme: dark;
+  }
+  html.light {
+    color-scheme: light;
+  }
+
   body {
     @apply bg-background text-foreground font-body;
     background-color: hsl(var(--background));
