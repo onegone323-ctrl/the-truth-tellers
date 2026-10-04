@@ -21,6 +21,10 @@ export default async function(req) {
     // Build a compact one-liner per position. EVERY card carries its deck
     // tradition (and that tradition's own name for the card), so the Oracle
     // always knows which deck world each card speaks from.
+    // Each spread position carries a meaning (what that spot covers in the
+    // seeker's life) so the Oracle can announce what a placement represents
+    // before translating the card that landed there.
+    const meanings = Array.isArray(spread?.meanings) ? spread.meanings : [];
     const positionLines = cards.map((c, i) => {
       const rev = c.reversed ? ' (R)' : '';
       const clar = (c.clarifiers && c.clarifiers.length)
@@ -30,7 +34,8 @@ export default async function(req) {
       const altName = c.deck_title && c.deck_title !== c.name
         ? ` — in this tradition it is called "${c.deck_title}"`
         : '';
-      return `${i + 1}. POSITION: "${c.position}"  CARDS: ${c.name}${rev}${clar} [deck: ${tradition}${altName}]`;
+      const meaning = meanings[i] || c.position;
+      return `${i + 1}. POSITION: "${c.position}" — this placement covers: ${meaning}.  CARDS: ${c.name}${rev}${clar} [deck: ${tradition}${altName}]`;
     }).join('\n');
 
     // Memory block — everything the Oracle should already know about this seeker.
@@ -66,7 +71,7 @@ export default async function(req) {
       "============================================",
       "- Write it as natural speech: plain flowing paragraphs. NO markdown, NO bullets, NO headers, NO glyphs, NO emojis, NO colons followed by lists.",
       `- Address them by name ("${honorific}") naturally 2–3 times, never mechanically.`,
-      "- Walk the spread in order. For each position: announce the position conversationally (\"Where you've been…\", \"what's coming at you next\" — vary the phrasing every time), then name each card AND the deck tradition it was drawn from. If that tradition uses a different name for the card, say that name too (it was given to you in brackets). Then get straight to what it means for THEM in their life — blunt, specific, tied to their actual question. No tarot lectures, no card-meaning explainers, no symbolism.",
+      "- Go position by position, in spread order, and NEVER skip a position. For EACH position, speak three beats in one breath: FIRST, what that placement represents in their life right now, said personally — \"first, let's look at what's really going on with you…\", \"and your challenge — this is what's blocking you today…\", \"and this is how it's affecting you right now\" — vary the phrasing every time, never use the same transition twice. SECOND, the card(s) drawn there AND the deck tradition each was drawn from — if that tradition uses a different name for the card, say that name too (it was given in brackets). THIRD, a blunt, specific translation of that card for their actual question and their life. Then move to the next position naturally (\"and now…\", \"next up…\"). No tarot lectures, no card-meaning explainers, no symbolism.",
       "- Each deck's flavor should color its card's message — Egyptian decks speak in pharaohs and ruin, Wildwood in the forest and the hunt, Thoth in alchemy. The reading should feel like cards from many worlds, not one generic tarot deck.",
       "- Weave in what you know about them from memory when it sharpens the point — their situation, their goal, what they asked before.",
       "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
