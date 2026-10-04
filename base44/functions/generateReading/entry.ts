@@ -1,8 +1,11 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 
-// The Oracle generates a full tarot reading. Voice: blunt, warm, personal —
-// freshly spoken every time, real advice, zero templated catchphrases.
+// The Oracle generates a full tarot reading on OpenAI.
+// Voice: spunky, warm, personal, blunt — a life coach with a wicked sense of
+// humor. Every card is named WITH the deck tradition it was drawn from.
+// Anti-repetition: freshly spoken every time, real advice, zero templated
+// catchphrases.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -15,17 +18,19 @@ export default async function(req) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
 
-    // Build a compact one-liner per position so the model covers every card
-    // (and its clarifiers) with the deck tradition it was drawn from.
+    // Build a compact one-liner per position. EVERY card carries its deck
+    // tradition (and that tradition's own name for the card), so the Oracle
+    // always knows which deck world each card speaks from.
     const positionLines = cards.map((c, i) => {
       const rev = c.reversed ? ' (R)' : '';
       const clar = (c.clarifiers && c.clarifiers.length)
         ? ' · ' + c.clarifiers.map(x => `${x.name}${x.reversed ? ' (R)' : ''}`).join(' · ')
         : '';
-      const deckHint = c.deck_title && c.deck_title !== c.name
-        ? ` [in ${c.deck_name || 'this deck'} tradition, called "${c.deck_title}"]`
+      const tradition = c.deck_tradition || c.deck_name || 'Rider-Waite';
+      const altName = c.deck_title && c.deck_title !== c.name
+        ? ` — in this tradition it is called "${c.deck_title}"`
         : '';
-      return `${i + 1}. POSITION: "${c.position}"  CARDS: ${c.name}${rev}${clar}${deckHint}`;
+      return `${i + 1}. POSITION: "${c.position}"  CARDS: ${c.name}${rev}${clar} [deck: ${tradition}${altName}]`;
     }).join('\n');
 
     // Memory block — everything the Oracle should already know about this seeker.
@@ -46,7 +51,7 @@ export default async function(req) {
     const honorific = memory?.user_name || 'my friend';
 
     const prompt = [
-      "You are The Oracle. To this seeker you are a real person: their blunt, warm, wickedly funny friend who happens to read tarot. You tell it like it is. You give real advice — concrete, specific, actionable — not vague mysticism. You are never cruel, but you never sugarcoat either.",
+      "You are The Oracle. You read tarot like a brilliant best friend who happens to see straight through people — spunky, warm, sharp-tongued, playful, and impossible to fool. You tease the seeker affectionately. You crack a dry one-liner when the cards earn it. You get genuinely excited when the cards are good and you say so. You tell it like it is: direct, blunt, concrete, actionable advice — never vague mysticism. You are never cruel, but you never sugarcoat either. You know this person. You remember what they told you. You call them by name or title. You tell them the truth in the fewest words that will land — and you have fun doing it.",
       "",
       "============================================",
       "ANTI-REPETITION — THE MOST IMPORTANT RULE",
@@ -62,6 +67,7 @@ export default async function(req) {
       "- Write it as natural speech: plain flowing paragraphs. NO markdown, NO bullets, NO headers, NO glyphs, NO emojis, NO colons followed by lists.",
       `- Address them by name ("${honorific}") naturally 2–3 times, never mechanically.`,
       "- Walk the spread in order. For each position: announce the position conversationally (\"Where you've been…\", \"what's coming at you next\" — vary the phrasing every time), then name each card AND the deck tradition it was drawn from. If that tradition uses a different name for the card, say that name too (it was given to you in brackets). Then get straight to what it means for THEM in their life — blunt, specific, tied to their actual question. No tarot lectures, no card-meaning explainers, no symbolism.",
+      "- Each deck's flavor should color its card's message — Egyptian decks speak in pharaohs and ruin, Wildwood in the forest and the hunt, Thoth in alchemy. The reading should feel like cards from many worlds, not one generic tarot deck.",
       "- Weave in what you know about them from memory when it sharpens the point — their situation, their goal, what they asked before.",
       "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
       "- Then give ADVICE: a short stretch of direct, concrete advice — what to do this week, what to stop doing, what to watch for. Firm. Tell it like it is.",
@@ -74,7 +80,7 @@ export default async function(req) {
       "",
       `THE SEEKER: ${honorific}`,
       `THEIR QUESTION: "${question}"`,
-      `DECK: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''}`,
+      `DECK MODE: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''} — but individual cards may come from different traditions, as listed below.`,
       `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
       "",
       "CARDS DRAWN (in spread order — cover every one):",
@@ -85,26 +91,28 @@ export default async function(req) {
     ].join('\n');
 
     // Keep the provider credential server-side in Base44 secrets.
-    const apiKey = secrets.get('perplexity_api_key');
+    const apiKey = secrets.get('OPENAI_API_KEY');
     if (!apiKey) {
-      return Response.json({ error: 'The Oracle is not configured — missing API key.' }, { status: 500 });
+      return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Perplexity Agent API. Multi-model fallback chain: on overload (429) or
-    // a 5xx we walk to the next model. The Agent API does NOT accept a model
-    // array, so we loop client-side.
+    // The Oracle reads cards from prompt only — no tools, no web search.
+    //
+    // Model fallback chain: if a model is overloaded (429), missing (404/400)
+    // or returns a 5xx, we walk to the next model in the list.
     const modelChain = [
-      'openai/gpt-5.6-sol',
-      'anthropic/claude-sonnet-5',
-      'google/gemini-3.8-flash',
+      'gpt-5.6-sol',
+      'gpt-5.4',
+      'gpt-4.1',
     ];
 
     const oracleInstructions =
-      "You are The Oracle — a blunt, warm, personal friend who reads tarot and tells it like it is. " +
+      "You are The Oracle — a spunky, warm, personal tarot reader with a wicked sense of humor who tells it like it is. " +
       "Write the reading as natural spoken paragraphs with NO markdown, NO bullets, NO glyphs, NO emojis. " +
       "Cover every position and every card in spread order, naming each card's deck tradition. " +
       "Give a direct verdict on the seeker's actual question, then concrete advice. " +
-      "Do NOT cite sources. Do NOT include AI disclaimers. Produce ONLY the reading itself.";
+      "Do NOT cite sources. Do NOT include AI disclaimers. Produce ONLY the reading itself; " +
+      "answer entirely from the prompt.";
 
     let aiRes;
     let data;
@@ -112,7 +120,7 @@ export default async function(req) {
     let usedModel = '';
     for (const modelId of modelChain) {
       try {
-        aiRes = await fetch('https://api.perplexity.ai/v1/agent', {
+        aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -120,10 +128,11 @@ export default async function(req) {
           },
           body: JSON.stringify({
             model: modelId,
-            instructions: oracleInstructions,
-            input: prompt,
-            max_output_tokens: 2400,
-            temperature: 0.95,
+            messages: [
+              { role: 'system', content: oracleInstructions },
+              { role: 'user', content: prompt },
+            ],
+            max_completion_tokens: 2400,
           }),
           signal: AbortSignal.timeout(60000),
         });
@@ -137,14 +146,14 @@ export default async function(req) {
 
       const raw = await aiRes.text();
       if (!aiRes.ok) {
-        // Retriable failures: overloaded (429) or any 5xx from the provider.
-        // Non-retriable: 400 invalid_request, 401 auth, 402 billing, 404 model.
+        // Retriable failures: overloaded (429), unknown model (404/400) or any
+        // 5xx from the provider — walk to the next model.
         lastErrorDetail = `${modelId} -> ${aiRes.status}: ${raw.slice(0, 300)}`;
-        if (aiRes.status === 429 || aiRes.status >= 500) {
+        if (aiRes.status === 429 || aiRes.status === 404 || aiRes.status === 400 || aiRes.status >= 500) {
           continue; // try next model
         }
         // Non-retriable: surface immediately.
-        return Response.json({ error: 'Oracle API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
+        return Response.json({ error: 'OpenAI API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
       }
 
       try {
@@ -160,38 +169,23 @@ export default async function(req) {
 
     if (!data) {
       return Response.json({
-        error: 'All Oracle models failed. Last: ' + lastErrorDetail.slice(0, 400),
+        error: 'All OpenAI models failed. Last: ' + lastErrorDetail.slice(0, 400),
       }, { status: 502 });
     }
 
-    // Agent API response shape: data.output is an array of typed items. The
-    // model's answer is a `message` item whose `content` array contains one
-    // or more `output_text` blocks. Concatenate all text blocks across all
-    // message items so we never miss a piece of the reading.
+    // Chat Completions response shape: choices[0].message.content.
     let text = '';
-    if (Array.isArray(data?.output)) {
-      for (const item of data.output) {
-        if (item?.type === 'message' && Array.isArray(item.content)) {
-          for (const block of item.content) {
-            if (block?.type === 'output_text' && typeof block.text === 'string') {
-              text += block.text;
-            }
-          }
-        }
-      }
-    }
-    // Fallback: some SDK-shaped responses expose output_text directly.
-    if (!text && typeof data?.output_text === 'string') {
-      text = data.output_text;
+    if (Array.isArray(data?.choices) && data.choices.length) {
+      text = typeof data.choices[0]?.message?.content === 'string' ? data.choices[0].message.content : '';
     }
 
     if (!text.trim()) {
       return Response.json({
-        error: 'Oracle API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
+        error: 'OpenAI API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
       }, { status: 502 });
     }
 
-    return Response.json({ reading: text });
+    return Response.json({ reading: text, model: usedModel });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
