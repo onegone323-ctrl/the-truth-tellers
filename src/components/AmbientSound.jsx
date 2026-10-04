@@ -27,7 +27,7 @@ export default function AmbientSound() {
       title={enabled ? "Silence the ambience" : "Play the ambience"}
       aria-label={enabled ? "Silence the ambience" : "Play the ambience"}
       aria-pressed={enabled}
-      className="fixed right-4 z-40 flex items-center justify-center gap-2 min-w-[44px] min-h-[44px] px-3 py-2 rounded-full text-sm uppercase tracking-widest transition-all bottom-[calc(80px_+_env(safe-area-inset-bottom))] sm:bottom-[calc(16px_+_env(safe-area-inset-bottom))]"
+      className="fixed right-4 z-40 flex items-center justify-center gap-2 min-w-[44px] min-h-[44px] px-3 py-2 rounded-full text-sm uppercase tracking-widest transition-all bottom-[calc(72px_+_env(safe-area-inset-bottom))] sm:bottom-[calc(16px_+_env(safe-area-inset-bottom))]"
       style={{
         background: "rgba(0,0,0,0.72)",
         border: "1px solid rgba(212,175,55,0.45)",

@@ -52,14 +52,18 @@ export default function Home() {
   // Load user + memory
   useEffect(() => {
     (async () => {
-      try {
-        const me = await base44.auth.me();
-        setUser(me);
-        const mem = await base44.entities.OracleMemory.list("-updated_date", 1);
-        if (mem && mem.length) setMemory(mem[0]);
-        const prof = await base44.entities.SeekerProfile.list("-updated_date", 1);
-        if (prof && prof.length) setProfile(prof[0]);
-      } catch (e) { console.error(e); }
+      // All three load in parallel — one failure never blocks the others.
+      const [meRes, memRes, profRes] = await Promise.allSettled([
+        base44.auth.me(),
+        base44.entities.OracleMemory.list("-updated_date", 1),
+        base44.entities.SeekerProfile.list("-updated_date", 1),
+      ]);
+      if (meRes.status === "fulfilled") setUser(meRes.value);
+      else console.error(meRes.reason);
+      if (memRes.status === "fulfilled" && memRes.value && memRes.value.length) setMemory(memRes.value[0]);
+      else if (memRes.status === "rejected") console.error(memRes.reason);
+      if (profRes.status === "fulfilled" && profRes.value && profRes.value.length) setProfile(profRes.value[0]);
+      else if (profRes.status === "rejected") console.error(profRes.reason);
       setProfileLoaded(true);
     })();
   }, []);
@@ -437,7 +441,9 @@ export default function Home() {
           <p className="text-muted-foreground font-body text-sm max-w-md">
             {readingError
               ? readingError
-              : busy || voiceBusy
+              : busy
+              ? "The Oracle is reading the cards…"
+              : voiceBusy
               ? "He's looking into the cards…"
               : orbState === "speaking"
               ? "Listen. The truth is in his voice."
