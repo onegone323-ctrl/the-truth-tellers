@@ -42,6 +42,10 @@ export default function Home() {
   const keepAliveRef = useRef(null);
   const watchdogRef = useRef(null);
   const speechCancelledRef = useRef(false);
+  // Identifies the active speak() run. Any chain (audio or browser voice) that
+  // finds a newer run id aborts itself — this is what keeps two voices from
+  // ever playing over each other.
+  const speakRunRef = useRef(0);
 
   // Kick the browser to load its voice list eagerly on mount. Some browsers
   // (Chrome desktop especially) only populate getVoices() AFTER the first
@@ -126,6 +130,7 @@ export default function Home() {
 
   // ---- Generate reading ----
   const handleRead = async () => {
+    if (busy) return;
     setPhase("reading");
     setOrbState("thinking");
     setBusy(true);
@@ -253,12 +258,12 @@ export default function Home() {
   // server-side) and played back-to-back as one continuous voice. If the
   // voice service is unavailable, we fall back to the device synthesizer
   // below so the reading is never left unspoken.
-  const playAudioChunks = (chunks) =>
+  const playAudioChunks = (chunks, runId) =>
     new Promise((allDone) => {
       let i = 0;
       let blocked = false;
       const playNext = () => {
-        if (speechCancelledRef.current || blocked) { allDone(false); return; }
+        if (speakRunRef.current !== runId || speechCancelledRef.current || blocked) { allDone(false); return; }
         if (i >= chunks.length) { allDone(true); return; }
         const audio = new Audio("data:audio/mpeg;base64," + chunks[i++]);
         audioRef.current = audio;
@@ -281,6 +286,9 @@ export default function Home() {
 
   const speak = async (sourceText) => {
     if (!sourceText) return;
+    // Claim this run: any older audio/browser chain aborts the moment it sees
+    // a newer run id.
+    const myRun = ++speakRunRef.current;
     // Cancel whatever is currently playing (server audio or browser chain).
     speechCancelledRef.current = true;
     if (typeof window !== "undefined" && window.speechSynthesis) {
@@ -320,17 +328,20 @@ export default function Home() {
     }
 
     if (chunks) {
-      const completed = await playAudioChunks(chunks);
+      const completed = await playAudioChunks(chunks, myRun);
       if (completed) { finish(); return; }
       if (captionTimerRef.current) clearInterval(captionTimerRef.current);
     } else if (captionTimerRef.current) {
       clearInterval(captionTimerRef.current);
     }
 
+    // A newer speak() took over — it owns the cleanup and the voice.
+    if (speakRunRef.current !== myRun) return;
+
     if (speechCancelledRef.current) { setVoiceBusy(false); setOrbState("idle"); return; }
 
     // 2) Device voice fallback.
-    speakBrowser(spoken);
+    speakBrowser(spoken, myRun);
   };
 
   // Speak the reading, immune to Chrome's known SpeechSynthesis bugs.
@@ -350,7 +361,7 @@ export default function Home() {
   //     internal 15-second silence timer.
   //   - speechCancelledRef guards against a new speak() while a previous
   //     serial chain is still stepping — it stops the old chain cold.
-  const speakBrowser = (sourceText) => {
+  const speakBrowser = (sourceText, runId) => {
     if (!sourceText) return;
     const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
     if (!synth) {
@@ -372,6 +383,7 @@ export default function Home() {
     setCaptionText(spoken);
 
     const doSpeak = () => {
+      if (speakRunRef.current !== runId) return; // a newer speak() took over
       // Clear the cancel flag now that we're starting this run.
       speechCancelledRef.current = false;
 
@@ -426,7 +438,7 @@ export default function Home() {
         // Assume ~14 chars/sec speaking rate, plus a 5s safety buffer.
         const estMs = Math.max(3000, (chunkText.length / 14) * 1000 + 5000);
         watchdogRef.current = setTimeout(() => {
-          if (speechCancelledRef.current) return;
+          if (speechCancelledRef.current || speakRunRef.current !== runId) return;
           console.warn("Speech watchdog fired — chunk didn't complete, advancing:", chunkText.slice(0, 60));
           // Force cancel the stuck utterance and move on.
           try { synth.cancel(); } catch { /* ignore */ }
@@ -435,7 +447,7 @@ export default function Home() {
       };
 
       const speakNext = () => {
-        if (speechCancelledRef.current) return;
+        if (speechCancelledRef.current || speakRunRef.current !== runId) return;
         if (watchdogRef.current) { clearTimeout(watchdogRef.current); watchdogRef.current = null; }
         if (idx >= chunks.length) {
           if (captionTimerRef.current) clearInterval(captionTimerRef.current);
@@ -494,9 +506,17 @@ export default function Home() {
     };
 
     if (!synth.getVoices().length) {
-      const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
+      // Voices may arrive late: start on the FIRST of (voiceschanged | 500ms),
+      // never both — a double start makes the Oracle speak over herself.
+      let started = false;
+      const startOnce = () => {
+        if (started || speakRunRef.current !== runId) return;
+        started = true;
+        doSpeak();
+      };
+      const handler = () => { synth.removeEventListener("voiceschanged", handler); startOnce(); };
       synth.addEventListener("voiceschanged", handler);
-      setTimeout(() => { if (!utteranceRef.current) doSpeak(); }, 500);
+      setTimeout(startOnce, 500);
     } else {
       doSpeak();
     }
