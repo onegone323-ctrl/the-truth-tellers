@@ -238,11 +238,11 @@ export default function Home() {
     if (!synth) return null;
     const voices = synth.getVoices();
     if (!voices || !voices.length) return null;
-    // Preference order: high-quality named female voices → any en-US female →
-    // any en-* voice → whatever the browser has.
+    // Preference order: deep male voices first → any en-US male → any en-* →
+    // whatever the browser has.
     const preferred = [
-      /Samantha/i, /Google US English/i, /Microsoft (Aria|Jenny|Michelle)/i,
-      /Karen/i, /Serena/i, /Moira/i, /Tessa/i, /Ava/i, /Allison/i,
+      /Alex/i, /Daniel/i, /Google UK English Male/i, /Microsoft (Guy|Davis|David|Christopher)/i,
+      /Fred/i, /Oliver/i, /Rishi/i, /Tom/i, /Aaron/i, /Arthur/i,
     ];
     for (const rx of preferred) {
       const hit = voices.find((v) => rx.test(v.name) && /en/i.test(v.lang));
