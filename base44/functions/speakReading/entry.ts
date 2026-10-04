@@ -46,10 +46,9 @@ export default async function(req) {
     }
     if (buf.trim()) chunks.push(buf.trim());
 
-    const toSpeak = chunks.slice(0, 8);
-
+    // No cap: the WHOLE reading gets spoken, start to finish.
     const audio = [];
-    for (const chunk of toSpeak) {
+    for (const chunk of chunks) {
       const res = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -75,7 +74,7 @@ export default async function(req) {
       audio.push(arrayBufferToBase64(audioBytes));
     }
 
-    return Response.json({ audio, model, voice, chunks: toSpeak.length });
+    return Response.json({ chunks: audio, model, voice, spoken_chunks: chunks.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -248,13 +248,38 @@ export default function Home() {
         || voices[0];
   };
 
-  // ---- Oracle voice (OpenAI TTS, device-voice fallback) ----
-  // The reading is spoken by OpenAI's TTS engine — a warm, natural voice
-  // configured in the app's secrets — synthesized in sentence-sized chunks
-  // server-side and played back back-to-back as one continuous voice. If the
-  // voice service fails for any reason, we fall back to the device's own
-  // synthesizer below so the reading is never lost.
-  const speak = (sourceText) => {
+  // ---- Oracle voice: OpenAI TTS first, device voice as fallback ----
+  // The reading is synthesized by OpenAI's natural voice (chunked
+  // server-side) and played back-to-back as one continuous voice. If the
+  // voice service is unavailable, we fall back to the device synthesizer
+  // below so the reading is never left unspoken.
+  const playAudioChunks = (chunks) =>
+    new Promise((allDone) => {
+      let i = 0;
+      let blocked = false;
+      const playNext = () => {
+        if (speechCancelledRef.current || blocked) { allDone(false); return; }
+        if (i >= chunks.length) { allDone(true); return; }
+        const audio = new Audio("data:audio/mpeg;base64," + chunks[i++]);
+        audioRef.current = audio;
+        const advance = () => {
+          audio.onended = null;
+          audio.onerror = null;
+          playNext();
+        };
+        audio.onended = advance;
+        audio.onerror = advance;
+        audio.play().catch(() => {
+          // The browser refused to start the audio — if this was the very
+          // first chunk, surface it so we fall back cleanly.
+          if (i === 1) blocked = true;
+          advance();
+        });
+      };
+      playNext();
+    });
+
+  const speak = async (sourceText) => {
     if (!sourceText) return;
     // Cancel whatever is currently playing (server audio or browser chain).
     speechCancelledRef.current = true;
@@ -263,56 +288,49 @@ export default function Home() {
     }
     if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
     if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
 
     setVoiceBusy(true);
     setOrbState("speaking");
+    const spoken = toSpokenText(sourceText);
+    setCaptionText(spoken);
+    setCaptionProgress(0);
+    speechCancelledRef.current = false;
 
-    (async () => {
-      speechCancelledRef.current = false;
-      try {
-        const spoken = toSpokenText(sourceText);
-        setCaptionText(spoken);
-        setCaptionProgress(0);
+    // Drive the caption scroll off elapsed speaking time.
+    const estMs = Math.max(4000, (spoken.length / 14) * 1000);
+    const start = Date.now();
+    captionTimerRef.current = setInterval(() => {
+      setCaptionProgress(Math.min(1, (Date.now() - start) / estMs));
+    }, 100);
 
-        const res = await base44.functions.invoke("speakReading", { text: spoken });
-        const chunks = res?.data?.audio;
-        if (!Array.isArray(chunks) || !chunks.length) {
-          throw new Error("The voice service returned no audio.");
-        }
+    const finish = () => {
+      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+      setCaptionProgress(1);
+      setOrbState("idle");
+      setVoiceBusy(false);
+    };
 
-        // Drive the caption scroll off elapsed speaking time.
-        const estMs = Math.max(4000, (spoken.length / 14) * 1000);
-        const start = Date.now();
-        captionTimerRef.current = setInterval(() => {
-          const p = Math.min(1, (Date.now() - start) / estMs);
-          setCaptionProgress(p);
-        }, 100);
+    // 1) Try OpenAI's natural voice.
+    let chunks = null;
+    try {
+      const res = await base44.functions.invoke("speakReading", { text: spoken });
+      if (Array.isArray(res?.data?.chunks) && res.data.chunks.length) chunks = res.data.chunks;
+    } catch (e) {
+      console.warn("OpenAI voice unavailable — falling back to device voice.", e?.message || e);
+    }
 
-        // Play each MP3 chunk in order — together they speak the WHOLE
-        // reading, start to finish.
-        for (const b64 of chunks) {
-          if (speechCancelledRef.current) return;
-          const audio = new Audio(`data:audio/mpeg;base64,${b64}`);
-          audioRef.current = audio;
-          await new Promise((done, fail) => {
-            audio.onended = done;
-            audio.onerror = done; // skip a bad chunk, keep the reading going
-            audio.play().catch(() => fail(new Error("playback blocked")));
-          });
-        }
+    if (chunks) {
+      const completed = await playAudioChunks(chunks);
+      if (completed) { finish(); return; }
+      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    } else if (captionTimerRef.current) {
+      clearInterval(captionTimerRef.current);
+    }
 
-        if (speechCancelledRef.current) return;
-        if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-        setCaptionProgress(1);
-        setOrbState("idle");
-        setVoiceBusy(false);
-        audioRef.current = null;
-      } catch (e) {
-        console.warn("OpenAI voice failed — falling back to device voice.", e);
-        speakBrowser(sourceText);
-      }
-    })();
+    if (speechCancelledRef.current) { setVoiceBusy(false); setOrbState("idle"); return; }
+
+    // 2) Device voice fallback.
+    speakBrowser(spoken);
   };
 
   // Speak the reading, immune to Chrome's known SpeechSynthesis bugs.
