@@ -38,18 +38,32 @@ export default function Home() {
   const recogRef = useRef(null);
   const audioRef = useRef(null);
   const captionTimerRef = useRef(null);
-  const speechCancelledRef = useRef(false);
-  // Identifies the active speak() run. Any chain (audio or browser voice) that
-  // finds a newer run id aborts itself — this is what keeps two voices from
-  // ever playing over each other.
+  const busyRef = useRef(false);
+  // Identifies the active speak() run. Any playback chain that finds a newer
+  // run id aborts itself.
   const speakRunRef = useRef(0);
+
+  // The Oracle's voice plays through ONE audio element for the whole page, so
+  // two voices can never sound at once — a new reading just re-points it.
+  const getVoice = () => {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  };
+  const stopVoice = () => {
+    speakRunRef.current += 1; // invalidates every running playback chain
+    const el = audioRef.current;
+    if (el) {
+      el.onended = null;
+      el.onerror = null;
+      try { el.pause(); } catch { /* ignore */ }
+    }
+  };
 
   // Stop any in-flight audio on unmount so the Oracle never keeps talking
   // after the seeker leaves the page.
   useEffect(() => {
     return () => {
-      speechCancelledRef.current = true;
-      if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
+      stopVoice();
       if (captionTimerRef.current) clearInterval(captionTimerRef.current);
     };
   }, []);
@@ -108,7 +122,10 @@ export default function Home() {
 
   // ---- Generate reading ----
   const handleRead = async () => {
-    if (busy) return;
+    // A ref (not state) so a fast double-tap can't start two readings — two
+    // readings means two voices.
+    if (busy || busyRef.current) return;
+    busyRef.current = true;
     setPhase("reading");
     setOrbState("thinking");
     setBusy(true);
@@ -204,42 +221,39 @@ export default function Home() {
       );
       setOrbState("idle");
     }
+    busyRef.current = false;
     setBusy(false);
   };
 
   // ---- Oracle voice: OpenAI TTS only ----
-  // The reading is synthesized by OpenAI's natural voice (chunked
-  // server-side) and played back-to-back as one continuous voice. There is
-  // deliberately no device-voice fallback — with two voice systems in play,
-  // a browser utterance could keep droning under the OpenAI audio (and
-  // speechSynthesis.cancel() isn't reliable on every device). If the voice
-  // can't play, the "Hear His Voice" button is a fresh tap that retries.
-
-  // ---- Oracle voice: OpenAI TTS first, device voice as fallback ----
-  // The reading is synthesized by OpenAI's natural voice (chunked
-  // server-side) and played back-to-back as one continuous voice. If the
-  // voice service is unavailable, we fall back to the device synthesizer
-  // below so the reading is never left unspoken.
+  // The reading is synthesized server-side in chunks and played back-to-back
+  // through the single shared audio element. If the voice can't play, the
+  // "Hear His Voice" button is a fresh tap that retries.
   const playAudioChunks = (chunks, runId) =>
     new Promise((allDone) => {
+      const el = getVoice();
       let i = 0;
-      let blocked = false;
       const playNext = () => {
-        if (speakRunRef.current !== runId || speechCancelledRef.current || blocked) { allDone(false); return; }
+        if (speakRunRef.current !== runId) { allDone(false); return; }
         if (i >= chunks.length) { allDone(true); return; }
-        const audio = new Audio("data:audio/mpeg;base64," + chunks[i++]);
-        audioRef.current = audio;
+        const isFirst = i === 0;
+        // Each chunk may move the chain forward exactly once. Without this,
+        // a chunk that both errors AND rejects play() would advance twice and
+        // fork the chain into two overlapping voices.
+        let moved = false;
         const advance = () => {
-          audio.onended = null;
-          audio.onerror = null;
+          if (moved) return;
+          moved = true;
           playNext();
         };
-        audio.onended = advance;
-        audio.onerror = advance;
-        audio.play().catch(() => {
-          // The browser refused to start the audio — if this was the very
-          // first chunk, surface it so we fall back cleanly.
-          if (i === 1) blocked = true;
+        el.onended = advance;
+        el.onerror = advance;
+        el.src = "data:audio/mpeg;base64," + chunks[i++];
+        el.play().catch(() => {
+          if (moved) return;
+          // The browser refused to start the very first chunk (autoplay
+          // policy) — stop cleanly so the tap-to-hear button can retry.
+          if (isFirst && speakRunRef.current === runId) { moved = true; allDone(false); return; }
           advance();
         });
       };
@@ -248,11 +262,10 @@ export default function Home() {
 
   const speak = async (sourceText) => {
     if (!sourceText) return;
-    // Claim this run: any older audio chain aborts the moment it sees a
-    // newer run id.
-    const myRun = ++speakRunRef.current;
-    speechCancelledRef.current = true;
-    if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
+    // Silence whatever is playing and claim a fresh run id: any older chain
+    // aborts the moment it sees it.
+    stopVoice();
+    const myRun = speakRunRef.current;
     if (captionTimerRef.current) clearInterval(captionTimerRef.current);
 
     setVoiceBusy(true);
@@ -260,7 +273,6 @@ export default function Home() {
     const spoken = toSpokenText(sourceText);
     setCaptionText(spoken);
     setCaptionProgress(0);
-    speechCancelledRef.current = false;
 
     // Drive the caption scroll off elapsed speaking time.
     const estMs = Math.max(4000, (spoken.length / 14) * 1000);
@@ -296,8 +308,7 @@ export default function Home() {
   };
 
   const reset = () => {
-    speechCancelledRef.current = true;
-    if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
+    stopVoice();
     if (captionTimerRef.current) clearInterval(captionTimerRef.current);
     setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
