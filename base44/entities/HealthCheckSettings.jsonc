@@ -1,0 +1,12 @@
+{
+  "name": "HealthCheckSettings",
+  "type": "object",
+  "properties": {
+    "report_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_email"
+  ]
+}

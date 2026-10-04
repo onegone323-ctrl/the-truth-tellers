@@ -1,0 +1,42 @@
+{
+  "name": "DailyHealthCheck",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "degraded"
+      ]
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "ok"
+        ]
+      }
+    },
+    "run_date": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "checks",
+    "run_date"
+  ]
+}

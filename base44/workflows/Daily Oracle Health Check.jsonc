@@ -1,0 +1,44 @@
+{
+  "description": "Every morning at 8am, tests the Oracle's text generation, his voice, and the data layer, saves the report, and emails the admins.",
+  "name": "Daily Oracle Health Check",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 8 * * *",
+      "one_time_date": null,
+      "timezone": "America/Los_Angeles",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "daily_oracle_health_check",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_health_check": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "dailyHealthCheck"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Run daily health check",
+            "description": "Text, voice and data checks, then report"
+          }
+        }
+      }
+    ]
+  }
+}
