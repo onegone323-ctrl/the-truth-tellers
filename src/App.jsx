@@ -11,6 +11,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Journal from '@/pages/Journal';
+import Memory from '@/pages/Memory';
 // The Timeline page pulls in heavy chart libraries — load it on demand so the
 // rest of the app renders without them.
 const Timeline = React.lazy(() => import('@/pages/Timeline'));
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/memory" element={<Memory />} />
           <Route path="/journal/:id" element={<JournalDetail />} />
           <Route path="/timeline" element={
             <React.Suspense fallback={

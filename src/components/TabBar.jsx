@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, BookOpen, TrendingUp, LayoutGrid, Link2 } from "lucide-react";
+import { Sparkles, BookOpen, TrendingUp, LayoutGrid, Link2, Brain } from "lucide-react";
 
 export const TABS = [
   { to: "/", label: "Consult", Icon: Sparkles },
   { to: "/journal", label: "Journal", Icon: BookOpen },
+  { to: "/memory", label: "Memory", Icon: Brain },
   { to: "/timeline", label: "Timeline", Icon: TrendingUp },
   { to: "/cards", label: "Cards", Icon: LayoutGrid },
   { to: "/connect", label: "Connect", Icon: Link2 },

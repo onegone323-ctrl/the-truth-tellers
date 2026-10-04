@@ -9,6 +9,7 @@ import RouteTransition from "@/components/RouteTransition";
 const NAV = [
   { to: "/", label: "Consult" },
   { to: "/journal", label: "Journal" },
+  { to: "/memory", label: "Memory" },
   { to: "/timeline", label: "Timeline" },
   { to: "/cards", label: "Cards" },
   { to: "/connect", label: "Connect" },
