@@ -27,9 +27,9 @@ export default async function(req) {
     }
 
     // Voice configuration comes from the app's secrets, with sane defaults:
-    // a warm, expressive female voice at natural speed.
+    // a warm, expressive MALE voice at natural speed.
     const model = secrets.get('OPENAI_TTS_MODEL') || 'gpt-4o-mini-tts';
-    const voice = secrets.get('OPENAI_TTS_VOICE') || 'nova';
+    const voice = secrets.get('OPENAI_TTS_VOICE') || 'ash';
     const speedRaw = parseFloat(secrets.get('OPENAI_TTS_SPEED') || '1.0');
     const speed = Number.isFinite(speedRaw) && speedRaw >= 0.25 && speedRaw <= 4 ? speedRaw : 1.0;
 

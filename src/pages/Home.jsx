@@ -202,7 +202,7 @@ export default function Home() {
 
       // Browsers require a fresh user gesture to start audio, so we don't
       // auto-speak here (the click that submitted the question is minutes
-      // stale by the time the reading arrives). The 'Hear Her Voice' button
+      // stale by the time the reading arrives). The 'Hear His Voice' button
       // below is tied directly to a click and always works.
       // Try anyway for browsers that allow it — harmless if blocked.
       speak(text);
@@ -496,7 +496,7 @@ export default function Home() {
       setTimeout(() => {
         if (speechCancelledRef.current) return;
         if (!synth.speaking && !synth.pending) {
-          console.warn("speechSynthesis appears blocked — autoplay policy. Ask user to click Hear Her Voice.");
+          console.warn("speechSynthesis appears blocked — autoplay policy. Ask user to click Hear His Voice.");
           if (captionTimerRef.current) clearInterval(captionTimerRef.current);
           if (keepAliveRef.current) clearInterval(keepAliveRef.current);
           setOrbState("idle");
@@ -573,7 +573,7 @@ export default function Home() {
             </h1>
             <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px 0 0" }}>
               {phase === "setup"
-                ? `${greeting} Speak your question, choose your deck and spread, and let her read the cards.`
+                ? `${greeting} Speak your question, choose your deck and spread, and let him read the cards.`
                 : "The cards are dealing. Watch them reveal — then ask her to read."}
             </p>
           </div>
@@ -730,10 +730,10 @@ export default function Home() {
             {readingError
               ? readingError
               : busy || voiceBusy
-              ? "She's looking into the cards…"
+              ? "He's looking into the cards…"
               : orbState === "speaking"
-              ? "Listen. The truth is in her voice."
-              : "Her words are yours to keep."}
+              ? "Listen. The truth is in his voice."
+              : "His words are yours to keep."}
           </p>
 
           {readingError && !busy && (
@@ -749,7 +749,7 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-3">
               <button onClick={() => speak(reading)}
                 className="neo-button flex items-center gap-2 px-6">
-                <Volume2 className="w-3.5 h-3.5" /> Hear Her Voice
+                <Volume2 className="w-3.5 h-3.5" /> Hear His Voice
               </button>
               <button onClick={reset}
                 className="neo-pill flex items-center gap-2 px-6 py-2.5">
