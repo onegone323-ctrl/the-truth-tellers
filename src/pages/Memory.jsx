@@ -5,6 +5,13 @@ import { ArrowLeft, Brain, Plus, Send } from "lucide-react";
 
 const AGENT_NAME = "oracle_memory";
 
+// The questions this parlor exists for — asked after time has passed.
+const SUGGESTIONS = [
+  "What lesson am I not seeing?",
+  "What am I not understanding?",
+  "What keeps happening to me?",
+];
+
 const asList = (res) => (Array.isArray(res) ? res : res?.items || res?.conversations || []);
 
 export default function Memory() {
@@ -64,8 +71,8 @@ export default function Memory() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (raw) => {
+    const text = (raw ?? input).trim();
     if (!text || sending || !active?.id) return;
     setSending(true);
     setInput("");
@@ -120,7 +127,7 @@ export default function Memory() {
           <div className="neo-eyebrow mb-5">Memory Parlor</div>
           <h1 className="neo-h1 m-0 text-[30px] tracking-[4px] sm:text-[44px] sm:tracking-[7px]">Ask Your Past</h1>
           <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "20px 0 0" }}>
-            The Oracle reads every reading he ever gave you — and connects it to what's happening in your cards now.
+            After time has passed, come back and ask him: what lesson am I not seeing? He reads every reading he ever gave you — and hands you the hard truth.
           </p>
         </div>
         <div className="hidden sm:flex justify-center">
@@ -142,9 +149,16 @@ export default function Memory() {
           <div className="flex-1 space-y-3 overflow-y-auto pr-1" style={{ minHeight: 320, maxHeight: 560 }}>
             {loading && <p className="neo-note">Opening your records…</p>}
             {!loading && messages.length === 0 && (
-              <p className="neo-note">
-                Ask him anything about your reading history — "What keeps coming back for me?" or "Did your advice about my job play out?"
-              </p>
+              <div>
+                <p className="neo-note" style={{ color: "#b5ad99" }}>
+                  This is where you come back after time has passed — when the lesson still hasn't landed. Ask him. He remembers everything he told you, and he will hand you the hard truth.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {SUGGESTIONS.map((s) => (
+                    <button key={s} onClick={() => send(s)} className="neo-pill">{s}</button>
+                  ))}
+                </div>
+              </div>
             )}
             {messages.map((m, i) => (
               <MessageBubble key={i} message={m} />
