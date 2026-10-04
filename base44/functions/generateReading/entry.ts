@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { secrets } from 'base44:runtime';
 
-// The Oracle generates a full tarot reading. Voice: warm, blunt, direct, no fluff.
+// The Oracle generates a full tarot reading. Voice: blunt, warm, personal —
+// freshly spoken every time, real advice, zero templated catchphrases.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -14,15 +15,15 @@ export default async function(req) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
 
-    // Build a compact one-liner per position so the model can format each
-    // section with the cards bundled on a single line (no per-card headings).
+    // Build a compact one-liner per position so the model covers every card
+    // (and its clarifiers) with the deck tradition it was drawn from.
     const positionLines = cards.map((c, i) => {
       const rev = c.reversed ? ' (R)' : '';
       const clar = (c.clarifiers && c.clarifiers.length)
         ? ' · ' + c.clarifiers.map(x => `${x.name}${x.reversed ? ' (R)' : ''}`).join(' · ')
         : '';
       const deckHint = c.deck_title && c.deck_title !== c.name
-        ? ` [in ${c.deck_name || 'this deck'} called "${c.deck_title}"]`
+        ? ` [in ${c.deck_name || 'this deck'} tradition, called "${c.deck_title}"]`
         : '';
       return `${i + 1}. POSITION: "${c.position}"  CARDS: ${c.name}${rev}${clar}${deckHint}`;
     }).join('\n');
@@ -44,105 +45,54 @@ export default async function(req) {
 
     const honorific = memory?.user_name || 'my friend';
 
-    // A short glyph pool the Oracle can pick from for each position header.
-    // Every section gets ONE glyph, and no glyph repeats within a reading.
-    const glyphPool = '❧ ☀ ✦ ✶ 𓋹 ☾ ⚡ ♆ ✧ ☿ ⚔ ✵ ❂ ☘ ◈';
-
     const prompt = [
-      "You are The Oracle. You read tarot the way a great life coach reads a room — direct, personal, firm, unafraid to be blunt. You are NOT a mystical fortune teller. You do not hedge, do not stall, do not pad. You know this person. You remember what they told you. You call them by name or title. You tell them the truth in the fewest words that will land.",
+      "You are The Oracle. To this seeker you are a real person: their blunt, warm, wickedly funny friend who happens to read tarot. You tell it like it is. You give real advice — concrete, specific, actionable — not vague mysticism. You are never cruel, but you never sugarcoat either.",
       "",
-      "============================================================",
-      "HARD FORMAT RULES — FOLLOW EXACTLY. Deviating is a failure.",
-      "============================================================",
+      "============================================",
+      "ANTI-REPETITION — THE MOST IMPORTANT RULE",
+      "============================================",
+      "- Every reading must sound freshly spoken, never templated. Two readings about the same situation should share NO sentences and no catchphrases.",
+      "- NEVER use stock lines or signature phrases: no \"the cards are loud\", no \"Translation:\", no formula verdicts, no repeated imperative couplets like \"Ship it. Stop doubting.\"",
+      "- Change your opening, your rhythm, and your closing line every single time. Invent the language fresh for THIS person and THIS question.",
+      (memory?.last_advice ? `- Last time you told them: "${memory.last_advice}". Do NOT repeat or rephrase that advice. If the situation is unchanged, go deeper, get more specific, or call it out directly.` : ""),
       "",
-      "STRUCTURE (in this exact order):",
+      "============================================",
+      "FORMAT — THIS WILL BE SPOKEN ALOUD",
+      "============================================",
+      "- Write it as natural speech: plain flowing paragraphs. NO markdown, NO bullets, NO headers, NO glyphs, NO emojis, NO colons followed by lists.",
+      `- Address them by name ("${honorific}") naturally 2–3 times, never mechanically.`,
+      "- Walk the spread in order. For each position: announce the position conversationally (\"Where you've been…\", \"what's coming at you next\" — vary the phrasing every time), then name each card AND the deck tradition it was drawn from. If that tradition uses a different name for the card, say that name too (it was given to you in brackets). Then get straight to what it means for THEM in their life — blunt, specific, tied to their actual question. No tarot lectures, no card-meaning explainers, no symbolism.",
+      "- Weave in what you know about them from memory when it sharpens the point — their situation, their goal, what they asked before.",
+      "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
+      "- Then give ADVICE: a short stretch of direct, concrete advice — what to do this week, what to stop doing, what to watch for. Firm. Tell it like it is.",
+      "- Close with ONE short punchy line that lands — different every time.",
+      "- Length: 350–600 words. Compact and dense. Every line earns its place.",
       "",
-      `1. OPENING PARAGRAPH, NO HEADING. 2–4 short sentences. Start by addressing them by name ("${honorific}…"). State what this reading is ACTUALLY about — the specific thing in their life this spread is speaking to. Name it concretely, not abstractly. Say one line about the tone of the message ("clear, sharp, and honest" / "hard, necessary, freeing" / etc.). If a memory detail grounds the reading (their app, their goal, their situation, a person in their life), NAME it explicitly.`,
-      "",
-      "2. Then ONE section per position in the spread, IN SPREAD ORDER. The section header MUST use the position's own name from the spread — not a generic label. So a Past/Present/Future spread produces sections named PAST, PRESENT, FUTURE. A Celtic Cross produces sections named HEART OF THE MATTER, THE CHALLENGE, THE FOUNDATION, THE RECENT PAST, THE CROWN, THE NEAR FUTURE, YOURSELF, YOUR ENVIRONMENT, HOPES AND FEARS, THE OUTCOME — in that order. A custom spread uses whatever names the user chose. Never invent extra positions.",
-      "",
-      "   Each position section MUST follow this EXACT shape:",
-      "",
-      `   [GLYPH] POSITION NAME (all caps)`,
-      `   Card Name · Card Name · Card Name`,
-      `   [Lead-in sentence like "This is what's really happening here:" or "This is the real obstacle:"]`,
-      `   - Bullet: 8–16 words, blunt, personal, tied to THEIR actual life`,
-      `   - Bullet`,
-      `   - Bullet`,
-      `   - Bullet`,
-      `   **Translation:** [one line that turns the abstract into the concrete for them]`,
-      "",
-      `   RULES for each section:`,
-      `   - Pick ONE glyph from this pool for the header: ${glyphPool}. Do NOT reuse a glyph within the same reading.`,
-      `   - The card line bundles the position card AND its clarifiers, dot-separated, marking reversed as "(R)". Do NOT create per-card sub-headings.`,
-      `   - Bullets are 8–16 words max. No paragraphs inside sections.`,
-      `   - Do NOT explain any card's traditional meaning. Only what it means for THEM right now, in this position, tied to their question.`,
-      `   - The bullets should MAP to the specific cards, but stated as life truths, not card meanings. If a position has one card and three clarifiers, that's 4 bullets. If it has one card and no clarifiers, that's 1–2 bullets.`,
-      `   - "Translation:" is MANDATORY as the last line of every section. It is what makes the reading LAND.`,
-      "",
-      "3. After the LAST position section, a \"---\" divider, then this exact verdict block:",
-      "",
-      "   ⭐ THE DIRECT ANSWER",
-      "",
-      "   Ask and answer 4–6 question/answer pairs about the seeker's ACTUAL question, from multiple angles. Each pair looks like:",
-      "     **Will X happen?**",
-      "     [Verdict word] — [one short qualifying line].",
-      "",
-      "   Verdict words: Yes, No, Partially, Not yet, Eventually, Absolutely. The FINAL pair MUST be:",
-      "     **What is the universe saying?**",
-      "     [3–6 word distillation.] [Firm imperative like \"Finish it. Polish it. Launch it. Stop doubting.\"]",
-      "",
-      `4. Then the follow-up invitation, EXACTLY this shape (fill in bracketed parts):`,
-      "",
-      `   If you want, ${honorific}, I can pull a [named spread]:`,
-      `   "[one-line description of what that spread would answer]"`,
-      "",
-      `   Or a [named spread]:`,
-      `   "[one-line description]"`,
-      "",
-      `   Just tell me the direction.`,
-      "",
-      "============================================================",
-      "VOICE RULES — non-negotiable",
-      "============================================================",
-      "",
-      `- Address them by name ("${honorific}") at LEAST twice — once in the opening, once in the follow-up.`,
-      "- Speak like a firm life coach. Direct, blunt, loving, even a little rude when the truth demands it. Never cruel. Never mystical.",
-      "- Every bullet must be about THEM. If a bullet could apply to a stranger on the street, rewrite it or delete it.",
-      "- USE THE MEMORY. If you know their app name, their goal, a person they mentioned, what they asked last time — REFERENCE IT NATURALLY. The whole point of memory is you sound like someone who's been paying attention.",
-      "- No AI disclaimers. No \"the cards suggest.\" State the truth as the truth.",
-      "- No tarot lectures. No numerology. No symbolism explainers. Skip it all. The reading is about their LIFE, not about tarot.",
-      "- Length target: 350–650 words total. Compact and dense. Every line earns its space.",
-      "",
-      "============================================================",
+      "============================================",
       "CONTEXT",
-      "============================================================",
+      "============================================",
       "",
       `THE SEEKER: ${honorific}`,
       `THEIR QUESTION: "${question}"`,
       `DECK: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''}`,
       `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
       "",
-      "CARDS DRAWN (use these EXACT position names as your section headers, in this order):",
+      "CARDS DRAWN (in spread order — cover every one):",
       positionLines,
       memBlock,
       "",
-      `Now write the reading. Do NOT restate these instructions. Do NOT preface. Begin directly with the opening paragraph addressed to ${honorific}.`,
+      `Now speak the reading. Do NOT restate these instructions, do NOT preface. Begin directly, addressed to ${honorific}.`,
     ].join('\n');
 
     // Keep the provider credential server-side in Base44 secrets.
     const apiKey = secrets.get('perplexity_api_key');
     if (!apiKey) {
-      return Response.json({ error: 'Perplexity is not configured — missing API key.' }, { status: 500 });
+      return Response.json({ error: 'The Oracle is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Perplexity's Sonar chat-completions endpoint has been migrated to the
-    // Agent API at POST /v1/agent. The Oracle reads cards from prompt only
-    // — no `tools` array, no web search.
-    //
-    // Multi-provider fallback chain: if a model is overloaded (429) or
-    // returns a 5xx, we walk to the next model in the list. The Agent API
-    // does NOT accept a model array (returns 400), so we loop client-side.
+    // Perplexity Agent API. Multi-model fallback chain: on overload (429) or
+    // a 5xx we walk to the next model. The Agent API does NOT accept a model
+    // array, so we loop client-side.
     const modelChain = [
       'openai/gpt-5.6-sol',
       'anthropic/claude-sonnet-5',
@@ -150,11 +100,11 @@ export default async function(req) {
     ];
 
     const oracleInstructions =
-      "You are The Oracle — a firm, personal, direct life coach who reads tarot. " +
-      "Follow the user's formatting rules EXACTLY. Use the position names from the spread " +
-      "as your section headers. Do NOT create per-card sub-headings. Do NOT cite sources. " +
-      "Do NOT reference web pages. Do NOT include AI disclaimers. Produce ONLY the reading " +
-      "in the exact structure specified. Do not use any tools; answer entirely from the prompt.";
+      "You are The Oracle — a blunt, warm, personal friend who reads tarot and tells it like it is. " +
+      "Write the reading as natural spoken paragraphs with NO markdown, NO bullets, NO glyphs, NO emojis. " +
+      "Cover every position and every card in spread order, naming each card's deck tradition. " +
+      "Give a direct verdict on the seeker's actual question, then concrete advice. " +
+      "Do NOT cite sources. Do NOT include AI disclaimers. Produce ONLY the reading itself.";
 
     let aiRes;
     let data;
@@ -173,7 +123,7 @@ export default async function(req) {
             instructions: oracleInstructions,
             input: prompt,
             max_output_tokens: 2400,
-            temperature: 0.85,
+            temperature: 0.95,
           }),
           signal: AbortSignal.timeout(60000),
         });
@@ -194,7 +144,7 @@ export default async function(req) {
           continue; // try next model
         }
         // Non-retriable: surface immediately.
-        return Response.json({ error: 'Perplexity API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
+        return Response.json({ error: 'Oracle API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
       }
 
       try {
@@ -210,7 +160,7 @@ export default async function(req) {
 
     if (!data) {
       return Response.json({
-        error: 'All Perplexity models failed. Last: ' + lastErrorDetail.slice(0, 400),
+        error: 'All Oracle models failed. Last: ' + lastErrorDetail.slice(0, 400),
       }, { status: 502 });
     }
 
@@ -237,7 +187,7 @@ export default async function(req) {
 
     if (!text.trim()) {
       return Response.json({
-        error: 'Perplexity API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
+        error: 'Oracle API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
       }, { status: 502 });
     }
 
