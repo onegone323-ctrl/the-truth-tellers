@@ -125,6 +125,14 @@ export default function Home() {
           deck_title: deckCardTitle((c.cardDeck || activeDeck).id, c.name),
           clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
         })),
+        profile: profile ? {
+          full_name: profile.full_name,
+          occupation: profile.occupation,
+          goals: profile.goals,
+          trigger: profile.trigger,
+          makes_happy: profile.makes_happy,
+          hard_memory: profile.hard_memory,
+        } : null,
         memory: memory ? {
           user_name: memory.user_name || user?.full_name,
           summary: memory.summary,

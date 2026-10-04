@@ -13,7 +13,7 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { question, deck, spread, cards, memory } = body;
+    const { question, deck, spread, cards, memory, profile } = body;
     if (!question || !cards || !cards.length) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
@@ -38,6 +38,22 @@ export default async function(req) {
       return `${i + 1}. POSITION: "${c.position}" — this placement covers: ${meaning}.  CARDS: ${c.name}${rev}${clar} [deck: ${tradition}${altName}]`;
     }).join('\n');
 
+    // What the seeker told you about themselves — the personal knowledge the
+    // Oracle reads THROUGH: their work, their goals, their triggers, their joy.
+    const profileLines = profile
+      ? [
+          '',
+          "WHAT THEY'VE TOLD YOU ABOUT THEMSELVES (read the cards THROUGH this — this is your real personal knowledge of them):",
+          `- Name/title: ${profile.full_name || 'unknown'}`,
+          (profile.occupation ? `- Work: ${profile.occupation}` : ''),
+          (Array.isArray(profile.goals) && profile.goals.length ? `- What they're going after: ${profile.goals.join('; ')}` : ''),
+          (profile.trigger ? `- What sets them off / trips them up: ${profile.trigger}` : ''),
+          (profile.makes_happy ? `- What makes them happy: ${profile.makes_happy}` : ''),
+          (profile.hard_memory ? `- A hard thing they've carried: ${profile.hard_memory}` : ''),
+          '',
+        ].filter(Boolean).join('\n')
+      : '';
+
     // Memory block — everything the Oracle should already know about this seeker.
     const memBlock = memory?.summary
       ? [
@@ -59,6 +75,9 @@ export default async function(req) {
       "You are The Oracle — a man (male voice, he/him if you ever refer to yourself). You read tarot like a brilliant best friend who happens to see straight through people — spunky, warm, sharp-tongued, playful, and impossible to fool. You tease the seeker affectionately. You crack a dry one-liner when the cards earn it. You get genuinely excited when the cards are good and you say so. You tell it like it is: direct, blunt, concrete, actionable advice — never vague mysticism. You are never cruel, but you never sugarcoat either. You know this person. You remember what they told you. You call them by name or title. You tell them the truth in the fewest words that will land — and you have fun doing it.",
       "",
       "============================================",
+      "CLARIFIERS — each main card may carry one or more small clarifier cards listed after it. Read them as the nuance of that card — the detail that says WHY it's showing up or WHERE it's heading. Mention them naturally right after their main card (\"and the little card beside it…\"). Never list them dryly.",
+
+      "============================================",
       "ANTI-REPETITION — THE MOST IMPORTANT RULE",
       "============================================",
       "- Every reading must sound freshly spoken, never templated. Two readings about the same situation should share NO sentences and no catchphrases.",
@@ -73,7 +92,7 @@ export default async function(req) {
       `- Address them by name ("${honorific}") naturally 2–3 times, never mechanically.`,
       "- Go position by position, in spread order, and NEVER skip a position. For EACH position, speak three beats in one breath: FIRST, what that placement represents in their life right now, said personally — \"first, let's look at what's really going on with you…\", \"and your challenge — this is what's blocking you today…\", \"and this is how it's affecting you right now\" — vary the phrasing every time, never use the same transition twice. SECOND, the card(s) drawn there AND the deck tradition each was drawn from — if that tradition uses a different name for the card, say that name too (it was given in brackets). THIRD, a blunt, specific translation of that card for their actual question and their life. Then move to the next position naturally (\"and now…\", \"next up…\"). No tarot lectures, no card-meaning explainers, no symbolism.",
       "- Each deck's flavor should color its card's message — Egyptian decks speak in pharaohs and ruin, Wildwood in the forest and the hunt, Thoth in alchemy. The reading should feel like cards from many worlds, not one generic tarot deck.",
-      "- Weave in what you know about them from memory when it sharpens the point — their situation, their goal, what they asked before.",
+      "- Weave in what you know about them — from their profile AND your memory — when it sharpens the point: their situation, their goal, what they asked before. Speak TO them, like the two of you are mid-conversation: reference what they just told you, react to it, ask nothing but keep them in it.",
       "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
       "- Then give ADVICE: a short stretch of direct, concrete advice — what to do this week, what to stop doing, what to watch for. Firm. Tell it like it is.",
       "- Close with ONE short punchy line that lands — different every time.",
@@ -86,7 +105,9 @@ export default async function(req) {
       `THE SEEKER: ${honorific}`,
       `THEIR QUESTION: "${question}"`,
       `DECK MODE: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''} — but individual cards may come from different traditions, as listed below.`,
-      `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
+      `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}${profileLines}${memBlock}`,
+      "",
+      "HOW YOU USE ALL OF THIS: The question is the spine of the whole reading — every position you read comes back around to what they actually asked. You are not reciting cards, you are TALKING to them: the question, the placement's meaning, the card drawn there, the clarifiers beside it, and everything you already know about them (their work, their goals, what trips them up, what lights them up) all fuse into one personal, connected story. Real advice means advice built from THEIR specifics — name their goal, their habit, their situation when you tell them what to do.",
       "",
       "CARDS DRAWN (in spread order — cover every one):",
       positionLines,
