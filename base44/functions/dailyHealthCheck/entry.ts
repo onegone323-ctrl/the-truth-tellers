@@ -11,6 +11,21 @@ import { secrets } from 'base44:runtime';
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Admin-only: this function spends paid API credits (chat + TTS) and
+    // emails the report, so it must never run for an anonymous or
+    // non-admin caller. The scheduled workflow invocation runs with the
+    // app owner's identity; direct HTTP calls must present an admin session.
+    let user = null;
+    try {
+      user = await base44.auth.me();
+    } catch (_) {
+      user = null; // no session at all — treated as anonymous below
+    }
+    if (!user || user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const checks = [];
 
     // ---- 1. Oracle text generation ----
