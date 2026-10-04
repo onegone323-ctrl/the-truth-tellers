@@ -10,17 +10,25 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
-import Journal from '@/pages/Journal';
-import Memory from '@/pages/Memory';
-// The Timeline page pulls in heavy chart libraries — load it on demand so the
-// rest of the app renders without them.
+
+// Every page below the home route loads on demand — smaller initial bundle.
+const Journal = React.lazy(() => import('@/pages/Journal'));
+const Memory = React.lazy(() => import('@/pages/Memory'));
 const Timeline = React.lazy(() => import('@/pages/Timeline'));
-import Cards from '@/pages/Cards';
-import CardDetail from '@/pages/CardDetail';
-import JournalDetail from '@/pages/JournalDetail';
-import PullRequests from '@/pages/PullRequests';
-import Connect from '@/pages/Connect';
-import Settings from '@/pages/Settings';
+const Cards = React.lazy(() => import('@/pages/Cards'));
+const CardDetail = React.lazy(() => import('@/pages/CardDetail'));
+const JournalDetail = React.lazy(() => import('@/pages/JournalDetail'));
+const PullRequests = React.lazy(() => import('@/pages/PullRequests'));
+const Connect = React.lazy(() => import('@/pages/Connect'));
+const Settings = React.lazy(() => import('@/pages/Settings'));
+
+// Gold spinner shown while a lazy page chunk loads.
+const RouteSplash = () => (
+  <div className="flex justify-center pt-16">
+    <div className="w-8 h-8 border-2 rounded-full animate-spin"
+      style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
+  </div>
+);
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -60,21 +68,16 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/oauth/consent" element={<OAuthConsent />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route element={<Layout />}>
+        <Route element={
+          <React.Suspense fallback={<RouteSplash />}>
+            <Layout />
+          </React.Suspense>
+        }>
           <Route path="/" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/memory" element={<Memory />} />
           <Route path="/journal/:id" element={<JournalDetail />} />
-          <Route path="/timeline" element={
-            <React.Suspense fallback={
-              <div className="flex justify-center pt-16">
-                <div className="w-8 h-8 border-2 rounded-full animate-spin"
-                  style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
-              </div>
-            }>
-              <Timeline />
-            </React.Suspense>
-          } />
+          <Route path="/timeline" element={<Timeline />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/cards/:name" element={<CardDetail />} />
           <Route path="/pulls" element={<PullRequests />} />

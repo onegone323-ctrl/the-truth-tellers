@@ -72,7 +72,9 @@ export default function Memory() {
   }, [messages.length]);
 
   const send = async (raw) => {
-    const text = (raw ?? input).trim();
+    // raw is a preset question string; anything else (e.g. a click event)
+    // means "send what's typed".
+    const text = (typeof raw === "string" ? raw : input).trim();
     if (!text || sending || !active?.id) return;
     setSending(true);
     setInput("");
