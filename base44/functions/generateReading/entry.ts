@@ -132,7 +132,9 @@ export default async function(req) {
               { role: 'system', content: oracleInstructions },
               { role: 'user', content: prompt },
             ],
-            max_completion_tokens: 2400,
+            // Generous ceiling so the reading is never cut off mid-thought
+            // (reasoning models spend part of this budget thinking first).
+            max_completion_tokens: 6000,
           }),
           signal: AbortSignal.timeout(60000),
         });

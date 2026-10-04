@@ -10,6 +10,7 @@ import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
+import { createOraclePlayer } from "@/lib/oracleVoice";
 import CaptionScroll from "@/components/CaptionScroll";
 import AmbientSound from "@/components/AmbientSound";
 
@@ -36,36 +37,16 @@ export default function Home() {
   const [captionText, setCaptionText] = useState("");
   const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
-  const audioRef = useRef(null);
-  const captionTimerRef = useRef(null);
   const busyRef = useRef(false);
-  // Identifies the active speak() run. Any playback chain that finds a newer
-  // run id aborts itself.
-  const speakRunRef = useRef(0);
-
-  // The Oracle's voice plays through ONE audio element for the whole page, so
-  // two voices can never sound at once — a new reading just re-points it.
-  const getVoice = () => {
-    if (!audioRef.current) audioRef.current = new Audio();
-    return audioRef.current;
-  };
-  const stopVoice = () => {
-    speakRunRef.current += 1; // invalidates every running playback chain
-    const el = audioRef.current;
-    if (el) {
-      el.onended = null;
-      el.onerror = null;
-      try { el.pause(); } catch { /* ignore */ }
-    }
-  };
+  // ONE audio player for the whole page, so two voices can never sound at once.
+  const playerRef = useRef(null);
+  if (!playerRef.current) playerRef.current = createOraclePlayer();
+  const player = playerRef.current;
 
   // Stop any in-flight audio on unmount so the Oracle never keeps talking
   // after the seeker leaves the page.
   useEffect(() => {
-    return () => {
-      stopVoice();
-      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-    };
+    return () => { player.stop(); };
   }, []);
 
   // Load user + memory
@@ -126,6 +107,9 @@ export default function Home() {
     // readings means two voices.
     if (busy || busyRef.current) return;
     busyRef.current = true;
+    // This tap is the one moment the browser lets us unlock audio, so the
+    // voice can start by itself when the reading arrives.
+    player.unlock();
     setPhase("reading");
     setOrbState("thinking");
     setBusy(true);
@@ -156,7 +140,9 @@ export default function Home() {
         throw new Error("The reading service returned no reading.");
       }
       setReading(text);
-      setOrbState("idle");
+      // His voice starts right now — saving to the journal happens in the
+      // background below and never holds it up.
+      speak(text);
 
       try {
         const cardData = cards.map((c) => ({
@@ -194,13 +180,6 @@ export default function Home() {
       } catch (persistenceError) {
         console.error("Reading succeeded but could not be saved.", persistenceError);
       }
-
-      // Browsers require a fresh user gesture to start audio, so we don't
-      // auto-speak here (the click that submitted the question is minutes
-      // stale by the time the reading arrives). The 'Hear His Voice' button
-      // below is tied directly to a click and always works.
-      // Try anyway for browsers that allow it — harmless if blocked.
-      speak(text);
     } catch (e) {
       console.error(e);
       // Surface the actual server-side error so we can see what's failing
@@ -226,90 +205,32 @@ export default function Home() {
   };
 
   // ---- Oracle voice: OpenAI TTS only ----
-  // The reading is synthesized server-side in chunks and played back-to-back
-  // through the single shared audio element. If the voice can't play, the
-  // "Hear His Voice" button is a fresh tap that retries.
-  const playAudioChunks = (chunks, runId) =>
-    new Promise((allDone) => {
-      const el = getVoice();
-      let i = 0;
-      const playNext = () => {
-        if (speakRunRef.current !== runId) { allDone(false); return; }
-        if (i >= chunks.length) { allDone(true); return; }
-        const isFirst = i === 0;
-        // Each chunk may move the chain forward exactly once. Without this,
-        // a chunk that both errors AND rejects play() would advance twice and
-        // fork the chain into two overlapping voices.
-        let moved = false;
-        const advance = () => {
-          if (moved) return;
-          moved = true;
-          playNext();
-        };
-        el.onended = advance;
-        el.onerror = advance;
-        el.src = "data:audio/mpeg;base64," + chunks[i++];
-        el.play().catch(() => {
-          if (moved) return;
-          // The browser refused to start the very first chunk (autoplay
-          // policy) — stop cleanly so the tap-to-hear button can retry.
-          if (isFirst && speakRunRef.current === runId) { moved = true; allDone(false); return; }
-          advance();
-        });
-      };
-      playNext();
-    });
-
+  // The whole reading is spoken piece by piece: the first piece arrives in a
+  // couple of seconds and the rest load while he talks. The words on screen
+  // begin at the exact moment the first sound plays, and track his voice.
+  // If the browser blocks the sound, "Hear His Voice" is a fresh tap.
   const speak = async (sourceText) => {
     if (!sourceText) return;
-    // Silence whatever is playing and claim a fresh run id: any older chain
-    // aborts the moment it sees it.
-    stopVoice();
-    const myRun = speakRunRef.current;
-    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-
-    setVoiceBusy(true);
-    setOrbState("speaking");
     const spoken = toSpokenText(sourceText);
-    setCaptionText(spoken);
+    setVoiceBusy(true);
+    setOrbState("thinking");
+    setCaptionText("");
     setCaptionProgress(0);
 
-    // Drive the caption scroll off elapsed speaking time.
-    const estMs = Math.max(4000, (spoken.length / 14) * 1000);
-    const start = Date.now();
-    captionTimerRef.current = setInterval(() => {
-      setCaptionProgress(Math.min(1, (Date.now() - start) / estMs));
-    }, 100);
+    const result = await player.speak(spoken, {
+      onStart: () => { setCaptionText(spoken); setOrbState("speaking"); },
+      onProgress: setCaptionProgress,
+    });
 
-    const finish = () => {
-      if (captionTimerRef.current) clearInterval(captionTimerRef.current);
-      setCaptionProgress(1);
-      setOrbState("idle");
-      setVoiceBusy(false);
-    };
-
-    // 1) Try OpenAI's natural voice.
-    let chunks = null;
-    try {
-      const res = await base44.functions.invoke("speakReading", { text: spoken });
-      if (Array.isArray(res?.data?.chunks) && res.data.chunks.length) chunks = res.data.chunks;
-    } catch (e) {
-      console.warn("The Oracle's voice service is unavailable.", e?.message || e);
-    }
-
-    // A newer speak() took over — it owns the cleanup and the voice.
-    if (speakRunRef.current !== myRun) return;
-
-    if (chunks) {
-      await playAudioChunks(chunks, myRun);
-      if (speakRunRef.current !== myRun) return;
-    }
-    finish();
+    // A newer speak() or a reset took over — it owns the cleanup.
+    if (result === "aborted") return;
+    setCaptionProgress(1);
+    setOrbState("idle");
+    setVoiceBusy(false);
   };
 
   const reset = () => {
-    stopVoice();
-    if (captionTimerRef.current) clearInterval(captionTimerRef.current);
+    player.stop();
     setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
