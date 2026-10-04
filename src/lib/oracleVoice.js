@@ -46,9 +46,12 @@ function silentWav() {
   return "data:audio/wav;base64," + btoa(bin);
 }
 
-// Asks the voice service for one piece; retries once. Never throws.
+// Asks the voice service for one piece; keeps retrying with a short pause
+// between attempts so a hiccup never swallows part of the reading. Never throws.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function fetchClips(text) {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
       const res = await base44.functions.invoke("speakReading", { text });
       const clips = res?.data?.chunks;
@@ -56,6 +59,7 @@ async function fetchClips(text) {
     } catch (e) {
       console.warn("The Oracle's voice service hiccuped.", e?.message || e);
     }
+    if (attempt < 3) await sleep(1200 * (attempt + 1));
   }
   return null;
 }
@@ -138,10 +142,12 @@ export function createOraclePlayer() {
 
       let spokenChars = 0;
       let started = false;
+      const missed = []; // pieces the voice service couldn't produce (yet)
       for (let i = 0; i < parts.length; i++) {
         prefetch(i); prefetch(i + 1); prefetch(i + 2);
         const clips = await pending[i];
         if (run !== myRun) return "aborted";
+        if (!clips) { missed.push(i); continue; }
         if (clips) {
           for (let k = 0; k < clips.length; k++) {
             const result = await playClip(
@@ -151,10 +157,28 @@ export function createOraclePlayer() {
             );
             if (run !== myRun) return "aborted";
             if (result === "blocked") return "blocked";
+            if (result === "error") { missed.push(i); break; } // re-fetch this piece later
           }
         }
         spokenChars += parts[i].length;
         onProgress(spokenChars / total);
+      }
+
+      // Anything the voice service dropped gets one more full pass — the
+      // Oracle never leaves a piece of the reading unsaid.
+      for (const i of missed) {
+        const clips = await fetchClips(parts[i]);
+        if (run !== myRun) return "aborted";
+        if (!clips) continue;
+        for (let k = 0; k < clips.length; k++) {
+          const result = await playClip(
+            "data:audio/mpeg;base64," + clips[k],
+            () => { if (!started) { started = true; onStart(); } },
+            (f) => { if (run === myRun) onProgress((spokenChars + parts[i].length * ((k + f) / clips.length)) / total); },
+          );
+          if (run !== myRun) return "aborted";
+          if (result === "blocked") return "blocked";
+        }
       }
       return started ? "done" : "failed";
     },
