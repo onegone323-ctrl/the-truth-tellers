@@ -76,7 +76,9 @@ export default function Memory() {
     if (!text || sending || !active?.id) return;
     setSending(true);
     setInput("");
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    // Optimistic: the bubble appears instantly, marked pending until the
+    // agent's reply starts arriving.
+    setMessages((m) => [...m, { role: "user", content: text, pending: true }]);
     try {
       const conv = await base44.agents.getConversation(active.id);
       await base44.agents.addMessage(conv, { role: "user", content: text });
@@ -85,6 +87,9 @@ export default function Memory() {
       console.error(e);
       setMessages((m) => [...m, { role: "assistant", content: "The connection to my records flickered — try that again." }]);
     }
+    // The subscription may not have echoed the sent message yet — settle the
+    // pending flag here so the indicator never lingers after the reply lands.
+    setMessages((m) => m.map((x) => (x.pending ? { ...x, pending: false } : x)));
     setSending(false);
   };
 

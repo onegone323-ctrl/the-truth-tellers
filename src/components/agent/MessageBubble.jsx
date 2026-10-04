@@ -30,6 +30,14 @@ export default function MessageBubble({ message }) {
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
           ))}
+        {isUser && message.pending && (
+          <div className="flex items-center justify-end gap-1 mt-1.5" aria-label="Sending">
+            {[0, 1, 2].map((d) => (
+              <span key={d} className="w-1 h-1 rounded-full animate-pulse"
+                style={{ background: "rgba(0,229,255,.8)", animationDelay: `${d * 180}ms` }} />
+            ))}
+          </div>
+        )}
         {(message.tool_calls || []).map((tc, i) => {
           const parsed = (() => {
             try {
