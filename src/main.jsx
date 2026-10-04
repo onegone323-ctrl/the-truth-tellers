@@ -8,7 +8,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <ThemeProvider
     attribute="class"
     defaultTheme="dark"
-    enableSystem={false}
+    enableSystem={true}
     storageKey="truth-teller-theme"
     disableTransitionOnChange
   >

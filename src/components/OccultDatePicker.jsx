@@ -5,6 +5,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -85,36 +92,36 @@ export default function OccultDatePicker({
           </DrawerHeader>
 
           <div className="grid grid-cols-3 gap-2 px-4 pb-4">
-            <select
-              className="neo-field px-2 py-2"
-              value={m}
-              aria-label="Month"
-              onChange={(e) => setM(Number(e.target.value))}
-            >
-              {MONTHS.map((name, i) => (
-                <option key={name} value={i}>{name}</option>
-              ))}
-            </select>
-            <select
-              className="neo-field px-2 py-2"
-              value={day}
-              aria-label="Day"
-              onChange={(e) => setD(Number(e.target.value))}
-            >
-              {Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-            <select
-              className="neo-field px-2 py-2"
-              value={y}
-              aria-label="Year"
-              onChange={(e) => setY(Number(e.target.value))}
-            >
-              {years.map((yr) => (
-                <option key={yr} value={yr}>{yr}</option>
-              ))}
-            </select>
+            <Select value={String(m)} onValueChange={(v) => setM(Number(v))}>
+              <SelectTrigger aria-label="Month" className="neo-field min-h-[44px] px-2 py-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((name, i) => (
+                  <SelectItem key={name} value={String(i)}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(day)} onValueChange={(v) => setD(Number(v))}>
+              <SelectTrigger aria-label="Day" className="neo-field min-h-[44px] px-2 py-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(y)} onValueChange={(v) => setY(Number(v))}>
+              <SelectTrigger aria-label="Year" className="neo-field min-h-[44px] px-2 py-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((yr) => (
+                  <SelectItem key={yr} value={String(yr)}>{yr}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
