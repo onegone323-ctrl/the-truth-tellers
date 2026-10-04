@@ -131,13 +131,14 @@ export default function Connect() {
           <input
             value={serverUrl}
             readOnly
+            aria-label="Your Oracle's MCP server URL"
             onFocus={(e) => e.target.select()}
             className="flex-1 bg-black/60 rounded-lg px-3 py-2.5 text-sm font-mono outline-none"
             style={{ border: "1px solid rgba(212,175,55,0.3)" }}
           />
           <button
             onClick={copyUrl}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full gold-pill text-gold-leaf text-xs uppercase tracking-widest shrink-0"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Copied" : "Copy"}
@@ -152,7 +153,7 @@ export default function Connect() {
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
-              className={`px-4 py-1.5 rounded-full text-[11px] uppercase tracking-widest transition-all ${
+              className={`px-4 py-2.5 min-h-[44px] rounded-full text-[11px] uppercase tracking-widest transition-all ${
                 active === c.id ? "gold-pill-active text-gold-leaf" : "gold-pill text-muted-foreground"
               }`}
             >
