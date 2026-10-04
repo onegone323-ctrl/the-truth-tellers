@@ -5,13 +5,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import ResponsiveSelect from "@/components/ResponsiveSelect";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -92,36 +86,27 @@ export default function OccultDatePicker({
           </DrawerHeader>
 
           <div className="grid grid-cols-3 gap-2 px-4 pb-4">
-            <Select value={String(m)} onValueChange={(v) => setM(Number(v))}>
-              <SelectTrigger aria-label="Month" className="neo-field min-h-[44px] px-2 py-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((name, i) => (
-                  <SelectItem key={name} value={String(i)}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={String(day)} onValueChange={(v) => setD(Number(v))}>
-              <SelectTrigger aria-label="Day" className="neo-field min-h-[44px] px-2 py-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={String(y)} onValueChange={(v) => setY(Number(v))}>
-              <SelectTrigger aria-label="Year" className="neo-field min-h-[44px] px-2 py-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((yr) => (
-                  <SelectItem key={yr} value={String(yr)}>{yr}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ResponsiveSelect
+              value={String(m)}
+              onValueChange={(v) => setM(Number(v))}
+              ariaLabel="Month"
+              triggerClassName="neo-field min-h-[44px] px-2 py-2"
+              items={MONTHS.map((name, i) => ({ value: String(i), label: name }))}
+            />
+            <ResponsiveSelect
+              value={String(day)}
+              onValueChange={(v) => setD(Number(v))}
+              ariaLabel="Day"
+              triggerClassName="neo-field min-h-[44px] px-2 py-2"
+              items={Array.from({ length: maxDay }, (_, i) => i + 1).map((n) => ({ value: String(n), label: String(n) }))}
+            />
+            <ResponsiveSelect
+              value={String(y)}
+              onValueChange={(v) => setY(Number(v))}
+              ariaLabel="Year"
+              triggerClassName="neo-field min-h-[44px] px-2 py-2"
+              items={years.map((yr) => ({ value: String(yr), label: String(yr) }))}
+            />
           </div>
 
           <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">

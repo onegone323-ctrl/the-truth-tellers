@@ -16,7 +16,10 @@ export default function CaptionScroll({ text, progress, active }) {
   if (!active || !text) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pointer-events-none">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 px-4 pointer-events-none"
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+    >
       <div
         ref={boxRef}
         className="max-w-2xl mx-auto max-h-28 overflow-y-auto rounded-lg px-4 py-3 text-sm leading-relaxed font-body"

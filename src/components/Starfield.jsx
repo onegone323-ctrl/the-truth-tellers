@@ -7,7 +7,7 @@ export default function Starfield() {
   const lite = useLiteMotion();
   const stars = useMemo(
     () =>
-      Array.from({ length: lite ? 30 : 90 }, () => ({
+      Array.from({ length: lite ? 18 : 90 }, () => ({
         top: Math.random() * 100,
         left: Math.random() * 100,
         size: Math.random() * 2 + 0.5,
