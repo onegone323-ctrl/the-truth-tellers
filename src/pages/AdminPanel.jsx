@@ -29,7 +29,10 @@ export default function AdminPanel() {
         base44.entities.JournalEntry.filter({}, { sort: "-created_date", limit: 30 }),
         base44.entities.Entitlement.filter({}, { sort: "-updated_date", limit: 100 }),
       ]);
-      if (uRes.status === "fulfilled") setUsers(uRes.value.items || []);
+      if (uRes.status === "fulfilled") {
+        const rawUsers = uRes.value;
+        setUsers(Array.isArray(rawUsers) ? rawUsers : rawUsers.items || []);
+      }
       if (pRes.status === "fulfilled") setPurchases(pRes.value.items || []);
       if (rRes.status === "fulfilled") setReports(rRes.value.items || []);
       if (eRes.status === "fulfilled") setEntries(eRes.value.items || []);
