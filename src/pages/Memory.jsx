@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import MessageBubble from "@/components/agent/MessageBubble";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { ArrowLeft, Brain, Plus, Send } from "lucide-react";
 
 const AGENT_NAME = "oracle_memory";
@@ -21,14 +22,14 @@ export default function Memory() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showListMobile, setShowListMobile] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
   const bottomRef = useRef(null);
 
   const selectConversation = async (id) => {
     const conv = await base44.agents.getConversation(id);
     setActive(conv);
     setMessages(conv?.messages || []);
-    setShowListMobile(false);
+    setListOpen(false);
   };
 
   const newConversation = async () => {
@@ -39,7 +40,7 @@ export default function Memory() {
     setConversations((c) => [conv, ...c]);
     setActive(conv);
     setMessages([]);
-    setShowListMobile(false);
+    setListOpen(false);
   };
 
   useEffect(() => {
@@ -98,7 +99,7 @@ export default function Memory() {
   const waiting = sending || (messages.length > 0 && messages[messages.length - 1]?.role === "user");
 
   const ConversationList = (
-    <div className={active && !showListMobile ? "hidden sm:block" : "block"}>
+    <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="neo-label m-0 flex items-center gap-2">
           <Brain className="w-4 h-4" /> Memory Sessions
@@ -143,11 +144,11 @@ export default function Memory() {
       </div>
 
       <div className="mx-4 sm:mx-[54px] mb-10 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-        <div className="neo-panel">{ConversationList}</div>
+        <div className="neo-panel hidden sm:block">{ConversationList}</div>
 
-        <div className={`neo-panel flex flex-col ${active && !showListMobile ? "block" : "hidden sm:flex"}`} style={{ minHeight: 480 }}>
+        <div className="neo-panel flex flex-col" style={{ minHeight: 480 }}>
           <div className="flex items-center justify-between mb-4">
-            <button onClick={() => setShowListMobile(true)} className="neo-pill sm:hidden px-3 py-2" aria-label="Back to sessions">
+            <button onClick={() => setListOpen(true)} className="neo-pill sm:hidden px-3 py-2" aria-label="Back to sessions">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <h2 className="neo-label m-0">{active?.metadata?.name || "Memory Session"}</h2>
@@ -199,6 +200,17 @@ export default function Memory() {
           </div>
         </div>
       </div>
+
+      {/* Mobile only: the session list slides up from the bottom as a drawer,
+          so picking another session is one natural gesture, not a hard swap. */}
+      <Drawer open={listOpen} onOpenChange={setListOpen}>
+        <DrawerContent className="sm:hidden" style={{ background: "var(--void-deep)", borderColor: "var(--neo-border)" }}>
+          <DrawerTitle className="sr-only">Memory Sessions</DrawerTitle>
+          <div className="px-4 pb-8 overflow-y-auto" style={{ maxHeight: "65vh" }}>
+            {ConversationList}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

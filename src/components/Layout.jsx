@@ -115,12 +115,12 @@ export default function Layout() {
               Admin
             </Link>
           )}
-          <Link to="/settings" className={`neo-navlink inline-flex items-center gap-1.5 ${location.pathname === "/settings" ? "is-active" : ""}`}
+          <Link to="/settings" className={`neo-navlink hidden md:flex items-center gap-1.5 ${location.pathname === "/settings" ? "is-active" : ""}`}
             title="Settings" aria-label="Settings">
             <SettingsIcon className="w-4 h-4" />
             <span className="hidden md:inline">Settings</span>
           </Link>
-          <button onClick={handleLogout} className="neo-navlink inline-flex items-center" title="Sign out" aria-label="Sign out">
+          <button onClick={handleLogout} className="neo-navlink hidden md:flex items-center" title="Sign out" aria-label="Sign out">
             <ArrowUpRight className="w-4 h-4" />
           </button>
         </nav>

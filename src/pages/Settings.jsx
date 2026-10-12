@@ -29,6 +29,13 @@ export default function Settings() {
         <div className="text-sm text-muted-foreground">{user?.email || ""}</div>
       </div>
 
+      <div className="lux-card rounded-xl p-6 space-y-4">
+        <div className="text-sm uppercase tracking-widest text-gold-leaf/80">Session</div>
+        <button onClick={async () => { await base44.auth.logout(); }} className="neo-button">
+          Sign Out
+        </button>
+      </div>
+
       <div className="lux-card rounded-xl p-6 space-y-4" style={{ borderColor: "rgba(192,57,43,0.45)" }}>
         <div>
           <div className="text-sm uppercase tracking-widest" style={{ color: "#e8a9a9" }}>Danger Zone</div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
 import { deckCardTitle } from "@/lib/deckCardNames";
@@ -14,6 +14,7 @@ import { toSpokenText } from "@/lib/speechText";
 import { createOraclePlayer } from "@/lib/oracleVoice";
 import CaptionScroll from "@/components/CaptionScroll";
 import AmbientSound from "@/components/AmbientSound";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -54,9 +55,8 @@ export default function Home() {
     return () => { player.stop(); };
   }, []);
 
-  // Load user + memory
-  useEffect(() => {
-    (async () => {
+  // Load user + memory — re-run by pull-to-refresh on mobile.
+  const loadData = useCallback(async () => {
       // All load in parallel — one failure never blocks the others.
       const [meRes, memRes, profRes, entRes, journalRes] = await Promise.allSettled([
         base44.auth.me(),
@@ -76,8 +76,9 @@ export default function Home() {
       if (profRes.status === "fulfilled" && profRes.value && profRes.value.length) setProfile(profRes.value[0]);
       else if (profRes.status === "rejected") console.error(profRes.reason);
       setProfileLoaded(true);
-    })();
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const categories = ["General", "Love", "Career", "Decision", "Yearly", "Spiritual", "Custom"];
   const spreadsInCat = SPREADS.filter((s) => s.category === spreadCategory);
@@ -295,8 +296,7 @@ export default function Home() {
       {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section
-          className="neo-hero grid grid-cols-1 lg:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px]"
-          style={{ minHeight: 530 }}
+          className="neo-hero grid grid-cols-1 lg:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
           <div style={{ animation: "materialize 1s .12s ease both" }}>
             <div className="neo-eyebrow mb-5">Consult</div>
@@ -317,7 +317,7 @@ export default function Home() {
 
       {/* SETUP PHASE — bento grid of beveled glass panels */}
       {phase === "setup" && (
-        <>
+        <PullToRefresh onRefresh={loadData}>
           <section className="enter delay1 mx-4 sm:mx-[54px] mb-6">
             <DailyCard memory={memory} setMemory={setMemory} userName={user?.full_name} />
           </section>
@@ -448,7 +448,7 @@ export default function Home() {
               )}
             </div>
           )}
-        </>
+        </PullToRefresh>
       )}
 
       {/* DRAWING PHASE */}

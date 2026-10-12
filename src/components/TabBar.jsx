@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Sparkles, BookOpen, TrendingUp, LayoutGrid, Link2, Brain } from "lucide-react";
+import { Sparkles, BookOpen, TrendingUp, LayoutGrid, Link2, Brain, Settings } from "lucide-react";
 
 export const TABS = [
   { to: "/", label: "Consult", Icon: Sparkles },
@@ -9,6 +9,7 @@ export const TABS = [
   { to: "/timeline", label: "Timeline", Icon: TrendingUp },
   { to: "/cards", label: "Cards", Icon: LayoutGrid },
   { to: "/connect", label: "Connect", Icon: Link2 },
+  { to: "/settings", label: "Settings", Icon: Settings },
 ];
 
 const HIDDEN_ON = ["/login", "/register", "/forgot-password", "/reset-password", "/oauth/consent"];
