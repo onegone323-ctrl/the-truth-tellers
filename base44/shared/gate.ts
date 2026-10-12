@@ -111,6 +111,10 @@ export async function getGateState(base44, user) {
 export async function checkRateLimit(base44, userId, maxPerMinute) {
   const sr = base44.asServiceRole;
   const minuteKey = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+  // The conditional increment below can only apply to an EXISTING row — a
+  // minute with no meter row yet applies 0 rows and would be throttled
+  // forever. Make sure this minute's fresh meter exists before claiming.
+  await ensureDailyMeter(sr, userId, minuteKey);
   const ok = await claimWithinCap(
     sr.entities.OracleUsage,
     { user_id: userId, day: minuteKey },
