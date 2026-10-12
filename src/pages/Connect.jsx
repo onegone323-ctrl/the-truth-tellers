@@ -8,7 +8,7 @@ const CLIENTS = [
     steps: [
       "Open Claude and go to your profile menu, then Settings.",
       "Choose Connectors and click \"Add custom connector\".",
-      "Give it a name — \"Truth with Clarity\" works — and paste the server URL below.",
+      "Give it a name — \"Truth 4 Clarity\" works — and paste the server URL below.",
       "Click Add. When prompted, approve the connection on this app's consent page.",
     ],
   },

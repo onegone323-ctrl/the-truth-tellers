@@ -53,7 +53,7 @@ export default function Layout() {
               fontWeight: 500,
             }}
           >
-            Truth with Clarity
+            Truth 4 Clarity
           </span>
         </Link>
         <nav className="flex items-center flex-wrap justify-end" style={{ gap: 4 }}>

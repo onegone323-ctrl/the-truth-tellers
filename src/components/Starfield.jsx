@@ -10,7 +10,8 @@ export default function Starfield() {
       Array.from({ length: lite ? 18 : 90 }, () => ({
         top: Math.random() * 100,
         left: Math.random() * 100,
-        size: Math.random() * 2 + 0.5,
+        size: Math.random() * 4 + 2,
+        bright: Math.random() < 0.22,
         delay: Math.random() * 5,
         duration: Math.random() * 4 + 3,
         gold: Math.random() < 0.25,
@@ -42,8 +43,12 @@ export default function Starfield() {
           style={{
             top: `${s.top}%`, left: `${s.left}%`,
             width: `${s.size}px`, height: `${s.size}px`,
-            background: s.gold ? "var(--gold-leaf)" : "var(--star-color)",
-            boxShadow: s.gold ? "0 0 6px 1px rgba(245,215,122,0.8)" : "0 0 4px 1px rgba(255,255,255,0.7)",
+            background: s.gold ? "var(--gold-leaf)" : s.bright ? "#ffffff" : "var(--star-color)",
+            boxShadow: s.gold
+              ? "0 0 10px 2px rgba(245,215,122,0.95)"
+              : s.bright
+              ? "0 0 12px 3px rgba(255,255,255,0.95), 0 0 24px 6px rgba(180,220,255,0.5)"
+              : "0 0 8px 2px rgba(255,255,255,0.85)",
             animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite alternate`,
           }} />
       ))}
