@@ -62,7 +62,7 @@ export default function DailyCard({ memory, setMemory, userName }) {
     <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(34,15,58,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
       <div>
         <label className="block" style={{ color: "#00e5ff", fontSize: 11, letterSpacing: 3, textTransform: "uppercase" }}>Today's Card</label>
-        <p className="mt-2.5 italic" style={{ color: "#a9a18f", fontSize: 13 }}>
+        <p className="mt-2.5 italic" style={{ color: "var(--neo-muted)", fontSize: 13 }}>
           {fresh
             ? "One card a day. Come back when the window resets."
             : "A single card for quick daily guidance — free once every 24 hours."}
@@ -78,7 +78,7 @@ export default function DailyCard({ memory, setMemory, userName }) {
             revealed={!justDrawn}
           />
           <div className="flex-1 text-center sm:text-left">
-            <h3 className="font-display text-xl" style={{ color: "#f5e6b8" }}>
+            <h3 className="font-display text-xl" style={{ color: "var(--ivory)" }}>
               {cardInfo.name}{isReversed ? " — Reversed" : ""}
             </h3>
             <p className="text-sm text-foreground/85 mt-2 leading-relaxed">
@@ -95,7 +95,7 @@ export default function DailyCard({ memory, setMemory, userName }) {
             <Sparkles className="w-4 h-4" />
             {busy ? "Drawing…" : "Draw Today's Card"}
           </button>
-          <span style={{ fontSize: 66, color: "#d4af37", textShadow: "0 0 25px #d4af37", animation: "breathe 4s ease-in-out infinite" }}>✦</span>
+          <span style={{ fontSize: 66, color: "var(--gold-leaf)", textShadow: "0 0 25px var(--gold-leaf)", animation: "breathe 4s ease-in-out infinite" }}>✦</span>
         </div>
       )}
     </div>

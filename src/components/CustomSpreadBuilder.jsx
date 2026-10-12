@@ -29,14 +29,14 @@ export default function CustomSpreadBuilder({ onBuild }) {
     <div className="space-y-3">
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name your spread"
         className="w-full bg-black/50 rounded-lg px-3 py-2 text-sm font-serif outline-none"
-        style={{ border: "1px solid rgba(212,175,55,0.25)" }} />
+        style={{ border: "1px solid color-mix(in srgb, var(--gold-leaf) 25%, transparent)" }} />
 
       <div className="flex gap-2">
         <input value={draft} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPos(); } }}
           placeholder="Add a position (e.g. 'What I Fear')"
           className="flex-1 bg-black/50 rounded-lg px-3 py-2 text-sm outline-none"
-          style={{ border: "1px solid rgba(212,175,55,0.25)" }} />
+          style={{ border: "1px solid color-mix(in srgb, var(--gold-leaf) 25%, transparent)" }} />
         <button onClick={addPos} aria-label="Add position" className="gold-pill min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-gold-leaf"><Plus className="w-4 h-4" /></button>
       </div>
 

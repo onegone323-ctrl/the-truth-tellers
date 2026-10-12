@@ -13,9 +13,9 @@ export default function CompanyMark({ height = 32, className = "" }) {
       style={{
         padding: "6px 11px",
         borderRadius: 6,
-        border: "1px solid rgba(212,175,55,0.35)",
+        border: "1px solid color-mix(in srgb, var(--gold-leaf) 35%, transparent)",
         background: "rgba(5,5,5,0.9)",
-        boxShadow: "0 0 12px rgba(212,175,55,0.1)",
+        boxShadow: "0 0 12px color-mix(in srgb, var(--gold-leaf) 10%, transparent)",
         lineHeight: 0,
       }}
       title="ADPOV Media and Entertainment — We Make It Make Sense"

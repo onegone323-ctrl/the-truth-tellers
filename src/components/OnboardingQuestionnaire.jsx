@@ -51,7 +51,7 @@ export default function OnboardingQuestionnaire({ onComplete, defaultName = "" }
   };
 
   const cls = "w-full bg-black/50 rounded-lg p-3 text-sm font-body outline-none";
-  const style = { border: "1px solid rgba(212,175,55,0.25)" };
+  const style = { border: "1px solid color-mix(in srgb, var(--gold-leaf) 25%, transparent)" };
   const labelCls = "block text-xs uppercase tracking-widest text-gold-leaf/80 mb-1.5";
 
   return (
@@ -125,9 +125,9 @@ export default function OnboardingQuestionnaire({ onComplete, defaultName = "" }
           className="w-full py-4 rounded-full text-sm uppercase tracking-[0.3em] font-display transition-all disabled:opacity-40"
           style={{
             background: "linear-gradient(160deg, rgba(120,20,30,0.7), rgba(60,10,15,0.9))",
-            border: "1px solid rgba(212,175,55,0.6)",
-            boxShadow: "0 0 24px rgba(192,57,43,0.3), 0 0 12px rgba(212,175,55,0.2)",
-            color: "#f5e6b8",
+            border: "1px solid color-mix(in srgb, var(--gold-leaf) 60%, transparent)",
+            boxShadow: "0 0 24px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 12px color-mix(in srgb, var(--gold-leaf) 20%, transparent)",
+            color: "var(--ivory)",
           }}>
           <Sparkles className="w-4 h-4 inline mr-2" />
           {busy ? "Sealing it…" : "Give It to the Oracle"}

@@ -10,8 +10,8 @@ export default function OrbStage({ state = "idle", size = 215, height = 370 }) {
         style={{
           width: size * 1.44,
           height: size * 1.44,
-          border: "1px solid rgba(212,175,55,0.8)",
-          boxShadow: "0 0 20px rgba(212,175,55,0.35), inset 0 0 20px rgba(123,44,255,0.2)",
+          border: "1px solid color-mix(in srgb, var(--gold-leaf) 80%, transparent)",
+          boxShadow: "0 0 20px color-mix(in srgb, var(--gold-leaf) 35%, transparent), inset 0 0 20px rgba(123,44,255,0.2)",
           transform: "rotate(26deg) skewY(8deg)",
           animation: "gyro 12s linear infinite",
         }}
@@ -21,8 +21,8 @@ export default function OrbStage({ state = "idle", size = 215, height = 370 }) {
         style={{
           width: size * 1.63,
           height: size * 0.79,
-          border: "1px solid rgba(212,175,55,0.8)",
-          boxShadow: "0 0 20px rgba(212,175,55,0.35), inset 0 0 20px rgba(123,44,255,0.2)",
+          border: "1px solid color-mix(in srgb, var(--gold-leaf) 80%, transparent)",
+          boxShadow: "0 0 20px color-mix(in srgb, var(--gold-leaf) 35%, transparent), inset 0 0 20px rgba(123,44,255,0.2)",
           transform: "rotate(-28deg)",
           animation: "gyroReverse 10s linear infinite",
         }}

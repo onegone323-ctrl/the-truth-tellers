@@ -13,8 +13,8 @@ export default function MessageBubble({ message }) {
       <div
         className={`max-w-[85%] px-4 py-3 text-[14px] leading-relaxed ${
           isUser
-            ? "rounded-2xl rounded-br-sm text-[#f2e8c9]"
-            : "rounded-2xl rounded-bl-sm text-[#d7cfb7]"
+            ? "rounded-2xl rounded-br-sm text-[var(--neo-ink)]"
+            : "rounded-2xl rounded-bl-sm text-[var(--neo-ink)]"
         }`}
         style={
           isUser
@@ -26,7 +26,7 @@ export default function MessageBubble({ message }) {
           (isUser ? (
             <p className="m-0 whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="prose prose-sm max-w-none prose-p:my-1.5 prose-p:text-[#d7cfb7]">
+            <div className="prose prose-sm max-w-none prose-p:my-1.5 prose-p:text-[var(--neo-ink)]">
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
           ))}
@@ -51,7 +51,7 @@ export default function MessageBubble({ message }) {
             FAILED.test(String(tc.results || "")) ||
             parsed?.success === false;
           return (
-            <div key={i} className="mt-2 text-[11px] tracking-wide" style={{ color: failed ? "#ff6b6b" : "#827b6d" }}>
+            <div key={i} className="mt-2 text-[11px] tracking-wide" style={{ color: failed ? "#ff6b6b" : "var(--neo-muted)" }}>
               {failed ? "✕" : "◈"} {tc.name}
             </div>
           );

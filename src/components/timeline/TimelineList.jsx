@@ -11,7 +11,7 @@ export default function TimelineList({ entries }) {
   return (
     <div className="relative pl-8 sm:pl-10">
       <div className="absolute left-3 sm:left-4 top-2 bottom-2 w-px"
-        style={{ background: "linear-gradient(180deg, transparent, rgba(212,175,55,0.55) 10%, rgba(192,57,43,0.25) 90%, transparent)" }} />
+        style={{ background: "linear-gradient(180deg, transparent, color-mix(in srgb, var(--gold-leaf) 55%, transparent) 10%, color-mix(in srgb, var(--accent) 25%, transparent) 90%, transparent)" }} />
       <div className="space-y-6">
         {entries.map((e, idx) => {
           const ratio = alignmentOf(e);
@@ -40,7 +40,7 @@ export default function TimelineList({ entries }) {
                     {badge.label}
                   </span>
                 </div>
-                <p className="font-serif text-base sm:text-lg mt-2" style={{ color: "#f0e6d2" }}>
+                <p className="font-serif text-base sm:text-lg mt-2" style={{ color: "var(--ivory)" }}>
                   “{e.question}”
                 </p>
                 <p className="text-sm text-muted-foreground mt-1 italic">
@@ -49,7 +49,7 @@ export default function TimelineList({ entries }) {
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {(e.cards_drawn || []).map((c, i) => (
                     <span key={i} className="gold-pill px-2.5 py-1 rounded-full text-sm"
-                      style={{ color: c.reversed ? "#e8a9a9" : "#d4c8a8" }}>
+                      style={{ color: c.reversed ? "#e8a9a9" : "var(--neo-ink)" }}>
                       {c.name}{c.reversed ? " (R)" : ""}
                     </span>
                   ))}
@@ -60,7 +60,7 @@ export default function TimelineList({ entries }) {
                   {isOpen ? "Close Her Words" : "Her Words"}
                 </button>
                 {isOpen && (
-                  <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(212,175,55,0.15)" }}>
+                  <div className="mt-3 pt-3" style={{ borderTop: "1px solid color-mix(in srgb, var(--gold-leaf) 15%, transparent)" }}>
                     <ReadingText text={e.interpretation} />
                   </div>
                 )}

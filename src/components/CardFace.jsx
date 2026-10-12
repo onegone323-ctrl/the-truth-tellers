@@ -15,7 +15,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
   }, [dealDelay, revealed]);
 
   const isMajor = card?.card?.arcana === "Major" || card?.arcana === "Major";
-  const accent = deck?.accent || "#d4af37";
+  const accent = deck?.accent || "var(--gold-leaf)";
   const suitGlyph = isMajor ? "✶" : card?.card?.suit === "Cups" ? "♥" : card?.card?.suit === "Wands" ? "♣" : card?.card?.suit === "Swords" ? "♠" : "♦";
 
   return (
@@ -45,10 +45,10 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 backfaceVisibility: "hidden",
                 background: "linear-gradient(145deg, #1a0306, #3a0810 50%, #1a0306)",
                 border: `1.5px solid ${accent}`,
-                boxShadow: `0 10px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(0,0,0,0.5), 0 0 12px ${accent}33`,
+                boxShadow: `0 10px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(0,0,0,0.5), 0 0 12px color-mix(in srgb, ${accent} 20%, transparent)`,
               }}>
-              <div className="absolute inset-1.5 rounded-md" style={{ border: `1px solid ${accent}66` }} />
-              <span style={{ fontSize: 44, color: accent, textShadow: `0 0 14px ${accent}99` }} className="opacity-80">
+              <div className="absolute inset-1.5 rounded-md" style={{ border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)` }} />
+              <span style={{ fontSize: 44, color: accent, textShadow: `0 0 14px color-mix(in srgb, ${accent} 60%, transparent)` }} className="opacity-80">
                 {deck?.backGlyph || "✦"}
               </span>
               <div className="absolute inset-0 rounded-lg opacity-30"
@@ -62,14 +62,14 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 transform: "rotateY(180deg)",
                 background: "linear-gradient(160deg, #0a0a0f, #14100c 60%, #0a0a0f)",
                 border: `1.5px solid ${accent}`,
-                boxShadow: `0 10px 30px rgba(0,0,0,0.7), 0 0 14px ${accent}44, inset 0 0 16px rgba(0,0,0,0.6)`,
+                boxShadow: `0 10px 30px rgba(0,0,0,0.7), 0 0 14px color-mix(in srgb, ${accent} 27%, transparent), inset 0 0 16px rgba(0,0,0,0.6)`,
               }}>
               {show && (
                 <div className="absolute inset-0 rounded-lg pointer-events-none"
                   style={{ background: "linear-gradient(115deg, transparent 30%, rgba(245,215,122,0.25) 50%, transparent 70%)",
                     animation: "sweep 1.1s ease-out" }} />
               )}
-              <div className="absolute inset-1 rounded-md" style={{ border: `1px solid ${accent}55` }} />
+              <div className="absolute inset-1 rounded-md" style={{ border: `1px solid color-mix(in srgb, ${accent} 33%, transparent)` }} />
               <div className="mt-2 text-sm leading-tight uppercase tracking-[0.08em]" style={{ color: accent, opacity: 0.85 }}>
                 {card?.position || `Card ${index + 1}`}
               </div>
@@ -77,11 +77,11 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 <span style={{ fontSize: 30, color: accent, textShadow: `0 0 12px ${accent}aa` }}>{suitGlyph}</span>
               </div>
               <div className="mb-2 px-1">
-                <div className="text-sm font-serif leading-tight" style={{ color: "#f0e6d2" }}>
+                <div className="text-sm font-serif leading-tight" style={{ color: "var(--ivory)" }}>
                   {deckCardTitle(deck?.id, card?.name) || card?.name}{card?.reversed ? " (R)" : ""}
                 </div>
                 {deckCardTitle(deck?.id, card?.name) && (
-                  <div className="text-sm leading-tight mt-0.5" style={{ color: "#9b937f" }}>
+                  <div className="text-sm leading-tight mt-0.5" style={{ color: "var(--neo-muted)" }}>
                     {card?.name}
                   </div>
                 )}
@@ -104,11 +104,11 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
               <div className="absolute inset-0 rounded flex flex-col items-center justify-center p-1 text-center"
                 style={{
                   background: "linear-gradient(160deg, #0a0a0f, #14100c)",
-                  border: `1px solid ${accent}aa`,
-                  boxShadow: `0 0 8px ${accent}44`,
+                  border: `1px solid color-mix(in srgb, ${accent} 67%, transparent)`,
+                  boxShadow: `0 0 8px color-mix(in srgb, ${accent} 27%, transparent)`,
                 }}>
                 <span style={{ fontSize: 16, color: accent }}>{c.card?.arcana === "Major" ? "✶" : "•"}</span>
-                <div className="text-sm font-serif leading-tight mt-0.5" style={{ color: "#d4c8a8" }}>
+                <div className="text-sm font-serif leading-tight mt-0.5" style={{ color: "var(--neo-ink)" }}>
                   {deckCardTitle(deck?.id, c.name) || c.name}{c.reversed ? " (R)" : ""}
                 </div>
               </div>

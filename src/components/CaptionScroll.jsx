@@ -24,14 +24,14 @@ export default function CaptionScroll({ text, progress, active }) {
         ref={boxRef}
         className="max-w-2xl mx-auto max-h-28 overflow-y-auto rounded-lg px-4 py-3 text-sm leading-relaxed font-body"
         style={{
-          background: "rgba(0,0,0,0.82)",
-          border: "1px solid rgba(212,175,55,0.45)",
-          boxShadow: "0 0 28px rgba(212,175,55,0.18), inset 0 0 18px rgba(212,175,55,0.05)",
+          background: "var(--surface-glass-strong)",
+          border: "1px solid color-mix(in srgb, var(--gold-leaf) 45%, transparent)",
+          boxShadow: "0 0 28px color-mix(in srgb, var(--gold-leaf) 18%, transparent), inset 0 0 18px color-mix(in srgb, var(--gold-leaf) 5%, transparent)",
           scrollbarWidth: "none",
           backdropFilter: "blur(8px)",
         }}
       >
-        <span style={{ color: "#e8dcae" }}>{visible}</span>
+        <span style={{ color: "var(--ivory)" }}>{visible}</span>
         <span className="animate-pulse text-gold-leaf"> ▍</span>
       </div>
     </div>
