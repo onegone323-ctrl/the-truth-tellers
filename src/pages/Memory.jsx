@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import MessageBubble from "@/components/agent/MessageBubble";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import PullToRefresh from "@/components/PullToRefresh";
 import { ArrowLeft, Brain, Plus, Send } from "lucide-react";
 
 const AGENT_NAME = "oracle_memory";
@@ -31,6 +32,23 @@ export default function Memory() {
     setMessages(conv?.messages || []);
     setListOpen(false);
   };
+
+  // Re-runs on pull-to-refresh: refreshes the session list and the open
+  // conversation's messages from the server.
+  const reload = useCallback(async () => {
+    try {
+      const list = asList(await base44.agents.listConversations({ agent_name: AGENT_NAME }));
+      list.sort((a, b) => String(b.updated_date || b.created_date || "").localeCompare(String(a.updated_date || a.created_date || "")));
+      setConversations(list);
+      if (active?.id) {
+        const conv = await base44.agents.getConversation(active.id);
+        setActive(conv);
+        setMessages(conv?.messages || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [active?.id]);
 
   const newConversation = async () => {
     const conv = await base44.agents.createConversation({
@@ -129,6 +147,7 @@ export default function Memory() {
   );
 
   return (
+    <PullToRefresh onRefresh={reload}>
     <div className="enter" style={{ animation: "materialize .8s ease both" }}>
       <div className="neo-hero grid grid-cols-1 sm:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-9" style={{ minHeight: 300 }}>
         <div>
@@ -212,5 +231,6 @@ export default function Memory() {
         </DrawerContent>
       </Drawer>
     </div>
+    </PullToRefresh>
   );
 }

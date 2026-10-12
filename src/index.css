@@ -132,6 +132,13 @@
     overscroll-behavior: none;
   }
 
+  /* Inner scroll containers (memory chat + session lists, admin lists,
+     captions, select menus) never rubber-band inside the page shell. */
+  .overflow-y-auto, .overflow-auto,
+  [style*="overflow-y: auto"], [style*="overflowY: auto"] {
+    overscroll-behavior: none;
+  }
+
   /* Controls only — never reading/article content */
   button, [role="button"], .neo-navlink, .tab-link, .neo-pill, .neo-tile, .neo-toggle,
   .neo-count, .neo-spread-tile, .neo-button, .gold-pill, .gold-pill-active {
