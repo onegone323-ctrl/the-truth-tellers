@@ -126,7 +126,7 @@ export default async function(req) {
           .join('');
         await base44.asServiceRole.integrations.Core.SendEmail({
           to,
-          subject: `The Truth Teller daily check — ${status.toUpperCase()}`,
+          subject: `Truth with Clarity daily check — ${status.toUpperCase()}`,
           html: `<p>Today's Oracle health check finished with status <strong>${status}</strong>.</p><ul>${rows}</ul><p>— The automated daily check</p>`,
         });
         emailed = true;

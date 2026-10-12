@@ -8,7 +8,7 @@ const CLIENTS = [
     steps: [
       "Open Claude and go to your profile menu, then Settings.",
       "Choose Connectors and click \"Add custom connector\".",
-      "Give it a name — \"The Truth Teller\" works — and paste the server URL below.",
+      "Give it a name — \"Truth with Clarity\" works — and paste the server URL below.",
       "Click Add. When prompted, approve the connection on this app's consent page.",
     ],
   },
@@ -38,7 +38,7 @@ const CLIENTS = [
     steps: [
       "Open VS Code with GitHub Copilot Chat installed.",
       "Open the Command Palette and run \"MCP: Add Server\", then choose \"HTTP\".",
-      "Paste the server URL below and give it a name like \"truth-teller\".",
+      "Paste the server URL below and give it a name like \"truth-with-clarity\".",
       "When Copilot Chat shows a sign-in request on the account icon, approve it — VS Code opens this app's consent page in your browser.",
     ],
   },
@@ -57,7 +57,7 @@ const CLIENTS = [
     label: "Gemini CLI",
     steps: [
       "Open your Gemini CLI config file at ~/.gemini/settings.json (create it if it doesn't exist).",
-      "Add an \"mcpServers\" entry with an \"httpUrl\" set to the server URL below, e.g. { \"mcpServers\": { \"truth-teller\": { \"httpUrl\": \"<server url>\" } } }.",
+      "Add an \"mcpServers\" entry with an \"httpUrl\" set to the server URL below, e.g. { \"mcpServers\": { \"truth-with-clarity\": { \"httpUrl\": \"<server url>\" } } }.",
       "Save the file and restart Gemini CLI so the server loads.",
       "On first use, approve the sign-in link it opens — that's this app's consent page.",
     ],

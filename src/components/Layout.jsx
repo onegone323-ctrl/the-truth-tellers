@@ -47,7 +47,7 @@ export default function Layout() {
               fontWeight: 500,
             }}
           >
-            The Truth Teller
+            Truth with Clarity
           </span>
         </Link>
         <nav className="flex items-center flex-wrap justify-end" style={{ gap: 4 }}>
