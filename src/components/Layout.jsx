@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowUpRight, Settings as SettingsIcon } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Settings as SettingsIcon } from "lucide-react";
+import useGoBack from "@/hooks/useGoBack";
 import { base44 } from "@/api/base44Client";
 import Starfield from "@/components/Starfield";
 import TabBar from "@/components/TabBar";
@@ -31,6 +32,24 @@ export default function Layout() {
     await base44.auth.logout();
   };
 
+  // Mobile header: on any path that isn't a tab root (a detail page like
+  // /journal/:id, or Settings/Pricing/Admin), show a back arrow and the page
+  // title instead of the brand. Tab roots and desktop keep the brand logo.
+  const TAB_ROOTS = ["/", "/journal", "/memory", "/timeline", "/cards", "/connect"];
+  const isTabRoot = TAB_ROOTS.includes(location.pathname);
+  const pageTitle = (() => {
+    const p = location.pathname;
+    const card = p.match(/^\/cards\/(.+)$/);
+    if (card) return decodeURIComponent(card[1]);
+    if (/^\/journal\/.+/.test(p)) return "Journal Entry";
+    const named = { "/settings": "Settings", "/pricing": "Pricing", "/admin": "Admin", "/pulls": "Pull Requests", "/about": "About", "/contact": "Contact" };
+    return named[p] || p.split("/").filter(Boolean).slice(-1)[0] || "Back";
+  })();
+  const goBack = useGoBack(
+    location.pathname.startsWith("/journal") ? "/journal" :
+    location.pathname.startsWith("/cards") ? "/cards" : "/"
+  );
+
   return (
     <div className="obsidian-page min-h-screen overflow-x-hidden text-foreground" style={{ background: "var(--void-deep)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <Starfield />
@@ -45,7 +64,29 @@ export default function Layout() {
           animation: "materialize .8s ease both",
         }}
       >
-        <Link to="/" className="flex items-center" style={{ gap: 13 }}>
+        {!isTabRoot && (
+          <div className="sm:hidden flex items-center" style={{ gap: 8 }}>
+            <button onClick={goBack} className="neo-navlink" title="Go back" aria-label="Go back">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <span
+              style={{
+                color: "var(--gold-leaf)",
+                fontSize: 15,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "44vw",
+              }}
+            >
+              {pageTitle}
+            </span>
+          </div>
+        )}
+        <Link to="/" className={`${isTabRoot ? "flex" : "hidden sm:flex"} items-center`} style={{ gap: 13 }}>
           <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
           <span
             style={{

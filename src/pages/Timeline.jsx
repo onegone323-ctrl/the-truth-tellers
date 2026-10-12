@@ -2,9 +2,18 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { alignmentOf, recurringCards, growthSeries, alignmentSeries } from "@/lib/timelineStats";
-import AlignmentTrendChart from "@/components/timeline/AlignmentTrendChart";
-import RecurringCardsChart from "@/components/timeline/RecurringCardsChart";
-import ReadingGrowthChart from "@/components/timeline/ReadingGrowthChart";
+// Charts (and the recharts library behind them) load on demand, only once
+// the Timeline page actually shows them.
+const AlignmentTrendChart = React.lazy(() => import("@/components/timeline/AlignmentTrendChart"));
+const RecurringCardsChart = React.lazy(() => import("@/components/timeline/RecurringCardsChart"));
+const ReadingGrowthChart = React.lazy(() => import("@/components/timeline/ReadingGrowthChart"));
+
+const ChartFallback = () => (
+  <div className="lux-card rounded-xl min-h-[220px] flex items-center justify-center">
+    <div className="w-8 h-8 border-2 rounded-full animate-spin"
+      style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
+  </div>
+);
 import TimelineList from "@/components/timeline/TimelineList";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -80,10 +89,18 @@ export default function Timeline() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AlignmentTrendChart data={trend} />
-        <ReadingGrowthChart data={growth} />
+        <React.Suspense fallback={<ChartFallback />}>
+          <AlignmentTrendChart data={trend} />
+        </React.Suspense>
+        <React.Suspense fallback={<ChartFallback />}>
+          <ReadingGrowthChart data={growth} />
+        </React.Suspense>
       </div>
-      {recurring.length > 0 && <RecurringCardsChart data={recurring} />}
+      {recurring.length > 0 && (
+        <React.Suspense fallback={<ChartFallback />}>
+          <RecurringCardsChart data={recurring} />
+        </React.Suspense>
+      )}
 
       <hr className="gold-hairline" />
 
