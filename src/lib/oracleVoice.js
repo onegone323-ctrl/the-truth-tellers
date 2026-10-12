@@ -58,6 +58,12 @@ async function fetchClips(text) {
       const clips = res?.data?.chunks;
       if (Array.isArray(clips) && clips.length) return clips;
     } catch (e) {
+      // Quota / entitlement rejections are final — stop retrying at once.
+      const status = e?.response?.status;
+      if (status === 402 || status === 429) {
+        console.warn("The Oracle's voice is resting.", e?.response?.data?.message || e?.message || e);
+        return null;
+      }
       console.warn("The Oracle's voice service hiccuped.", e?.message || e);
     }
     if (attempt < 3) await sleep(1200 * (attempt + 1));

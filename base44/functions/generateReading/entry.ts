@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
+import { getGateState, FREE_READINGS } from '../../shared/gate.ts';
 
 // The Oracle generates a full tarot reading on OpenAI.
 // Voice: spunky, warm, personal, blunt — a life coach with a wicked sense of
@@ -13,27 +14,36 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Monetization gate: premium subscribers read freely, and EVERYONE's first
-    // three readings are free — counted from the journal (one entry is saved
-    // per reading). After the free three, each reading spends one credit.
-    // The admin (builder) account is always free — everything unlocked.
-    // Counting and any credit spend run as service role: the entitlement row
-    // is webhook-owned and user writes are blocked by RLS.
+    // three readings are free — counted from journal entries THIS FUNCTION
+    // writes server-side below, never from anything a browser does (a direct
+    // API or MCP caller is counted the same way). After the free three, each
+    // reading spends one credit. The admin (builder) account is always free.
+    // Entitlement writes run as service role: the row is webhook-owned.
     const isAdmin = user?.role === 'admin';
-    const ents = isAdmin ? [] : await base44.entities.Entitlement.filter({ user_id: user.id });
-    const entitlement = ents && ents.length ? ents[0] : null;
-    if (!isAdmin && entitlement?.plan !== 'premium') {
-      const used = await base44.asServiceRole.entities.JournalEntry.count({ created_by_id: user.id });
-      const freeLeft = Math.max(0, 3 - (used || 0));
-      if (freeLeft === 0) {
-        if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
-          return Response.json({
-            error: 'out_of_credits',
-            message: "Your three free readings are used up — open Pricing to get more.",
-          }, { status: 402 });
-        }
-        await base44.asServiceRole.entities.Entitlement.update(entitlement.id, {
-          credits: entitlement.credits - 1,
-        });
+    const { ent: entitlement, freeLeft } = isAdmin
+      ? { ent: null, freeLeft: FREE_READINGS }
+      : await getGateState(base44, user);
+    if (!isAdmin && entitlement?.plan !== 'premium' && freeLeft === 0) {
+      if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
+        return Response.json({
+          error: 'out_of_credits',
+          message: "Your three free readings are used up — open Pricing to get more.",
+        }, { status: 402 });
+      }
+      // Atomic compare-and-spend: the decrement only applies while credits are
+      // still >= 1, so two concurrent requests can never both spend the same
+      // snapshot balance. Verified after the fact; failure = fail closed.
+      await base44.asServiceRole.entities.Entitlement.updateMany(
+        { user_id: user.id, credits: { $gte: 1 } },
+        { $inc: { credits: -1 } },
+      );
+      const after = await base44.asServiceRole.entities.Entitlement.filter({ user_id: user.id });
+      const afterCredits = after && after.length ? (after[0].credits || 0) : 0;
+      if (afterCredits >= (entitlement.credits || 0)) {
+        return Response.json({
+          error: 'out_of_credits',
+          message: "Your three free readings are used up — open Pricing to get more.",
+        }, { status: 402 });
       }
     }
 
@@ -238,6 +248,30 @@ export default async function(req) {
       return Response.json({
         error: 'OpenAI API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
       }, { status: 502 });
+    }
+
+    // SERVER-SIDE usage record: the reading is logged BEFORE it is handed
+    // back, so direct API and MCP callers are counted too — the free-tier
+    // counter can no longer be bypassed by skipping the app's UI. Uses this
+    // user's own client (not service role) so the entry is owned by them.
+    try {
+      await base44.entities.JournalEntry.create({
+        question,
+        deck: deck?.name || 'Rider-Waite',
+        spread: spread?.name || 'Custom',
+        cards_drawn: cards.map((c) => ({
+          name: c.name,
+          reversed: !!c.reversed,
+          position: c.position || '',
+          clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: !!x.reversed })),
+        })),
+        interpretation: text,
+        audio_url: null,
+      });
+    } catch (logError) {
+      // Fail closed: an unlogged reading is an unpaid reading.
+      console.error('generateReading: could not record journal entry', logError);
+      return Response.json({ error: 'Could not record the reading — try again.' }, { status: 500 });
     }
 
     return Response.json({ reading: text, model: usedModel });

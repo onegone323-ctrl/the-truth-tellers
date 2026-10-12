@@ -175,15 +175,9 @@ export default function Home() {
       speak(text);
 
       try {
-        const cardData = cards.map((c) => ({
-          name: c.name, reversed: c.reversed, position: c.position,
-          clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
-        }));
-
-        await base44.entities.JournalEntry.create({
-          question, deck: activeDeck.name, spread: spread.name,
-          cards_drawn: cardData, interpretation: text, audio_url: null,
-        });
+        // The journal entry is written by the SERVER inside generateReading
+        // (before the reading is returned) so usage can't be bypassed by
+        // calling the function directly — the client must not duplicate it.
 
         const adviceSnippet = text.slice(-280);
         if (memory) {

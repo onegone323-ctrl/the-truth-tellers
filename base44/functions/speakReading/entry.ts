@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
+import { getGateState, getDailyUsage, TTS_DAILY_CAP_CHARS } from '../../shared/gate.ts';
 
 // Turns the Oracle's reading into warm OpenAI TTS audio.
 // The reading arrives as already-cleaned spoken text; we split it into
@@ -17,9 +18,37 @@ export default async function(req) {
     if (!text.trim()) {
       return Response.json({ error: 'text is required' }, { status: 400 });
     }
-    if (text.length > 20000) {
-      return Response.json({ error: 'text too long (max 20000 chars)' }, { status: 400 });
+    // The client speaks a reading in ~600-char pieces, so anything far beyond
+    // one full reading per request is not a real use — a short ceiling bounds
+    // every request.
+    if (text.length > 4000) {
+      return Response.json({ error: 'text too long (max 4000 chars)' }, { status: 400 });
     }
+
+    // ===== ACCESS + QUOTA GATE =====
+    const isAdmin = user?.role === 'admin';
+    const { ent, freeLeft } = await getGateState(base44, user);
+    // Voice is part of the reading experience: premium subscribers, credit
+    // holders, and anyone still inside their free readings may synthesize.
+    // (No credit is debited here — voice ships with a reading already paid
+    // for; the daily budget below is what bounds consumption.)
+    if (!isAdmin && ent?.plan !== 'premium' && (ent?.credits || 0) < 1 && freeLeft === 0) {
+      return Response.json({ error: 'out_of_credits', message: 'Voice is part of your readings — open Pricing to keep it.' }, { status: 402 });
+    }
+    // Per-user daily character budget: scripted abuse cannot drain the app's
+    // OpenAI spend. Counted BEFORE synthesis so a failure never grants speech.
+    if (!isAdmin) {
+      const cap = ent?.plan === 'premium' ? TTS_DAILY_CAP_CHARS.premium : TTS_DAILY_CAP_CHARS.free;
+      const usage = await getDailyUsage(base44, user.id);
+      if ((usage?.tts_chars || 0) + text.length > cap) {
+        return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — his voice rests until tomorrow." }, { status: 429 });
+      }
+      await base44.asServiceRole.entities.OracleUsage.update(usage.id, {
+        tts_chars: (usage.tts_chars || 0) + text.length,
+        tts_calls: (usage.tts_calls || 0) + 1,
+      });
+    }
+    // ===== END GATE =====
 
     const apiKey = secrets.get('OPENAI_API_KEY');
     if (!apiKey) {
@@ -46,7 +75,8 @@ export default async function(req) {
     }
     if (buf.trim()) chunks.push(buf.trim());
 
-    // No cap: the WHOLE reading gets spoken, start to finish.
+    // The WHOLE reading gets spoken, start to finish — bounded by the
+    // per-request ceiling and the daily budget above.
     const audio = [];
     for (const chunk of chunks) {
       const res = await fetch('https://api.openai.com/v1/audio/speech', {

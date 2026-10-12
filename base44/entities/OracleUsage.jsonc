@@ -1,0 +1,43 @@
+{
+  "name": "OracleUsage",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "day": {
+      "type": "string"
+    },
+    "tts_chars": {
+      "type": "number",
+      "default": 0
+    },
+    "tts_calls": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
