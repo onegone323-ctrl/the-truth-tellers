@@ -69,6 +69,15 @@ export default function Pricing() {
               {entitlement.status === "ending" ? " (auto-renewal off, ends this billing cycle)" : ""}.
             </span>
           </div>
+        ) : readingsUsed < 3 ? (
+          <p className="neo-note">
+            {3 - readingsUsed} of your 3 free readings left — no purchase needed for those.
+            {(entitlement?.credits || 0) > 0
+              ? ` Plus ${(entitlement.credits || 0)} bought credit${(entitlement.credits || 0) === 1 ? "" : "s"}.`
+              : ""}
+          </p>
+        ) : entitlement === null ? (
+          <p className="neo-note">Your free readings are used up — buy below to keep reading.</p>
         ) : (
           <p className="neo-note">
             {entitlement.credits || 0} reading credit{(entitlement.credits || 0) === 1 ? "" : "s"} left. Each reading uses one.
