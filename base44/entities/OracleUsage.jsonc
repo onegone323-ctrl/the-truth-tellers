@@ -19,6 +19,14 @@
     "tts_calls": {
       "type": "number",
       "default": 0
+    },
+    "minute_key": {
+      "type": "string",
+      "default": ""
+    },
+    "minute_calls": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [],

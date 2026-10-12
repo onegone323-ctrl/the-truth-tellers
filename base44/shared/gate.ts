@@ -10,6 +10,14 @@
 //    least k, so at most `cap` requests can ever be admitted per meter — a
 //    concurrent burst fails closed instead of sharing one stale snapshot.
 // No read-then-write against a snapshot survives this pattern.
+//
+// METERS live on OracleUsage rows, keyed apart so concurrent claims never
+// touch the same row's different fields:
+//   readings (lifetime free tier):      { user_id, day: 'lifetime' }
+//   daily voice budget:                 { user_id, day: today }
+//   per-minute throttle:                { user_id, day: <minute key> }
+//   GLOBAL daily free readings:         { user_id: '__global__', day: today }
+//   GLOBAL daily free-tier voice chars: { user_id: '__global__', day: 'v-<today>' }
 
 // Everyone's first three readings are free, metered server-side.
 export const FREE_READINGS = 3;
@@ -18,6 +26,12 @@ export const FREE_READINGS = 3;
 // is ~2,000-4,000 chars, so free users get ~3 readings of voice a day,
 // premium users ~15+.
 export const TTS_DAILY_CAP_CHARS = { free: 12000, premium: 60000 };
+
+// GLOBAL daily ceilings on FREE-TIER usage (premium subscribers and bought
+// credits bypass them). They cap what a fleet of farmed free accounts can
+// drain from the app's AI budget in one day.
+export const GLOBAL_DAILY_FREE_READINGS = 500;
+export const GLOBAL_DAILY_VOICE_CHARS = 500000;
 
 // Concurrent sibling claims need this long to land before the audit read.
 const CLAIM_SETTLE_MS = 350;
@@ -40,6 +54,26 @@ async function claimWithinCap(entity, baseFilter, guard, incs, capOf) {
   await sleep(CLAIM_SETTLE_MS);
   const rows = await entity.filter(baseFilter);
   return rows.length > 0 && rows.every(capOf);
+}
+
+// A rejected claim's increment can still land and push its meter past the
+// cap — clamp it back so the meter stays honest (fail-closed, never reopen).
+async function clampMeter(entity, filter, field, cap) {
+  const over = { ...filter };
+  over[field] = { $gt: cap };
+  await entity.updateMany(over, { $set: { [field]: cap } });
+}
+
+// Make sure a meter row exists (a concurrent first touch may create two —
+// claims then apply to every matching row in lockstep and the audit holds).
+async function ensureDailyMeter(sr, userId, day) {
+  const rows = await sr.entities.OracleUsage.filter({ user_id: userId, day });
+  if (rows && rows.length) return;
+  try {
+    await sr.entities.OracleUsage.create({ user_id: userId, day, readings: 0, tts_chars: 0, tts_calls: 0 });
+  } catch (_) {
+    // A concurrent request created it — the claim below handles it.
+  }
 }
 
 // The lifetime free-reading meter: one row per user (day = 'lifetime'),
@@ -70,26 +104,65 @@ export async function getGateState(base44, user) {
   return { ent, freeLeft: Math.max(0, FREE_READINGS - usedMax) };
 }
 
-// Claims one free reading BEFORE any paid work. Returns true only if this
-// request is admitted (settled meter still within the 3-reading cap); a
-// concurrent burst over the cap fails closed. The claim is consumed even if
-// generation later fails — same as credits.
-export async function claimFreeReading(base44, user) {
-  await ensureLifetimeMeter(base44, user.id);
+// Per-minute throttle, same burst-safe pattern. Each minute gets its OWN
+// fresh meter row (keyed by the minute), so there is no rollover/reset race —
+// the counter just starts from zero every minute. Returns false when the
+// caller is over maxPerMinute for the current minute bucket.
+export async function checkRateLimit(base44, userId, maxPerMinute) {
+  const sr = base44.asServiceRole;
+  const minuteKey = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
   const ok = await claimWithinCap(
-    base44.asServiceRole.entities.OracleUsage,
+    sr.entities.OracleUsage,
+    { user_id: userId, day: minuteKey },
+    { minute_calls: { $lt: maxPerMinute } },
+    { $inc: { minute_calls: 1 } },
+    (r) => (r.minute_calls || 0) <= maxPerMinute,
+  );
+  // Housekeeping: rate rows older than an hour are dead weight. The $regex
+  // pins this to minute-bucket rows only — the daily voice row's day value
+  // ('YYYY-MM-DD') never matches.
+  const cutoff = new Date(Date.now() - 3600000).toISOString().slice(0, 16);
+  try {
+    await sr.entities.OracleUsage.deleteMany({
+      user_id: userId,
+      day: { $regex: '^\\d{4}-\\d{2}-\\d{2}T', $lt: cutoff },
+    });
+  } catch (_) {
+    // Housekeeping only — never fail a request over it.
+  }
+  return ok;
+}
+
+// Claims one free reading BEFORE any paid work. Returns true only if this
+// request is admitted — first under the GLOBAL daily free-reading ceiling
+// (bounds what farmed free accounts can drain per day), then under the
+// user's own 3-reading meter. The claim is consumed even if generation later
+// fails — same as credits.
+export async function claimFreeReading(base44, user) {
+  const sr = base44.asServiceRole;
+  await ensureLifetimeMeter(base44, user.id);
+  const today = new Date().toISOString().slice(0, 10);
+  await ensureDailyMeter(sr, '__global__', today);
+  const globalOk = await claimWithinCap(
+    sr.entities.OracleUsage,
+    { user_id: '__global__', day: today },
+    { readings: { $lt: GLOBAL_DAILY_FREE_READINGS } },
+    { $inc: { readings: 1 } },
+    (r) => (r.readings || 0) <= GLOBAL_DAILY_FREE_READINGS,
+  );
+  if (!globalOk) {
+    await clampMeter(sr.entities.OracleUsage, { user_id: '__global__', day: today }, 'readings', GLOBAL_DAILY_FREE_READINGS);
+    return false;
+  }
+  const ok = await claimWithinCap(
+    sr.entities.OracleUsage,
     { user_id: user.id, day: 'lifetime' },
     { readings: { $lt: FREE_READINGS } },
     { $inc: { readings: 1 } },
     (r) => (r.readings || 0) <= FREE_READINGS,
   );
   if (!ok) {
-    // A burst can push the meter past the cap (a rejected claim's increment
-    // still lands) — clamp it back to "exhausted" so the meter stays honest.
-    await base44.asServiceRole.entities.OracleUsage.updateMany(
-      { user_id: user.id, day: 'lifetime', readings: { $gt: FREE_READINGS } },
-      { $set: { readings: FREE_READINGS } },
-    );
+    await clampMeter(sr.entities.OracleUsage, { user_id: user.id, day: 'lifetime' }, 'readings', FREE_READINGS);
   }
   return ok;
 }
@@ -123,25 +196,36 @@ export async function spendCredit(base44, userId) {
 // to a meter that can still fit this request, and the request is admitted
 // only if the settled total is still within the cap — a concurrent burst of
 // oversized requests fails closed instead of sharing the pre-burst total.
-export async function reserveVoice(base44, userId, len, cap) {
+// When globalCap is set, the request must ALSO fit the global free-tier
+// daily voice ceiling (paid voice passes globalCap: null).
+export async function reserveVoice(base44, userId, len, cap, globalCap) {
   const sr = base44.asServiceRole;
   const day = new Date().toISOString().slice(0, 10);
-  // Make sure today's meter row exists (a concurrent first touch may create
-  // two — claims then apply to every matching row in lockstep and the audit
-  // still holds).
-  const rows = await sr.entities.OracleUsage.filter({ user_id: userId, day });
-  if (!rows || !rows.length) {
-    try {
-      await sr.entities.OracleUsage.create({ user_id: userId, day, readings: 0, tts_chars: 0, tts_calls: 0 });
-    } catch (_) {
-      // A concurrent request created it — the claim below handles it.
-    }
-  }
-  return claimWithinCap(
+  await ensureDailyMeter(sr, userId, day);
+  const ok = await claimWithinCap(
     sr.entities.OracleUsage,
     { user_id: userId, day },
     { tts_chars: { $lte: cap - len } },
     { $inc: { tts_chars: len, tts_calls: 1 } },
     (r) => (r.tts_chars || 0) <= cap,
   );
+  if (!ok) {
+    await clampMeter(sr.entities.OracleUsage, { user_id: userId, day }, 'tts_chars', cap);
+    return false;
+  }
+  if (globalCap == null) return true;
+  const vKey = { user_id: '__global__', day: `v-${day}` };
+  await ensureDailyMeter(sr, '__global__', `v-${day}`);
+  const globalOk = await claimWithinCap(
+    sr.entities.OracleUsage,
+    vKey,
+    { tts_chars: { $lte: globalCap - len } },
+    { $inc: { tts_chars: len, tts_calls: 1 } },
+    (r) => (r.tts_chars || 0) <= globalCap,
+  );
+  if (!globalOk) {
+    await clampMeter(sr.entities.OracleUsage, vKey, 'tts_chars', globalCap);
+    return false;
+  }
+  return true;
 }

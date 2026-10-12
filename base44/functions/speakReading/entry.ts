@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, reserveVoice, TTS_DAILY_CAP_CHARS } from '../../shared/gate.ts';
+import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS } from '../../shared/gate.ts';
 
 // Turns the Oracle's reading into warm OpenAI TTS audio.
 // The reading arrives as already-cleaned spoken text; we split it into
@@ -27,6 +27,13 @@ export default async function(req) {
 
     // ===== ACCESS + QUOTA GATE =====
     const isAdmin = user?.role === 'admin';
+    // Throttle hammering — synthesis costs the app money on every call.
+    if (!isAdmin) {
+      const throttled = !(await checkRateLimit(base44, user.id, 12));
+      if (throttled) {
+        return Response.json({ error: 'rate_limited', message: "You're moving faster than the cards allow — pause a moment." }, { status: 429 });
+      }
+    }
     const { ent, freeLeft } = await getGateState(base44, user);
     // Voice is part of the reading experience: premium subscribers, credit
     // holders, and anyone still inside their free readings may synthesize.
@@ -41,7 +48,10 @@ export default async function(req) {
     // own characters; none of them pass on a stale pre-burst total.
     if (!isAdmin) {
       const cap = ent?.plan === 'premium' ? TTS_DAILY_CAP_CHARS.premium : TTS_DAILY_CAP_CHARS.free;
-      const reserved = await reserveVoice(base44, user.id, text.length, cap);
+      // The global daily ceiling applies only to free-tier voice — premium
+      // subscribers and bought credits have already paid for their audio.
+      const globalCap = ent?.plan === 'premium' || (ent?.credits || 0) >= 1 ? null : GLOBAL_DAILY_VOICE_CHARS;
+      const reserved = await reserveVoice(base44, user.id, text.length, cap, globalCap);
       if (!reserved) {
         return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — his voice rests until tomorrow." }, { status: 429 });
       }

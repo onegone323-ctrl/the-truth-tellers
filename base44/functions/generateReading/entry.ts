@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, claimFreeReading, spendCredit, FREE_READINGS } from '../../shared/gate.ts';
+import { getGateState, claimFreeReading, spendCredit, checkRateLimit, FREE_READINGS } from '../../shared/gate.ts';
 
 // The Oracle generates a full tarot reading on OpenAI.
 // Voice: spunky, warm, personal, blunt — a life coach with a wicked sense of
@@ -19,6 +19,14 @@ export default async function(req) {
     // anything a browser does. After the free three, each reading spends one
     // credit. The admin (builder) account is always free.
     const isAdmin = user?.role === 'admin';
+    // Throttle hammering before anything else runs — each call costs the
+    // app money, and a script firing nonstop must be slowed down first.
+    if (!isAdmin) {
+      const throttled = !(await checkRateLimit(base44, user.id, 6));
+      if (throttled) {
+        return Response.json({ error: 'rate_limited', message: 'Slow down — one reading at a time.' }, { status: 429 });
+      }
+    }
     const { ent: entitlement, freeLeft } = isAdmin
       ? { ent: null, freeLeft: FREE_READINGS }
       : await getGateState(base44, user);
@@ -43,8 +51,51 @@ export default async function(req) {
     }
 
     const body = await req.json();
-    const { question, deck, spread, cards, memory, profile } = body;
-    if (!question || !cards || !cards.length) {
+    // Input ceilings: bound the prompt size (and so the cost per call) and
+    // keep oversized or malformed payloads out of generation.
+    const clampStr = (v, max) => (typeof v === 'string' ? v.slice(0, max) : v);
+    const question = clampStr(body.question, 1000);
+    const deck = {
+      ...body.deck,
+      name: clampStr(body.deck?.name, 120),
+      tradition: clampStr(body.deck?.tradition, 120),
+    };
+    const spread = {
+      ...body.spread,
+      name: clampStr(body.spread?.name, 200),
+      description: clampStr(body.spread?.description, 400),
+      meanings: (Array.isArray(body.spread?.meanings) ? body.spread.meanings : []).slice(0, 20).map((m) => clampStr(m, 200)),
+    };
+    const cards = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c) => ({
+      ...c,
+      name: clampStr(c?.name, 120),
+      position: clampStr(c?.position, 120),
+      deck_tradition: clampStr(c?.deck_tradition, 120),
+      deck_name: clampStr(c?.deck_name, 120),
+      deck_title: clampStr(c?.deck_title, 160),
+      clarifiers: (Array.isArray(c?.clarifiers) ? c.clarifiers : []).slice(0, 3).map((x) => ({ name: clampStr(x?.name, 120), reversed: !!x?.reversed })),
+    }));
+    const memory = body.memory
+      ? {
+          user_name: clampStr(body.memory.user_name, 120),
+          summary: clampStr(body.memory.summary, 1500),
+          recurring_themes: (Array.isArray(body.memory.recurring_themes) ? body.memory.recurring_themes : []).slice(0, 12).map((t) => clampStr(t, 80)),
+          last_question: clampStr(body.memory.last_question, 1000),
+          last_advice: clampStr(body.memory.last_advice, 400),
+          reading_count: Number(body.memory.reading_count) || 0,
+        }
+      : null;
+    const profile = body.profile
+      ? {
+          full_name: clampStr(body.profile.full_name, 120),
+          occupation: clampStr(body.profile.occupation, 400),
+          goals: (Array.isArray(body.profile.goals) ? body.profile.goals : []).slice(0, 10).map((g) => clampStr(g, 200)),
+          trigger: clampStr(body.profile.trigger, 400),
+          makes_happy: clampStr(body.profile.makes_happy, 400),
+          hard_memory: clampStr(body.profile.hard_memory, 400),
+        }
+      : null;
+    if (!question || !cards.length) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
 
