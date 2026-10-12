@@ -29,7 +29,7 @@ export default function Starfield() {
   );
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       {/* nebula glows */}
       <div className="absolute -top-1/3 -left-1/4 w-[80vw] h-[80vw] rounded-full blur-[120px] opacity-40"
         style={{ background: "radial-gradient(circle, rgba(120,10,20,0.5), transparent 70%)" }} />
