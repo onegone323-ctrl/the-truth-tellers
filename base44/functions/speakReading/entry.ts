@@ -30,7 +30,9 @@ export default async function(req) {
     const isAdmin = user?.role === 'admin';
     // Throttle hammering — synthesis costs the app money on every call.
     if (!isAdmin) {
-      const throttled = !(await checkRateLimit(base44, user.id, 12));
+      // Per-minute speed limit. Both paid functions share one counter, so
+      // this and generateReading must use the SAME number to stay consistent.
+      const throttled = !(await checkRateLimit(base44, user.id, 4));
       if (throttled) {
         return Response.json({ error: 'rate_limited', message: "You're moving faster than the cards allow — pause a moment." }, { status: 429 });
       }

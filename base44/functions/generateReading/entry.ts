@@ -23,7 +23,9 @@ export default async function(req) {
     // Throttle hammering before anything else runs — each call costs the
     // app money, and a script firing nonstop must be slowed down first.
     if (!isAdmin) {
-      const throttled = !(await checkRateLimit(base44, user.id, 6));
+      // Per-minute speed limit. Both paid functions share one counter, so
+      // this and speakReading must use the SAME number to stay consistent.
+      const throttled = !(await checkRateLimit(base44, user.id, 4));
       if (throttled) {
         return Response.json({ error: 'rate_limited', message: 'Slow down — one reading at a time.' }, { status: 429 });
       }
