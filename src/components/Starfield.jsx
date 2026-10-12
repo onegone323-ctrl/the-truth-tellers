@@ -61,7 +61,7 @@ export default function Starfield() {
       ))}
 
       <style>{`
-        @keyframes twinkle { 0% { opacity: 0.15; } 100% { opacity: 1; } }
+        @keyframes twinkle { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes rise {
           0% { transform: translateY(0) scale(1); opacity: 0; }
           10% { opacity: 0.8; }

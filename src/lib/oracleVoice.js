@@ -70,6 +70,8 @@ export function createOraclePlayer() {
   let el = null;
   let run = 0;
   let cancelClip = null;
+  let rewindFlag = false;
+  let paused = false;
 
   const audio = () => {
     if (!el) {
@@ -120,8 +122,29 @@ export function createOraclePlayer() {
 
     stop() {
       run += 1;
+      rewindFlag = false;
+      paused = false;
       if (cancelClip) cancelClip();
       if (el) el.pause();
+    },
+
+    // Freeze his voice mid-word; resume() picks up exactly where it left off.
+    pause() {
+      if (el) el.pause();
+      paused = true;
+    },
+
+    resume() {
+      paused = false;
+      if (el) el.play().catch(() => {});
+    },
+
+    // Replay what he just said: restart the clip he's on, or fall back one
+    // whole piece when pressed between pieces (or right at the start of one).
+    rewind() {
+      if (!el) { rewindFlag = true; return; }
+      if (el.currentTime > 1) { el.currentTime = 0; return; }
+      rewindFlag = true;
     },
 
     // Speaks the WHOLE text, piece by piece. onStart fires the moment the first
@@ -130,6 +153,8 @@ export function createOraclePlayer() {
     async speak(text, { onStart, onProgress }) {
       const myRun = ++run;
       if (cancelClip) cancelClip();
+      rewindFlag = false;
+      paused = false;
       const a = audio();
       a.pause();
       this.unlock();
@@ -163,6 +188,12 @@ export function createOraclePlayer() {
         }
         spokenChars += parts[i].length;
         onProgress(spokenChars / total);
+        // A rewind pressed between pieces falls back one whole piece.
+        if (rewindFlag && run === myRun) {
+          rewindFlag = false;
+          if (i > 0) { spokenChars -= parts[i - 1].length; i -= 2; }
+          else { spokenChars -= parts[i].length; i -= 1; }
+        }
       }
 
       // Anything the voice service dropped gets one more full pass — the

@@ -8,7 +8,7 @@ import OrbStage from "@/components/OrbStage";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
-import { Mic, MicOff, RefreshCw, Sparkles, Volume2 } from "lucide-react";
+import { Mic, MicOff, Pause, Play, RefreshCw, RotateCcw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import { createOraclePlayer } from "@/lib/oracleVoice";
 import CaptionScroll from "@/components/CaptionScroll";
@@ -30,11 +30,11 @@ export default function Home() {
   const [cards, setCards] = useState([]);
   const [reading, setReading] = useState("");
   const [readingError, setReadingError] = useState("");
-  const [mood, setMood] = useState("");
   const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voicePaused, setVoicePaused] = useState(false);
   const [captionText, setCaptionText] = useState("");
   const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
@@ -152,7 +152,6 @@ export default function Home() {
       if (typeof text !== "string" || !text.trim()) {
         throw new Error("The reading service returned no reading.");
       }
-      setMood(res?.data?.mood || "");
       setReading(text);
       // His voice starts right now — saving to the journal happens in the
       // background below and never holds it up.
@@ -227,6 +226,7 @@ export default function Home() {
     if (!sourceText) return;
     const spoken = toSpokenText(sourceText);
     setVoiceBusy(true);
+    setVoicePaused(false);
     setOrbState("thinking");
     setCaptionText("");
     setCaptionProgress(0);
@@ -241,11 +241,12 @@ export default function Home() {
     setCaptionProgress(1);
     setOrbState("idle");
     setVoiceBusy(false);
+    setVoicePaused(false);
   };
 
   const reset = () => {
     player.stop();
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setMood(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false); setVoicePaused(false);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -438,7 +439,7 @@ export default function Home() {
       {phase === "reading" && (
         <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
           <div style={{ animation: "orbRise 0.9s ease-out both" }}>
-            <OracleOrb state={orbState} size={300} mood={mood} />
+            <OracleOrb state={orbState} size={300} />
           </div>
           <p className="text-muted-foreground font-body text-sm max-w-md">
             {readingError
@@ -451,6 +452,24 @@ export default function Home() {
               ? "Listen. The truth is in his voice."
               : "His words are yours to keep."}
           </p>
+
+          {(voiceBusy || orbState === "speaking") && !readingError && (
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => {
+                  if (voicePaused) { player.resume(); setVoicePaused(false); }
+                  else { player.pause(); setVoicePaused(true); }
+                }}
+                className="neo-button flex items-center gap-2 px-6">
+                {voicePaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                {voicePaused ? "Resume His Voice" : "Pause His Voice"}
+              </button>
+              <button onClick={() => player.rewind()}
+                className="neo-pill flex items-center gap-2 px-6 py-2.5">
+                <RotateCcw className="w-3.5 h-3.5" /> Rewind
+              </button>
+            </div>
+          )}
 
           {readingError && !busy && (
             <div className="flex flex-wrap justify-center gap-3">

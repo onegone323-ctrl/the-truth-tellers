@@ -365,3 +365,8 @@
   50% { transform: translateX(18%) rotate(25deg); opacity: .9; }
 }
 @keyframes drift { to { background-position: 83px 83px; } }
+/* The orb never settles on one color — she drifts through the spectrum. */
+@keyframes hueDrift {
+  from { filter: hue-rotate(0deg) saturate(1.05); }
+  to { filter: hue-rotate(230deg) saturate(1.25); }
+}
