@@ -151,7 +151,7 @@ export default function Home() {
           hard_memory: profile.hard_memory,
         } : null,
         memory: memory ? {
-          user_name: memory.user_name || user?.full_name,
+          user_name: seekerName,
           summary: memory.summary,
           recurring_themes: memory.recurring_themes,
           last_question: memory.last_question,
@@ -187,12 +187,12 @@ export default function Home() {
             last_question: question,
             last_advice: adviceSnippet,
             reading_count: (memory.reading_count || 0) + 1,
-            user_name: memory.user_name || user?.full_name || "",
+            user_name: seekerName,
             recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
           });
         } else {
           const created = await base44.entities.OracleMemory.create({
-            user_name: user?.full_name || "",
+            user_name: seekerName,
             summary: text.slice(0, 600),
             recurring_themes: [spread.category],
             recurring_cards: cards.map((c) => c.name).slice(0, 12),
@@ -267,7 +267,14 @@ export default function Home() {
     setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false); setVoicePaused(false);
   };
 
-  const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
+  // Names: the platform auto-fills the account name from the email address,
+  // so "t4cmldxp82t" can end up treated as a person's name. The Oracle must
+  // NEVER call a seeker that — prefer the profile name they chose, then the
+  // memory record, and use the account name ONLY when it isn't just the
+  // email username.
+  const emailLocal = (user?.email || "").split("@")[0].toLowerCase();
+  const notEmailUsername = (n) => (n && n.trim().toLowerCase() !== emailLocal ? n.trim() : "");
+  const seekerName = notEmailUsername(profile?.full_name) || notEmailUsername(memory?.user_name) || notEmailUsername(user?.full_name);
   const greeting = seekerName ? `Welcome back, ${seekerName.split(" ")[0]}.` : "Welcome, seeker.";
 
   if (!profileLoaded) {
@@ -285,7 +292,7 @@ export default function Home() {
         <div className="flex flex-col items-center text-center pt-4">
           <OracleOrb state="idle" size={160} />
         </div>
-        <OnboardingQuestionnaire onComplete={setProfile} defaultName={user?.full_name || ""} />
+        <OnboardingQuestionnaire onComplete={setProfile} defaultName={notEmailUsername(user?.full_name)} />
         <AmbientSound />
       </div>
     );
@@ -319,7 +326,7 @@ export default function Home() {
       {phase === "setup" && (
         <PullToRefresh onRefresh={loadData}>
           <section className="enter delay1 mx-4 sm:mx-[54px] mb-6">
-            <DailyCard memory={memory} setMemory={setMemory} userName={user?.full_name} />
+            <DailyCard memory={memory} setMemory={setMemory} userName={seekerName} />
           </section>
 
           <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
