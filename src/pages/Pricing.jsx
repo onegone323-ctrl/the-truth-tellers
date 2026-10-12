@@ -6,16 +6,19 @@ import { Crown } from "lucide-react";
 export default function Pricing() {
   const [entitlement, setEntitlement] = useState(null);
   const [readingsUsed, setReadingsUsed] = useState(0);
+  const [role, setRole] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState("");
 
   const loadEntitlement = async () => {
     try {
-      const [rowsRes, usedRes] = await Promise.allSettled([
+      const [rowsRes, usedRes, meRes] = await Promise.allSettled([
         base44.entities.Entitlement.list("-updated_date", 1),
         base44.entities.JournalEntry.count(),
+        base44.auth.me(),
       ]);
+      if (meRes.status === "fulfilled") setRole(meRes.value?.role || "");
       if (rowsRes.status === "fulfilled") {
         const rows = rowsRes.value;
         setEntitlement(rows && rows.length ? rows[0] : null);
@@ -29,6 +32,7 @@ export default function Pricing() {
 
   useEffect(() => { loadEntitlement(); }, []);
 
+  const isAdmin = role === "admin";
   const isPremium = entitlement?.plan === "premium";
 
   const handleCancel = async () => {
@@ -61,6 +65,11 @@ export default function Pricing() {
         <h2 className="neo-label mt-0 mb-3">Your Balance</h2>
         {!loaded ? (
           <p className="neo-note">Checking your balance…</p>
+        ) : isAdmin ? (
+          <div className="flex items-center gap-3">
+            <Crown className="w-4 h-4" style={{ color: "#d4af37" }} />
+            <span className="neo-note">Admin account — everything unlocked, readings always free.</span>
+          </div>
         ) : isPremium ? (
           <div className="flex items-center gap-3">
             <Crown className="w-4 h-4" style={{ color: "#d4af37" }} />
@@ -86,7 +95,7 @@ export default function Pricing() {
         {cancelMessage && <p className="neo-note mt-3">{cancelMessage}</p>}
       </div>
 
-      {isPremium ? (
+      {isAdmin ? null : isPremium ? (
         <div className="flex justify-center">
           <button onClick={handleCancel} disabled={canceling} className="neo-pill px-6 py-2.5">
             {canceling ? "Canceling…" : "Cancel Auto-Renewal"}

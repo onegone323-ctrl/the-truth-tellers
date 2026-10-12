@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowUpRight, Settings as SettingsIcon } from "lucide-react";
 import { base44 } from "@/api/base44Client";
@@ -18,6 +18,11 @@ const NAV = [
 
 export default function Layout() {
   const location = useLocation();
+  // The Admin room link is visible to the keeper only.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    base44.auth.me().then((u) => setIsAdmin(u?.role === "admin")).catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await base44.auth.logout();
@@ -57,6 +62,11 @@ export default function Layout() {
               {label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link to="/admin" className={`neo-navlink hidden sm:inline-flex ${location.pathname === "/admin" ? "is-active" : ""}`}>
+              Admin
+            </Link>
+          )}
           <Link to="/settings" className={`neo-navlink inline-flex items-center gap-1.5 ${location.pathname === "/settings" ? "is-active" : ""}`}
             title="Settings" aria-label="Settings">
             <SettingsIcon className="w-4 h-4" />

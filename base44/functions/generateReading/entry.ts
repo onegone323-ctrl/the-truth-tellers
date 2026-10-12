@@ -15,11 +15,13 @@ export default async function(req) {
     // Monetization gate: premium subscribers read freely, and EVERYONE's first
     // three readings are free — counted from the journal (one entry is saved
     // per reading). After the free three, each reading spends one credit.
+    // The admin (builder) account is always free — everything unlocked.
     // Counting and any credit spend run as service role: the entitlement row
     // is webhook-owned and user writes are blocked by RLS.
-    const ents = await base44.entities.Entitlement.filter({ user_id: user.id });
+    const isAdmin = user?.role === 'admin';
+    const ents = isAdmin ? [] : await base44.entities.Entitlement.filter({ user_id: user.id });
     const entitlement = ents && ents.length ? ents[0] : null;
-    if (entitlement?.plan !== 'premium') {
+    if (!isAdmin && entitlement?.plan !== 'premium') {
       const used = await base44.asServiceRole.entities.JournalEntry.count({ created_by_id: user.id });
       const freeLeft = Math.max(0, 3 - (used || 0));
       if (freeLeft === 0) {

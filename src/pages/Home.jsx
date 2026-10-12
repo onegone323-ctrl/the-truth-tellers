@@ -166,7 +166,7 @@ export default function Home() {
       setReading(text);
       // Mirror the server-side spend locally: the first three readings are
       // free, premium reads freely, after that each reading spends a credit.
-      if (entitlement && entitlement.plan !== "premium" && readingsUsed >= 3) {
+      if (user?.role !== "admin" && entitlement && entitlement.plan !== "premium" && readingsUsed >= 3) {
         setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
       }
       setReadingsUsed((r) => r + 1);
@@ -433,9 +433,11 @@ export default function Home() {
               <Sparkles className="w-4 h-4" />Draw the Cards
             </button>
           </div>
-          {(entitlement || readingsUsed < 3) && (
+          {(user?.role === "admin" || entitlement || readingsUsed < 3) && (
             <div className="enter delay3 mx-4 sm:mx-[54px] mt-2 text-center">
-              {entitlement?.plan === "premium" ? (
+              {user?.role === "admin" ? (
+                <span className="neo-note">Admin — unlimited readings, everything unlocked.</span>
+              ) : entitlement?.plan === "premium" ? (
                 <span className="neo-note">Premium — unlimited readings.</span>
               ) : readingsUsed < 3 ? (
                 <span className="neo-note">

@@ -23,6 +23,7 @@ const Connect = React.lazy(() => import('@/pages/Connect'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
 const Pricing = React.lazy(() => import('@/pages/Pricing'));
 const ThankYou = React.lazy(() => import('@/pages/ThankYou'));
+const AdminPanel = React.lazy(() => import('@/pages/AdminPanel'));
 
 // Gold spinner shown while a lazy page chunk loads.
 const RouteSplash = () => (
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
           <Route path="/connect" element={<Connect />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
