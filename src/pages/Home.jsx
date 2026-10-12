@@ -8,6 +8,7 @@ import OrbStage from "@/components/OrbStage";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
+import { Link } from "react-router-dom";
 import { Mic, MicOff, Pause, Play, RefreshCw, RotateCcw, Sparkles, Volume2 } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import { createOraclePlayer } from "@/lib/oracleVoice";
@@ -33,6 +34,8 @@ export default function Home() {
   const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [entitlement, setEntitlement] = useState(null);
+  const [outOfCredits, setOutOfCredits] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voicePaused, setVoicePaused] = useState(false);
   const [captionText, setCaptionText] = useState("");
@@ -54,11 +57,14 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       // All three load in parallel — one failure never blocks the others.
-      const [meRes, memRes, profRes] = await Promise.allSettled([
+      const [meRes, memRes, profRes, entRes] = await Promise.allSettled([
         base44.auth.me(),
         base44.entities.OracleMemory.list("-updated_date", 1),
         base44.entities.SeekerProfile.list("-updated_date", 1),
+        base44.entities.Entitlement.list("-updated_date", 1),
       ]);
+      if (entRes.status === "fulfilled" && entRes.value && entRes.value.length) setEntitlement(entRes.value[0]);
+      else if (entRes.status === "rejected") console.error(entRes.reason);
       if (meRes.status === "fulfilled") setUser(meRes.value);
       else console.error(meRes.reason);
       if (memRes.status === "fulfilled" && memRes.value && memRes.value.length) setMemory(memRes.value[0]);
@@ -120,6 +126,7 @@ export default function Home() {
     setBusy(true);
     setReading("");
     setReadingError("");
+    setOutOfCredits(false);
     try {
       const payload = {
         question, deck: activeDeck, spread,
@@ -153,6 +160,10 @@ export default function Home() {
         throw new Error("The reading service returned no reading.");
       }
       setReading(text);
+      // Mirror the server-side credit spend locally (premium reads freely).
+      if (entitlement && entitlement.plan !== "premium") {
+        setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
+      }
       // His voice starts right now — saving to the journal happens in the
       // background below and never holds it up.
       speak(text);
@@ -206,11 +217,16 @@ export default function Home() {
         e?.data?.error ||
         e?.message ||
         String(e || "unknown error");
-      setReadingError(
-        /timed out|timeout/i.test(detail)
-          ? `The reading took too long to arrive — try again. (${detail})`
-          : `The reading couldn't be completed — try again. Reason: ${detail}`
-      );
+      if (e?.response?.status === 402 || /out_of_credits/i.test(detail)) {
+        setOutOfCredits(true);
+        setReadingError("You're out of readings. The Oracle waits for no one — grab credits or go Premium to keep going.");
+      } else {
+        setReadingError(
+          /timed out|timeout/i.test(detail)
+            ? `The reading took too long to arrive — try again. (${detail})`
+            : `The reading couldn't be completed — try again. Reason: ${detail}`
+        );
+      }
       setOrbState("idle");
     }
     busyRef.current = false;
@@ -411,6 +427,20 @@ export default function Home() {
               <Sparkles className="w-4 h-4" />Draw the Cards
             </button>
           </div>
+          {entitlement && (
+            <div className="enter delay3 mx-4 sm:mx-[54px] mt-2 text-center">
+              {entitlement.plan === "premium" ? (
+                <span className="neo-note">Premium — unlimited readings.</span>
+              ) : (
+                <span className="neo-note">
+                  {entitlement.credits || 0} reading credit{(entitlement.credits || 0) === 1 ? "" : "s"} left.
+                  {(entitlement.credits || 0) < 1 && (
+                    <Link to="/pricing" className="neo-pill px-3 py-1 ml-3">Get More</Link>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -473,7 +503,11 @@ export default function Home() {
 
           {readingError && !busy && (
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={handleRead} className="neo-button px-6">Try This Reading Again</button>
+              {outOfCredits ? (
+                <Link to="/pricing" className="neo-button px-6">Get More Readings</Link>
+              ) : (
+                <button onClick={handleRead} className="neo-button px-6">Try This Reading Again</button>
+              )}
               <button onClick={reset} className="neo-pill px-6 py-2.5">Another Reading</button>
             </div>
           )}
