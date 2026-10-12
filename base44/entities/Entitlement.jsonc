@@ -23,6 +23,7 @@
       "type": "string"
     }
   },
+  "required": [],
   "rls": {
     "read": {
       "$or": [
@@ -31,6 +32,11 @@
         },
         {
           "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },
