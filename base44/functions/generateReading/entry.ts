@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, FREE_READINGS } from '../../shared/gate.ts';
+import { getGateState, claimFreeReading, spendCredit, FREE_READINGS } from '../../shared/gate.ts';
 
 // The Oracle generates a full tarot reading on OpenAI.
 // Voice: spunky, warm, personal, blunt — a life coach with a wicked sense of
@@ -14,36 +14,31 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Monetization gate: premium subscribers read freely, and EVERYONE's first
-    // three readings are free — counted from journal entries THIS FUNCTION
-    // writes server-side below, never from anything a browser does (a direct
-    // API or MCP caller is counted the same way). After the free three, each
-    // reading spends one credit. The admin (builder) account is always free.
-    // Entitlement writes run as service role: the row is webhook-owned.
+    // three readings are free — metered by an ATOMIC server-side counter
+    // (OracleUsage, seeded from server-written journal history), never from
+    // anything a browser does. After the free three, each reading spends one
+    // credit. The admin (builder) account is always free.
     const isAdmin = user?.role === 'admin';
     const { ent: entitlement, freeLeft } = isAdmin
       ? { ent: null, freeLeft: FREE_READINGS }
       : await getGateState(base44, user);
-    if (!isAdmin && entitlement?.plan !== 'premium' && freeLeft === 0) {
-      if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
-        return Response.json({
-          error: 'out_of_credits',
-          message: "Your three free readings are used up — open Pricing to get more.",
-        }, { status: 402 });
-      }
-      // Atomic compare-and-spend: the decrement only applies while credits are
-      // still >= 1, so two concurrent requests can never both spend the same
-      // snapshot balance. Verified after the fact; failure = fail closed.
-      await base44.asServiceRole.entities.Entitlement.updateMany(
-        { user_id: user.id, credits: { $gte: 1 } },
-        { $inc: { credits: -1 } },
-      );
-      const after = await base44.asServiceRole.entities.Entitlement.filter({ user_id: user.id });
-      const afterCredits = after && after.length ? (after[0].credits || 0) : 0;
-      if (afterCredits >= (entitlement.credits || 0)) {
-        return Response.json({
-          error: 'out_of_credits',
-          message: "Your three free readings are used up — open Pricing to get more.",
-        }, { status: 402 });
+    if (!isAdmin && entitlement?.plan !== 'premium') {
+      // Reserve BEFORE any paid work: atomically claim a free slot, or
+      // atomically spend a credit. Each is a conditional increment verified
+      // by its own applied count — the guard is checked against the live row
+      // at write time, so a burst of concurrent requests can never share one
+      // snapshot. If neither lands, refuse.
+      const claimedFree = await claimFreeReading(base44, user);
+      if (!claimedFree) {
+        const spent = entitlement && entitlement.credits >= 1
+          ? await spendCredit(base44, user.id)
+          : false;
+        if (!spent) {
+          return Response.json({
+            error: 'out_of_credits',
+            message: "Your three free readings are used up — open Pricing to get more.",
+          }, { status: 402 });
+        }
       }
     }
 

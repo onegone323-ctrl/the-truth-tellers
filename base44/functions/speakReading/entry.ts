@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, getDailyUsage, TTS_DAILY_CAP_CHARS } from '../../shared/gate.ts';
+import { getGateState, reserveVoice, TTS_DAILY_CAP_CHARS } from '../../shared/gate.ts';
 
 // Turns the Oracle's reading into warm OpenAI TTS audio.
 // The reading arrives as already-cleaned spoken text; we split it into
@@ -35,18 +35,16 @@ export default async function(req) {
     if (!isAdmin && ent?.plan !== 'premium' && (ent?.credits || 0) < 1 && freeLeft === 0) {
       return Response.json({ error: 'out_of_credits', message: 'Voice is part of your readings — open Pricing to keep it.' }, { status: 402 });
     }
-    // Per-user daily character budget: scripted abuse cannot drain the app's
-    // OpenAI spend. Counted BEFORE synthesis so a failure never grants speech.
+    // ATOMIC daily character budget: scripted abuse cannot drain the app's
+    // OpenAI spend. The reserve is a conditional increment verified by its
+    // own applied count — a burst of concurrent requests each reserves its
+    // own characters; none of them pass on a stale pre-burst total.
     if (!isAdmin) {
       const cap = ent?.plan === 'premium' ? TTS_DAILY_CAP_CHARS.premium : TTS_DAILY_CAP_CHARS.free;
-      const usage = await getDailyUsage(base44, user.id);
-      if ((usage?.tts_chars || 0) + text.length > cap) {
+      const reserved = await reserveVoice(base44, user.id, text.length, cap);
+      if (!reserved) {
         return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — his voice rests until tomorrow." }, { status: 429 });
       }
-      await base44.asServiceRole.entities.OracleUsage.update(usage.id, {
-        tts_chars: (usage.tts_chars || 0) + text.length,
-        tts_calls: (usage.tts_calls || 0) + 1,
-      });
     }
     // ===== END GATE =====
 

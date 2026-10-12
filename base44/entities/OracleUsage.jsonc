@@ -8,6 +8,10 @@
     "day": {
       "type": "string"
     },
+    "readings": {
+      "type": "number",
+      "default": 0
+    },
     "tts_chars": {
       "type": "number",
       "default": 0
