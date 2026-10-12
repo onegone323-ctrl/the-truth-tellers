@@ -211,6 +211,7 @@ export default function Home() {
       // packs the function's JSON error body into a few different shapes
       // depending on how it hit — dig for whichever one has the real message.
       const detail =
+        e?.response?.data?.message ||
         e?.response?.data?.error ||
         e?.response?.data?.detail ||
         (typeof e?.response?.data === "string" ? e.response.data : "") ||

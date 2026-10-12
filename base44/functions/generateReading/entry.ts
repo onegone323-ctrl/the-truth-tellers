@@ -226,6 +226,7 @@ export default async function(req) {
     let aiRes;
     let data;
     let lastErrorDetail = '';
+    let lastWasBusy = false;
     let usedModel = '';
     for (const modelId of modelChain) {
       try {
@@ -260,11 +261,18 @@ export default async function(req) {
         // Retriable failures: overloaded (429), unknown model (404/400) or any
         // 5xx from the provider — walk to the next model.
         lastErrorDetail = `${modelId} -> ${aiRes.status}: ${raw.slice(0, 300)}`;
+        lastWasBusy = aiRes.status === 429;
         if (aiRes.status === 429 || aiRes.status === 404 || aiRes.status === 400 || aiRes.status >= 500) {
           continue; // try next model
         }
-        // Non-retriable: surface immediately.
-        return Response.json({ error: 'OpenAI API ' + aiRes.status + ': ' + raw.slice(0, 500) }, { status: 502 });
+        // Non-retriable: the provider's raw body NEVER reaches the client — it
+        // can carry model ids and account identifiers. It is logged here
+        // instead; the client gets a stable, generic error.
+        console.error('generateReading: provider rejected request', { model: modelId, status: aiRes.status, body: raw.slice(0, 500) });
+        return Response.json(
+          { error: 'provider_error', message: "The Oracle couldn't finish the reading — try again in a moment." },
+          { status: 502 },
+        );
       }
 
       try {
@@ -279,9 +287,18 @@ export default async function(req) {
     }
 
     if (!data) {
-      return Response.json({
-        error: 'All OpenAI models failed. Last: ' + lastErrorDetail.slice(0, 400),
-      }, { status: 502 });
+      // Same rule for the exhausted-fallback path: raw provider detail stays
+      // server-side; a busy provider gets its own friendlier message.
+      console.error('generateReading: all models failed', lastErrorDetail.slice(0, 600));
+      return Response.json(
+        {
+          error: lastWasBusy ? 'provider_busy' : 'provider_error',
+          message: lastWasBusy
+            ? 'The Oracle is busy right now — try again in a moment.'
+            : "The Oracle couldn't finish the reading — try again in a moment.",
+        },
+        { status: 502 },
+      );
     }
 
     // Chat Completions response shape: choices[0].message.content.
@@ -291,9 +308,11 @@ export default async function(req) {
     }
 
     if (!text.trim()) {
-      return Response.json({
-        error: 'OpenAI API returned no reading content. Raw shape: ' + JSON.stringify(Object.keys(data || {})).slice(0, 200),
-      }, { status: 502 });
+      console.error('generateReading: no reading content', JSON.stringify(Object.keys(data || {})).slice(0, 200));
+      return Response.json(
+        { error: 'provider_error', message: "The Oracle couldn't finish the reading — try again in a moment." },
+        { status: 502 },
+      );
     }
 
     // SERVER-SIDE usage record: the reading is logged BEFORE it is handed

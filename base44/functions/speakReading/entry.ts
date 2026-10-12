@@ -104,9 +104,13 @@ export default async function(req) {
       });
       if (!res.ok) {
         const errText = await res.text();
-        return Response.json({
-          error: 'OpenAI TTS ' + res.status + ': ' + errText.slice(0, 300),
-        }, { status: 502 });
+        // The provider's raw body stays server-side — it can carry model ids
+        // and account identifiers. The client gets a stable, generic error.
+        console.error('speakReading: provider rejected request', { status: res.status, body: errText.slice(0, 500) });
+        return Response.json(
+          { error: 'provider_error', message: "The Oracle's voice couldn't be created — try again in a moment." },
+          { status: 502 },
+        );
       }
       const audioBytes = await res.arrayBuffer();
       audio.push(arrayBufferToBase64(audioBytes));
