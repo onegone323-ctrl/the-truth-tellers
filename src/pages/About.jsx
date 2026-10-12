@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import CompanyMark from "@/components/CompanyMark";
 
 // Public "About" page — readable by search engines and by logged-out visitors.
 export default function About() {
@@ -49,7 +50,10 @@ export default function About() {
         </div>
       </main>
       <footer className="px-4 sm:px-[54px] py-8 text-center" style={{ borderTop: "1px solid var(--neo-border)" }}>
-        <span className="neo-note">© 2026 ADPOV-MEDIA-ENT · <Link to="/contact" className="neo-navlink inline-flex">Contact</Link></span>
+        <div className="flex flex-col items-center" style={{ gap: 12 }}>
+          <CompanyMark height={40} />
+          <span className="neo-note">ADPOV Media and Entertainment — We Make It Make Sense · © 2026 · <Link to="/contact" className="neo-navlink inline-flex">Contact</Link></span>
+        </div>
       </footer>
     </div>
   );

@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import Starfield from "@/components/Starfield";
 import TabBar from "@/components/TabBar";
 import RouteTransition from "@/components/RouteTransition";
+import CompanyMark from "@/components/CompanyMark";
 
 const NAV = [
   { to: "/", label: "Consult" },
@@ -56,6 +57,9 @@ export default function Layout() {
             }}
           >
             Truth 4 Clarity
+          </span>
+          <span className="hidden md:inline-flex" style={{ marginLeft: 6 }}>
+            <CompanyMark height={36} />
           </span>
         </Link>
         <nav className="flex items-center flex-wrap justify-end" style={{ gap: 4 }}>

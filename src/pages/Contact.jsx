@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import CompanyMark from "@/components/CompanyMark";
 import { Send } from "lucide-react";
 
 // Public "Contact" page — a contact form that saves messages for the owner,
@@ -84,7 +85,10 @@ export default function Contact() {
         </div>
       </main>
       <footer className="px-4 sm:px-[54px] py-8 text-center" style={{ borderTop: "1px solid var(--neo-border)" }}>
-        <span className="neo-note">© 2026 ADPOV-MEDIA-ENT · <Link to="/about" className="neo-navlink inline-flex">About</Link></span>
+        <div className="flex flex-col items-center" style={{ gap: 12 }}>
+          <CompanyMark height={40} />
+          <span className="neo-note">ADPOV Media and Entertainment — We Make It Make Sense · © 2026 · <Link to="/about" className="neo-navlink inline-flex">About</Link></span>
+        </div>
       </footer>
     </div>
   );
