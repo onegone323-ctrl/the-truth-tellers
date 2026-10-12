@@ -97,6 +97,7 @@ export default async function(req) {
       "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
       "- Then give ADVICE: a short stretch of direct, concrete advice — what to do this week, what to stop doing, what to watch for. Firm. Tell it like it is.",
       "- Close with ONE short punchy line that lands — different every time.",
+      "- After that closing line, on its own new line, add a mood tag: [MOOD: <one word>], choosing from: urgent, intense, warning, reflective, hopeful, calm. Urgent = immediate action or a deadline closing in. Intense = heavy, high-stakes. Warning = a real red flag ahead. Reflective = they need to sit with something. Hopeful = good news or real momentum. Calm = settled, steady, at ease. The tag is stripped before anyone sees or hears it — never mention it inside the reading itself.",
       "- Length: 350–600 words. Compact and dense. Every line earns its place.",
       "",
       "============================================",
@@ -114,7 +115,7 @@ export default async function(req) {
       positionLines,
       memBlock,
       "",
-      `Now speak the reading. Do NOT restate these instructions, do NOT preface. Begin directly, addressed to ${honorific}.`,
+      `Now speak the reading. Do NOT restate these instructions, do NOT preface. Begin directly, addressed to ${honorific}. End your LAST line with the [MOOD: <one word>] tag as instructed above.`,
     ].join('\n');
 
     // Keep the provider credential server-side in Base44 secrets.
@@ -139,8 +140,10 @@ export default async function(req) {
       "Cover every position in spread order. NEVER speak the names of the tarot cards or their deck traditions — the seeker sees the cards themselves; use them only as your private knowledge. " +
       "Open by restating the seeker's question, then name the deck set and the spread they chose, then walk the positions. " +
       "Give a direct verdict on the seeker's actual question, then concrete advice. " +
-      "Do NOT cite sources. Do NOT include AI disclaimers. Produce ONLY the reading itself; " +
-      "answer entirely from the prompt.";
+      "Do NOT cite sources. Do NOT include AI disclaimers. After the reading's final line, on its own new line, " +
+      "append a mood tag [MOOD: <one word>] choosing from: urgent, intense, warning, reflective, hopeful, calm — " +
+      "the word that best matches the reading's overall energy. " +
+      "Answer entirely from the prompt.";
 
     let aiRes;
     let data;
@@ -215,7 +218,51 @@ export default async function(req) {
       }, { status: 502 });
     }
 
-    return Response.json({ reading: text, model: usedModel });
+    // Pull the mood tag off the end (the model appends it for the orb's
+    // color) — the seeker never sees or hears it. The regex is tolerant of
+    // how the model formats it; if no tag made it through, a tiny fallback
+    // classification call decides the mood from the reading itself.
+    const MOODS = ['urgent', 'intense', 'warning', 'reflective', 'hopeful', 'calm'];
+    let mood = '';
+    const tail = text.slice(-140);
+    const tagMatches = [...tail.matchAll(/MOOD\s*[:\-]?\s*([a-z]+)/gi)];
+    if (tagMatches.length) {
+      const candidate = tagMatches[tagMatches.length - 1][1].toLowerCase();
+      if (MOODS.includes(candidate)) {
+        mood = candidate;
+        text = text.replace(new RegExp('\\s*\\[?MOOD\\s*[:\\-]?\\s*' + mood + '\\]?\\s*\\.?\\s*$', 'i'), '').trim();
+      }
+    }
+    if (!mood) {
+      try {
+        const clsRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'Classify the overall emotional energy a tarot reading carries for the person receiving it. Reply with JSON only.' },
+              { role: 'user', content: 'Reading:\n' + text.slice(0, 2500) + '\n\nReturn JSON: {"mood": <one word>} where the mood is exactly one of: urgent, intense, warning, reflective, hopeful, calm. Urgent = immediate action or a deadline closing in. Intense = heavy, high-stakes. Warning = a red flag ahead. Reflective = they need to sit with something. Hopeful = good news or momentum. Calm = settled and at ease.' },
+            ],
+            response_format: { type: 'json_object' },
+          }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (clsRes.ok) {
+          const cd = JSON.parse(await clsRes.text());
+          const content = cd?.choices?.[0]?.message?.content;
+          const p = typeof content === 'string' ? JSON.parse(content) : content;
+          const candidate = String(p?.mood || '').toLowerCase().trim();
+          if (MOODS.includes(candidate)) mood = candidate;
+        }
+      } catch { /* mood stays '' — the orb keeps its default colors */ }
+    }
+    console.log('mood resolved:', mood || '(none)');
+
+    return Response.json({ reading: text, mood, model: usedModel });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

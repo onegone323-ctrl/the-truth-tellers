@@ -30,6 +30,7 @@ export default function Home() {
   const [cards, setCards] = useState([]);
   const [reading, setReading] = useState("");
   const [readingError, setReadingError] = useState("");
+  const [mood, setMood] = useState("");
   const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -151,6 +152,7 @@ export default function Home() {
       if (typeof text !== "string" || !text.trim()) {
         throw new Error("The reading service returned no reading.");
       }
+      setMood(res?.data?.mood || "");
       setReading(text);
       // His voice starts right now — saving to the journal happens in the
       // background below and never holds it up.
@@ -243,7 +245,7 @@ export default function Home() {
 
   const reset = () => {
     player.stop();
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setMood(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false);
   };
 
   const seekerName = profile?.full_name || memory?.user_name || user?.full_name;
@@ -436,7 +438,7 @@ export default function Home() {
       {phase === "reading" && (
         <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
           <div style={{ animation: "orbRise 0.9s ease-out both" }}>
-            <OracleOrb state={orbState} size={300} />
+            <OracleOrb state={orbState} size={300} mood={mood} />
           </div>
           <p className="text-muted-foreground font-body text-sm max-w-md">
             {readingError
