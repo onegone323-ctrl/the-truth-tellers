@@ -14,6 +14,8 @@ const NAV = [
   { to: "/cards", label: "Cards" },
   { to: "/connect", label: "Connect" },
   { to: "/pricing", label: "Pricing" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
 ];
 
 export default function Layout() {

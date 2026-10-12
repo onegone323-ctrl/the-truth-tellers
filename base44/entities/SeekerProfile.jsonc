@@ -5,6 +5,10 @@
     "full_name": {
       "type": "string"
     },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "birthdate": {
       "type": "string",
       "format": "date"
