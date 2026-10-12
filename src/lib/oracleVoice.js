@@ -2,10 +2,11 @@ import { base44 } from "@/api/base44Client";
 
 // How much faster than the raw voice he talks (1 = exactly as generated).
 const VOICE_RATE = 1.15;
-// The first piece is short so his voice starts within a couple of seconds;
-// later pieces are longer and load while he is already talking.
-const FIRST_PART_CHARS = 300;
-const PART_CHARS = 1000;
+// The first piece gives the next piece time to load while he talks;
+// later pieces are small enough that each arrives long before the
+// current one finishes playing — even on a slow mobile connection.
+const FIRST_PART_CHARS = 450;
+const PART_CHARS = 600;
 
 // Breaks the reading into sentence-aligned pieces that cover ALL of the text.
 export function splitForSpeech(text) {
