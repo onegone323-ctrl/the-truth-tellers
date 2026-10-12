@@ -13,6 +13,7 @@ const NAV = [
   { to: "/timeline", label: "Timeline" },
   { to: "/cards", label: "Cards" },
   { to: "/connect", label: "Connect" },
+  { to: "/pricing", label: "Pricing" },
 ];
 
 export default function Layout() {

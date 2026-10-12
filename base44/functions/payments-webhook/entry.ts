@@ -12,6 +12,7 @@
 
 import { createClientFromRequest } from "npm:@base44/sdk";
 import { importSPKI, jwtVerify } from "npm:jose@5.9.6";
+import { PRODUCTS } from "../../shared/products.ts";
 
 // Wix event types (verbatim from Wix docs).
 const ORDER_APPROVED = "wix.ecom.v1.order_approved";
@@ -143,29 +144,63 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   const buyerEmail: string | null = purchase.buyerEmail ?? extractBuyerEmail(order);
 
   // ===== APP-SPECIFIC =====
-  // Grant whatever the buyer paid for. This runs BEFORE we mark the purchase paid: if it
-  // throws or times out, the status stays "pending", so Wix's retry re-runs the grant
-  // rather than hitting the "already paid" short-circuit above and skipping it forever.
-  //
-  // It MUST therefore be idempotent — Wix can also deliver duplicates CONCURRENTLY, so the
-  // "pending" check above is NOT a lock: two invocations can both reach this block. Make every
-  // effect safe to run twice by keying it on a stable id (purchase.id / checkoutId), never
-  // blind-create/blind-send:
-  //   - unlock a feature:   await db.entities.User.update(purchase.appUserId, { plan: purchase.productId });  // update is naturally idempotent
-  //   - create entitlement: const existing = await db.entities.Entitlement.filter({ purchaseId: purchase.id });
-  //                         if (!existing.length) await db.entities.Entitlement.create({ purchaseId: purchase.id, ... });
-  //   - one-time side effects (email/webhook): guard them the same way — record a marker keyed
-  //     on purchase.id and skip if it already exists, so a duplicate delivery can't send twice.
-  //   - QUANTITY: for a multi-unit purchase grant `purchase.quantity` (seats/credits/items), not a
-  //     single unit — it's the validated count create-checkout charged for. Fixed-entitlement = 1.
-  //   - subscriptions:      subscriptionId is persisted automatically below, for later revoke.
-  //   - GRANT TARGET: use purchase.appUserId when set (the built-in `User` entity — there is no
-  //     `AppUser`). For an anonymous buyer (appUserId null) match `buyerEmail` (resolved above)
-  //     against User; User records CANNOT be created here (invite-only), so when no user matches,
-  //     grant to an Entitlement row keyed on the email and claim it when they sign up.
-  //   - Gate paid access on a WRITABLE field you set here (e.g. plan / has_paid on the user or an
-  //     Entitlement row) — NEVER on is_verified: it is platform-protected and cannot be set here,
-  //     even as service role, so gating access on it locks the paying buyer out.
+  // Grant what the buyer paid for: premium-monthly → premium plan, the credit
+  // packs → N reading credits. Runs BEFORE the purchase is marked paid, so a
+  // failure leaves it "pending" and Wix's retry re-runs this grant.
+  const product = PRODUCTS[purchase.productId];
+  if (!product) {
+    console.error("payments-webhook: unknown productId on purchase", { purchaseId: purchase.id, productId: purchase.productId });
+  } else {
+    // Fulfillment target: the signed-in app user; otherwise the email the buyer
+    // typed on the Wix checkout page.
+    const targetFilter = purchase.appUserId
+      ? { user_id: purchase.appUserId }
+      : { email: (buyerEmail || "").toLowerCase() };
+    const hasTarget = purchase.appUserId || (buyerEmail && buyerEmail.trim());
+    if (!hasTarget) {
+      console.error("payments-webhook: no fulfillment target for purchase", { purchaseId: purchase.id });
+    } else {
+      // IDEMPOTENCY MARKER: Wix can deliver duplicates CONCURRENTLY, so the
+      // "pending" check above is not a lock. One EntitlementGrant row per
+      // purchase — a duplicate delivery finds it and skips the grant.
+      const grants = await db.entities.EntitlementGrant.filter({ purchase_id: purchase.id });
+      if (grants && grants.length) {
+        console.log("payments-webhook: grant already exists, skipping", { purchaseId: purchase.id });
+      } else {
+        await db.entities.EntitlementGrant.create({
+          purchase_id: purchase.id,
+          kind: purchase.productId,
+          credits: product.credits,
+        });
+
+        const ents = await db.entities.Entitlement.filter(targetFilter);
+        let ent = ents && ents.length ? ents[0] : null;
+        if (!ent) {
+          ent = await db.entities.Entitlement.create({
+            user_id: purchase.appUserId ?? "",
+            email: (buyerEmail || "").toLowerCase(),
+            plan: "",
+            credits: 0,
+            status: "",
+          });
+        }
+        if (product.subscription) {
+          // Premium plan: set the writable plan field (never is_verified).
+          await db.entities.Entitlement.update(ent.id, {
+            plan: "premium",
+            subscription_id: subscriptionId ?? ent.subscription_id ?? "",
+            status: "active",
+          });
+        } else {
+          // Credit pack / single reading: add N credits per unit purchased.
+          await db.entities.Entitlement.update(ent.id, {
+            credits: (ent.credits || 0) + product.credits * (purchase.quantity || 1),
+          });
+        }
+        console.log("payments-webhook: granted", { purchaseId: purchase.id, kind: purchase.productId });
+      }
+    }
+  }
   // ===== END APP-SPECIFIC =====
 
   // Mark paid LAST, so "paid" always implies the grant above completed. The idempotency
@@ -217,10 +252,14 @@ async function handleSubscriptionEnded(db: any, eventData: any): Promise<Respons
   }
 
   // ===== APP-SPECIFIC =====
-  // Revoke whatever access the subscription granted (mirror of the grant). Runs BEFORE we
-  // mark the purchase canceled: if it throws, the status stays as-is so Wix's retry re-runs
-  // the revoke rather than hitting the "already canceled" short-circuit and leaving access on.
-  // Must be idempotent.
+  // Revoke the premium plan this subscription granted. Credits already bought
+  // stay with the buyer — only unlimited access is removed.
+  const ents = await db.entities.Entitlement.filter({ subscription_id: subscriptionId });
+  const ent = ents && ents.length ? ents[0] : null;
+  if (ent && ent.plan === "premium") {
+    await db.entities.Entitlement.update(ent.id, { plan: "", status: "ended" });
+    console.log("payments-webhook: revoked plan", { entitlementId: ent.id, subscriptionId });
+  }
   // ===== END APP-SPECIFIC =====
 
   // Mark canceled LAST, so "canceled" always implies access was actually revoked.

@@ -12,6 +12,23 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Monetization gate: premium subscribers read freely; everyone else spends
+    // one credit per reading. The service role writes the decrement because the
+    // entitlement row is webhook-owned and user writes are blocked by RLS.
+    const ents = await base44.entities.Entitlement.filter({ user_id: user.id });
+    const entitlement = ents && ents.length ? ents[0] : null;
+    if (entitlement?.plan !== 'premium') {
+      if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
+        return Response.json({
+          error: 'out_of_credits',
+          message: "You're out of readings — open Pricing to get more.",
+        }, { status: 402 });
+      }
+      await base44.asServiceRole.entities.Entitlement.update(entitlement.id, {
+        credits: entitlement.credits - 1,
+      });
+    }
+
     const body = await req.json();
     const { question, deck, spread, cards, memory, profile } = body;
     if (!question || !cards || !cards.length) {
