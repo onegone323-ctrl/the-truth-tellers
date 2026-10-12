@@ -35,6 +35,7 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [entitlement, setEntitlement] = useState(null);
+  const [readingsUsed, setReadingsUsed] = useState(0);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voicePaused, setVoicePaused] = useState(false);
@@ -56,15 +57,18 @@ export default function Home() {
   // Load user + memory
   useEffect(() => {
     (async () => {
-      // All three load in parallel — one failure never blocks the others.
-      const [meRes, memRes, profRes, entRes] = await Promise.allSettled([
+      // All load in parallel — one failure never blocks the others.
+      const [meRes, memRes, profRes, entRes, journalRes] = await Promise.allSettled([
         base44.auth.me(),
         base44.entities.OracleMemory.list("-updated_date", 1),
         base44.entities.SeekerProfile.list("-updated_date", 1),
         base44.entities.Entitlement.list("-updated_date", 1),
+        base44.entities.JournalEntry.count(),
       ]);
       if (entRes.status === "fulfilled" && entRes.value && entRes.value.length) setEntitlement(entRes.value[0]);
       else if (entRes.status === "rejected") console.error(entRes.reason);
+      if (journalRes.status === "fulfilled" && typeof journalRes.value === "number") setReadingsUsed(journalRes.value);
+      else if (journalRes.status === "rejected") console.error(journalRes.reason);
       if (meRes.status === "fulfilled") setUser(meRes.value);
       else console.error(meRes.reason);
       if (memRes.status === "fulfilled" && memRes.value && memRes.value.length) setMemory(memRes.value[0]);
@@ -160,10 +164,12 @@ export default function Home() {
         throw new Error("The reading service returned no reading.");
       }
       setReading(text);
-      // Mirror the server-side credit spend locally (premium reads freely).
-      if (entitlement && entitlement.plan !== "premium") {
+      // Mirror the server-side spend locally: the first three readings are
+      // free, premium reads freely, after that each reading spends a credit.
+      if (entitlement && entitlement.plan !== "premium" && readingsUsed >= 3) {
         setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
       }
+      setReadingsUsed((r) => r + 1);
       // His voice starts right now — saving to the journal happens in the
       // background below and never holds it up.
       speak(text);
@@ -427,14 +433,18 @@ export default function Home() {
               <Sparkles className="w-4 h-4" />Draw the Cards
             </button>
           </div>
-          {entitlement && (
+          {(entitlement || readingsUsed < 3) && (
             <div className="enter delay3 mx-4 sm:mx-[54px] mt-2 text-center">
-              {entitlement.plan === "premium" ? (
+              {entitlement?.plan === "premium" ? (
                 <span className="neo-note">Premium — unlimited readings.</span>
+              ) : readingsUsed < 3 ? (
+                <span className="neo-note">
+                  {3 - readingsUsed} free reading{3 - readingsUsed === 1 ? "" : "s"} left — on the house.
+                </span>
               ) : (
                 <span className="neo-note">
-                  {entitlement.credits || 0} reading credit{(entitlement.credits || 0) === 1 ? "" : "s"} left.
-                  {(entitlement.credits || 0) < 1 && (
+                  {entitlement?.credits || 0} reading credit{(entitlement?.credits || 0) === 1 ? "" : "s"} left.
+                  {(entitlement?.credits || 0) < 1 && (
                     <Link to="/pricing" className="neo-pill px-3 py-1 ml-3">Get More</Link>
                   )}
                 </span>

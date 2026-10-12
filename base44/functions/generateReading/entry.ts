@@ -12,21 +12,27 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Monetization gate: premium subscribers read freely; everyone else spends
-    // one credit per reading. The service role writes the decrement because the
-    // entitlement row is webhook-owned and user writes are blocked by RLS.
+    // Monetization gate: premium subscribers read freely, and EVERYONE's first
+    // three readings are free — counted from the journal (one entry is saved
+    // per reading). After the free three, each reading spends one credit.
+    // Counting and any credit spend run as service role: the entitlement row
+    // is webhook-owned and user writes are blocked by RLS.
     const ents = await base44.entities.Entitlement.filter({ user_id: user.id });
     const entitlement = ents && ents.length ? ents[0] : null;
     if (entitlement?.plan !== 'premium') {
-      if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
-        return Response.json({
-          error: 'out_of_credits',
-          message: "You're out of readings — open Pricing to get more.",
-        }, { status: 402 });
+      const used = await base44.asServiceRole.entities.JournalEntry.count({ created_by_id: user.id });
+      const freeLeft = Math.max(0, 3 - (used || 0));
+      if (freeLeft === 0) {
+        if (!entitlement || !entitlement.credits || entitlement.credits < 1) {
+          return Response.json({
+            error: 'out_of_credits',
+            message: "Your three free readings are used up — open Pricing to get more.",
+          }, { status: 402 });
+        }
+        await base44.asServiceRole.entities.Entitlement.update(entitlement.id, {
+          credits: entitlement.credits - 1,
+        });
       }
-      await base44.asServiceRole.entities.Entitlement.update(entitlement.id, {
-        credits: entitlement.credits - 1,
-      });
     }
 
     const body = await req.json();

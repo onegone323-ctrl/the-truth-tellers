@@ -5,14 +5,22 @@ import { Crown } from "lucide-react";
 
 export default function Pricing() {
   const [entitlement, setEntitlement] = useState(null);
+  const [readingsUsed, setReadingsUsed] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState("");
 
   const loadEntitlement = async () => {
     try {
-      const rows = await base44.entities.Entitlement.list("-updated_date", 1);
-      setEntitlement(rows && rows.length ? rows[0] : null);
+      const [rowsRes, usedRes] = await Promise.allSettled([
+        base44.entities.Entitlement.list("-updated_date", 1),
+        base44.entities.JournalEntry.count(),
+      ]);
+      if (rowsRes.status === "fulfilled") {
+        const rows = rowsRes.value;
+        setEntitlement(rows && rows.length ? rows[0] : null);
+      } else console.error(rowsRes.reason);
+      if (usedRes.status === "fulfilled" && typeof usedRes.value === "number") setReadingsUsed(usedRes.value);
     } catch (e) {
       console.error(e);
     }
@@ -43,7 +51,7 @@ export default function Pricing() {
           Pricing
         </h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md mx-auto">
-          Every reading is a live session with the Oracle — go unlimited, or pay per reading.
+          Your first three readings are free. After that, go unlimited or pay per reading.
         </p>
       </div>
 
@@ -53,8 +61,6 @@ export default function Pricing() {
         <h2 className="neo-label mt-0 mb-3">Your Balance</h2>
         {!loaded ? (
           <p className="neo-note">Checking your balance…</p>
-        ) : entitlement === null ? (
-          <p className="neo-note">No credits yet — buy below to start your first reading.</p>
         ) : isPremium ? (
           <div className="flex items-center gap-3">
             <Crown className="w-4 h-4" style={{ color: "#d4af37" }} />
