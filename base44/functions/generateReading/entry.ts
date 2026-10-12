@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { getGateState, claimFreeReading, spendCredit, checkRateLimit, FREE_READINGS } from '../../shared/gate.ts';
 
+// redeploy marker: picks up the shared gate fix (minute meter row creation)
 // The Oracle generates a full tarot reading on OpenAI.
 // Voice: spunky, warm, personal, blunt — a life coach with a wicked sense of
 // humor. Every card is named WITH the deck tradition it was drawn from.

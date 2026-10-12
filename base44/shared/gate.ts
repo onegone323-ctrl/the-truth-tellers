@@ -122,6 +122,11 @@ export async function checkRateLimit(base44, userId, maxPerMinute) {
     { $inc: { minute_calls: 1 } },
     (r) => (r.minute_calls || 0) <= maxPerMinute,
   );
+  if (!ok) {
+    // A refusal must be visible in the logs — a silent throttle is a bug
+    // masquerading as a rate limit.
+    console.error('gate.checkRateLimit: refusing call', { userId, minuteKey, maxPerMinute });
+  }
   // Housekeeping: rate rows older than an hour are dead weight. The $regex
   // pins this to minute-bucket rows only — the daily voice row's day value
   // ('YYYY-MM-DD') never matches.

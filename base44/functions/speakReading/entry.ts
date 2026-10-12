@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS } from '../../shared/gate.ts';
 
+// redeploy marker: picks up the shared gate fix (minute meter row creation)
 // Turns the Oracle's reading into warm OpenAI TTS audio.
 // The reading arrives as already-cleaned spoken text; we split it into
 // sentence-sized chunks (the TTS input cap is ~4096 chars), synthesize each
