@@ -216,7 +216,7 @@
 
   /* beveled glass panel with cyan inner hairline + scanline sweep */
   .neo-panel {
-    position: relative; min-width: 0; padding: 27px;
+    position: relative; min-width: 0; padding: clamp(16px, 5vw, 27px);
     border: 1px solid var(--neo-border);
     background: var(--neo-panel-bg);
     box-shadow: 0 15px 36px rgba(0,0,0,.5), inset 0 0 28px rgba(123,44,255,.05);

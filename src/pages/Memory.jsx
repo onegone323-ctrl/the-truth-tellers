@@ -118,7 +118,7 @@ export default function Memory() {
             <strong className="block font-serif text-[14px] font-normal" style={{ color: "#eadfbf" }}>
               {c.metadata?.name || "Memory Session"}
             </strong>
-            <span className="block mt-1" style={{ color: "#817a6d", fontSize: 11 }}>
+            <span className="block mt-1" style={{ color: "#817a6d", fontSize: 14 }}>
               {String(c.created_date || "").slice(0, 10)}
             </span>
           </button>
@@ -143,7 +143,7 @@ export default function Memory() {
         </div>
       </div>
 
-      <div className="mx-4 sm:mx-[54px] mb-10 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="mx-4 sm:mx-[54px] mb-10 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
         <div className="neo-panel hidden sm:block">{ConversationList}</div>
 
         <div className="neo-panel flex flex-col" style={{ minHeight: 480 }}>

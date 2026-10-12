@@ -44,7 +44,7 @@ export default function PricingCards() {
                 <Icon className="w-4 h-4" style={{ color: "#d4af37" }} />
                 <h3 className="neo-label m-0">{p.name}</h3>
                 {p.featured && (
-                  <span className="gold-pill text-gold-leaf px-2 py-0.5 ml-auto" style={{ fontSize: 10 }}>
+                  <span className="gold-pill text-gold-leaf px-2 py-0.5 ml-auto" style={{ fontSize: 14 }}>
                     Best value
                   </span>
                 )}

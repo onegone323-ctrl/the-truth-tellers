@@ -296,7 +296,7 @@ export default function Home() {
       {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section
-          className="neo-hero grid grid-cols-1 lg:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
+          className="neo-hero grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
           <div style={{ animation: "materialize 1s .12s ease both" }}>
             <div className="neo-eyebrow mb-5">Consult</div>
@@ -322,7 +322,7 @@ export default function Home() {
             <DailyCard memory={memory} setMemory={setMemory} userName={user?.full_name} />
           </section>
 
-          <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
+          <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
             {/* Question + voice */}
             <div className="neo-panel">
               <h2 className="neo-label mt-0 mb-[18px]">Your Question</h2>
@@ -344,7 +344,7 @@ export default function Home() {
             <div className="neo-panel">
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Choose Your Deck</h2>
-                <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 11 }}>
+                <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 14 }}>
                   Blend all decks
                   <button onClick={() => setBlendDecks((v) => !v)}
                     type="button"
@@ -372,7 +372,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
+          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
             {/* Spread selection */}
             <div className="neo-panel">
               <h2 className="neo-label mt-0 mb-[18px]">Choose Your Spread</h2>
@@ -390,7 +390,7 @@ export default function Home() {
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
                       <strong className="block font-serif text-[15px] font-normal" style={{ color: "#eadfbf" }}>{s.name}</strong>
-                      <span className="block mt-[5px]" style={{ color: "#817a6d", fontSize: 11 }}>{s.description}</span>
+                      <span className="block mt-[5px]" style={{ color: "#817a6d", fontSize: 14 }}>{s.description}</span>
                     </button>
                   ))}
                 </div>

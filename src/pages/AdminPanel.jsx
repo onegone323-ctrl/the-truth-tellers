@@ -138,7 +138,7 @@ export default function AdminPanel() {
               <div key={p.id} className="flex items-center justify-between gap-3 text-sm"
                 style={{ borderBottom: "1px solid rgba(212,175,55,0.12)", paddingBottom: 6 }}>
                 <span style={{ color: "#c7bda4" }}>{p.buyerEmail || p.appUserId || "unknown"}</span>
-                <span style={{ color: "#817a6d", fontSize: 12 }}>{p.productName}</span>
+                <span style={{ color: "#817a6d", fontSize: 14 }}>{p.productName}</span>
                 <span style={{ color: p.status === "paid" ? "#d4af37" : "#817a6d" }}>
                   {p.amount} {p.currency} · {p.status}
                 </span>
@@ -160,8 +160,8 @@ export default function AdminPanel() {
             <div key={u.id} className="flex items-center justify-between gap-3 text-sm"
               style={{ borderBottom: "1px solid rgba(212,175,55,0.12)", paddingBottom: 6 }}>
               <span style={{ color: "#c7bda4" }}>{u.full_name || "—"}</span>
-              <span style={{ color: "#817a6d", fontSize: 12 }}>{u.email}</span>
-              <span style={{ color: u.role === "admin" ? "#00e5ff" : "#817a6d", fontSize: 12 }}>
+              <span style={{ color: "#817a6d", fontSize: 14 }}>{u.email}</span>
+              <span style={{ color: u.role === "admin" ? "#00e5ff" : "#817a6d", fontSize: 14 }}>
                 {u.role} · {String(u.created_date || "").slice(0, 10)}
               </span>
             </div>
@@ -207,7 +207,7 @@ export default function AdminPanel() {
                   <span style={{ color: r.status === "healthy" ? "#7dd8a0" : "#e0a13a" }}>●</span>
                   <span style={{ color: "#c7bda4" }}>{r.run_date} — {r.status}</span>
                 </div>
-                <div className="mt-1" style={{ fontSize: 12, color: "#817a6d" }}>
+                <div className="mt-1" style={{ fontSize: 14, color: "#817a6d" }}>
                   {(r.checks || []).map((c, i) => `${c.name}: ${c.ok ? "ok" : "FAIL"}${c.detail ? ` (${c.detail})` : ""}`).join(" · ")}
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function AdminPanel() {
                 <div style={{ color: "#c7bda4" }} className="truncate">
                   "{(e.question || "").slice(0, 70)}{(e.question || "").length > 70 ? "…" : ""}"
                 </div>
-                <div style={{ color: "#817a6d", fontSize: 12 }}>
+                <div style={{ color: "#817a6d", fontSize: 14 }}>
                   {e.spread} · {e.deck} · {String(e.created_date || "").slice(0, 10)} · by {e.created_by || "unknown"}
                 </div>
               </div>
