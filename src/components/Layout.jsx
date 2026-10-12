@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, ChevronDown, Settings as SettingsIcon } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, ArrowUpRight, Settings as SettingsIcon } from "lucide-react";
 import useGoBack from "@/hooks/useGoBack";
 import { base44 } from "@/api/base44Client";
 import Starfield from "@/components/Starfield";
@@ -36,12 +35,6 @@ export default function Layout() {
   // Mobile header: on any path that isn't a tab root (a detail page like
   // /journal/:id, or Settings/Pricing/Admin), show a back arrow and the page
   // title instead of the brand. Tab roots and desktop keep the brand logo.
-  // Tablet (640-767px): About/Contact/Pricing collapse behind a compact "More"
-  // dropdown; desktop (>=768px) shows every link as before.
-  const MORE_TO = ["/about", "/contact", "/pricing"];
-  const moreNav = NAV.filter((n) => MORE_TO.includes(n.to));
-  const moreActive = MORE_TO.includes(location.pathname);
-
   const TAB_ROOTS = ["/", "/journal", "/memory", "/timeline", "/cards", "/connect"];
   const isTabRoot = TAB_ROOTS.includes(location.pathname);
   const pageTitle = (() => {
@@ -72,7 +65,7 @@ export default function Layout() {
         }}
       >
         {!isTabRoot && (
-          <div className="sm:hidden flex items-center" style={{ gap: 8 }}>
+          <div className="md:hidden flex items-center" style={{ gap: 8 }}>
             <button onClick={goBack} className="neo-navlink" title="Go back" aria-label="Go back">
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -93,7 +86,7 @@ export default function Layout() {
             </span>
           </div>
         )}
-        <Link to="/" className={`${isTabRoot ? "flex" : "hidden sm:flex"} items-center`} style={{ gap: 13 }}>
+        <Link to="/" className={`${isTabRoot ? "flex" : "hidden md:flex"} items-center`} style={{ gap: 13 }}>
           <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
           <span
             style={{
@@ -111,38 +104,21 @@ export default function Layout() {
           </span>
         </Link>
         <nav className="flex items-center flex-wrap justify-end" style={{ gap: 4 }}>
+          {/* Desktop-only: below 768px the TabBar is the primary nav. */}
           {NAV.map(({ to, label }) => (
-            <Link key={to} to={to} className={`neo-navlink ${MORE_TO.includes(to) ? "hidden md:inline-flex" : "hidden sm:inline-flex"} ${location.pathname === to ? "is-active" : ""}`}>
+            <Link key={to} to={to} className={`neo-navlink hidden md:inline-flex ${location.pathname === to ? "is-active" : ""}`}>
               {label}
             </Link>
           ))}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={`neo-navlink hidden sm:inline-flex items-center gap-1 md:hidden ${moreActive ? "is-active" : ""}`}
-                aria-label="More pages">
-                More <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={8} className="md:hidden">
-              {moreNav.map(({ to, label }) => (
-                <DropdownMenuItem key={to} asChild>
-                  <Link to={to} className={`cursor-pointer ${location.pathname === to ? "text-[var(--gold-leaf)]" : ""}`}>
-                    {label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
           {isAdmin && (
-            <Link to="/admin" className={`neo-navlink hidden sm:inline-flex ${location.pathname === "/admin" ? "is-active" : ""}`}>
+            <Link to="/admin" className={`neo-navlink hidden md:inline-flex ${location.pathname === "/admin" ? "is-active" : ""}`}>
               Admin
             </Link>
           )}
           <Link to="/settings" className={`neo-navlink inline-flex items-center gap-1.5 ${location.pathname === "/settings" ? "is-active" : ""}`}
             title="Settings" aria-label="Settings">
             <SettingsIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Settings</span>
+            <span className="hidden md:inline">Settings</span>
           </Link>
           <button onClick={handleLogout} className="neo-navlink inline-flex items-center" title="Sign out" aria-label="Sign out">
             <ArrowUpRight className="w-4 h-4" />
@@ -152,7 +128,7 @@ export default function Layout() {
       <main className={`overscroll-none ${location.pathname === "/" ? "relative z-[1] pb-[72px]" : "relative z-[1] max-w-5xl mx-auto px-4 py-8"}`}>
         <RouteTransition />
         {/* keeps content clear of the mobile tab bar */}
-        <div className="h-[72px] sm:hidden" aria-hidden="true" />
+        <div className="h-[72px] md:hidden" aria-hidden="true" />
       </main>
       <TabBar />
     </div>

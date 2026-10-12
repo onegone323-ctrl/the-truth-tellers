@@ -306,7 +306,7 @@ export default function Home() {
             <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px 0 0" }}>
               {phase === "setup"
                 ? `${greeting} Speak your question, choose your deck and spread, and let him read the cards.`
-                : "The cards are dealing. Watch them reveal — then ask her to read."}
+                : "The cards are dealing. Watch them reveal — then ask him to read."}
             </p>
           </div>
           <div style={{ animation: "materialize 1s .3s ease both" }}>

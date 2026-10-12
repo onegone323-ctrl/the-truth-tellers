@@ -24,7 +24,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
         {/* deal-in wrapper: card slides down from above and settles */}
         <div
           style={{
-            width: 150, height: 240,
+            width: "clamp(120px, 40vw, 150px)", height: "clamp(192px, 64vw, 240px)",
             transform: dealt ? "translateY(0) scale(1) rotate(0deg)" : "translateY(-280px) scale(0.78) rotate(-8deg)",
             opacity: dealt ? 1 : 0,
             transition: "transform 0.8s cubic-bezier(0.22,1,0.36,1), opacity 0.5s ease",
@@ -33,7 +33,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
           <div
             className="relative transition-transform"
             style={{
-              width: 150, height: 240,
+              width: "clamp(120px, 40vw, 150px)", height: "clamp(192px, 64vw, 240px)",
               transformStyle: "preserve-3d",
               transform: show ? "rotateY(180deg)" : "rotateY(0deg)",
               transitionDuration: "1100ms",
@@ -48,7 +48,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 boxShadow: `0 10px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(0,0,0,0.5), 0 0 12px color-mix(in srgb, ${accent} 20%, transparent)`,
               }}>
               <div className="absolute inset-1.5 rounded-md" style={{ border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)` }} />
-              <span style={{ fontSize: 44, color: accent, textShadow: `0 0 14px color-mix(in srgb, ${accent} 60%, transparent)` }} className="opacity-80">
+              <span style={{ fontSize: "clamp(28px, 9.4vw, 44px)", color: accent, textShadow: `0 0 14px color-mix(in srgb, ${accent} 60%, transparent)` }} className="opacity-80">
                 {deck?.backGlyph || "✦"}
               </span>
               <div className="absolute inset-0 rounded-lg opacity-30"
@@ -74,7 +74,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 {card?.position || `Card ${index + 1}`}
               </div>
               <div className="flex-1 flex items-center justify-center">
-                <span style={{ fontSize: 30, color: accent, textShadow: `0 0 12px ${accent}aa` }}>{suitGlyph}</span>
+                <span style={{ fontSize: "clamp(20px, 6.4vw, 30px)", color: accent, textShadow: `0 0 12px ${accent}aa` }}>{suitGlyph}</span>
               </div>
               <div className="mb-2 px-1">
                 <div className="text-sm font-serif leading-tight" style={{ color: "var(--ivory)" }}>
@@ -100,7 +100,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
           style={{ opacity: show ? 1 : 0 }}>
           <div className="w-px h-3 mx-auto" style={{ background: `linear-gradient(${accent}, transparent)` }} />
           {clarifiers.map((c, i) => (
-            <div key={i} className="relative rounded" style={{ width: 72, height: 100 }}>
+            <div key={i} className="relative rounded" style={{ width: "clamp(56px, 18vw, 72px)", height: "clamp(78px, 25vw, 100px)" }}>
               <div className="absolute inset-0 rounded flex flex-col items-center justify-center p-1 text-center"
                 style={{
                   background: "linear-gradient(160deg, #0a0a0f, #14100c)",

@@ -49,24 +49,34 @@ export default function AdminPanel() {
     const amount = parseInt(grantCredits, 10) || 0;
     if (!email || amount < 1) { setGrantMessage("Enter an email and a credit amount."); return; }
     setGrantMessage("Granting…");
-    try {
-      const existing = entitlements.find((e) => (e.email || "").toLowerCase() === email);
-      if (existing) {
-        await base44.entities.Entitlement.update(existing.id, { credits: (existing.credits || 0) + amount });
-      } else {
+    const existing = entitlements.find((e) => (e.email || "").toLowerCase() === email);
+    if (existing) {
+      // Optimistic: show the new balance immediately, roll back if the write fails.
+      const prevCredits = existing.credits || 0;
+      setEntitlements((list) =>
+        list.map((e) => (e.id === existing.id ? { ...e, credits: prevCredits + amount } : e))
+      );
+      try {
+        await base44.entities.Entitlement.update(existing.id, { credits: prevCredits + amount });
+        setGrantMessage(`Added ${amount} reading credit${amount === 1 ? "" : "s"} to ${email}.`);
+        setGrantEmail("");
+        setGrantCredits("5");
+      } catch (e) {
+        setEntitlements((list) =>
+          list.map((e) => (e.id === existing.id ? { ...e, credits: prevCredits } : e))
+        );
+        setGrantMessage(e?.message || "Couldn't add credits — try again.");
+      }
+    } else {
+      try {
         const created = await base44.entities.Entitlement.create({ email, credits: amount, plan: "", status: "" });
         setEntitlements((list) => [created, ...list]);
+        setGrantMessage(`Added ${amount} reading credit${amount === 1 ? "" : "s"} to ${email}.`);
+        setGrantEmail("");
+        setGrantCredits("5");
+      } catch (e) {
+        setGrantMessage(e?.message || "Couldn't add credits — try again.");
       }
-      setEntitlements((list) =>
-        list.map((e) => ((e.email || "").toLowerCase() === email
-          ? { ...e, credits: (e.credits || 0) + amount }
-          : e))
-      );
-      setGrantMessage(`Added ${amount} reading credit${amount === 1 ? "" : "s"} to ${email}.`);
-      setGrantEmail("");
-      setGrantCredits("5");
-    } catch (e) {
-      setGrantMessage(e?.message || "Couldn't add credits — try again.");
     }
   };
 

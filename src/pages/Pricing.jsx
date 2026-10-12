@@ -38,11 +38,15 @@ export default function Pricing() {
   const handleCancel = async () => {
     setCanceling(true);
     setCancelMessage("");
+    // Optimistic: flip the status now; roll back if the API refuses.
+    const prev = entitlement;
+    if (prev) setEntitlement({ ...prev, status: "ending" });
     try {
       await base44.functions.invoke("cancelSubscription", {});
       await loadEntitlement();
       setCancelMessage("Auto-renewal is off. Your premium access stays on until the end of the billing period.");
     } catch (e) {
+      if (prev) setEntitlement(prev);
       setCancelMessage(e?.response?.data?.error || e?.message || "Couldn't cancel — try again.");
     }
     setCanceling(false);

@@ -62,7 +62,7 @@ export default function TabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="sm:hidden fixed inset-x-0 bottom-0 z-50 flex items-stretch"
+      className="md:hidden fixed inset-x-0 bottom-0 z-50 flex items-stretch"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)",
         background: "var(--surface-glass-strong)",
@@ -78,10 +78,12 @@ export default function TabBar() {
             className="tab-link flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] text-sm tracking-wide transition-colors"
             style={{ color: active ? "#00e5ff" : "var(--neo-muted)", textShadow: active ? "0 0 10px rgba(0,229,255,.5)" : "none" }}>
             <Icon className="w-5 h-5" />
-            <span className="text-sm leading-none">{label}</span>
+            <span className="tab-label text-sm leading-none">{label}</span>
           </Link>
         );
       })}
+      {/* Very narrow screens: six tabs get crowded — icon-only below 380px. */}
+      <style>{`@media (max-width: 379.98px) { .tab-label { display: none; } }`}</style>
     </nav>
   );
 }

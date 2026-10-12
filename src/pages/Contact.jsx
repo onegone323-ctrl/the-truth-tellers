@@ -2,17 +2,30 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CompanyMark from "@/components/CompanyMark";
+import DetailBackHeader from "@/components/DetailBackHeader";
+import { useAuth } from "@/lib/AuthContext";
 import { Send } from "lucide-react";
 
-// Public "Contact" page — a contact form that saves messages for the owner,
-// readable by logged-out visitors and search engines.
+// "Contact" — public and search-indexable; inside the authenticated app it
+// swaps its standalone header for the sticky back-button header the other
+// detail pages use.
 export default function Contact() {
+  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const inLayout = !isLoadingAuth && isAuthenticated;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  if (isLoadingAuth) {
+    return (
+      <div className="flex justify-center pt-16">
+        <div className="w-8 h-8 border-2 rounded-full animate-spin"
+          style={{ borderColor: "rgba(212,175,55,0.3)", borderTopColor: "#d4af37" }} />
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,18 +47,22 @@ export default function Contact() {
 
   return (
     <div className="obsidian-page min-h-screen text-foreground" style={{ background: "var(--void-deep)" }}>
-      <header className="px-4 sm:px-[54px] py-6 flex items-center justify-between" style={{ borderBottom: "1px solid var(--neo-border)" }}>
-        <Link to="/" className="flex items-center" style={{ gap: 13 }}>
-          <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
-          <span style={{ color: "var(--gold-leaf)", fontSize: 18, letterSpacing: 4, textTransform: "uppercase", fontWeight: 500 }}>
-            Truth 4 Clarity
-          </span>
-        </Link>
-        <nav className="flex items-center gap-3">
-          <Link to="/about" className="neo-navlink inline-flex">About</Link>
-          <Link to="/" className="neo-button">Consult the Oracle</Link>
-        </nav>
-      </header>
+      {inLayout ? (
+        <DetailBackHeader title="Contact" />
+      ) : (
+        <header className="px-4 sm:px-[54px] py-6 flex items-center justify-between" style={{ borderBottom: "1px solid var(--neo-border)" }}>
+          <Link to="/" className="flex items-center" style={{ gap: 13 }}>
+            <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
+            <span style={{ color: "var(--gold-leaf)", fontSize: 18, letterSpacing: 4, textTransform: "uppercase", fontWeight: 500 }}>
+              Truth 4 Clarity
+            </span>
+          </Link>
+          <nav className="flex items-center gap-3">
+            <Link to="/about" className="neo-navlink inline-flex">About</Link>
+            <Link to="/" className="neo-button">Consult the Oracle</Link>
+          </nav>
+        </header>
+      )}
       <main className="relative z-[1] max-w-3xl mx-auto px-4 py-12">
         <h1 className="neo-h1 m-0" style={{ fontSize: 40, letterSpacing: 4 }}>Contact Us</h1>
         <div className="gold-hairline my-8" />

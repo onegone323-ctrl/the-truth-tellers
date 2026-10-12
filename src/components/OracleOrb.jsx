@@ -1,4 +1,5 @@
 import React from "react";
+import useViewportWidth from "@/hooks/useViewportWidth";
 
 // The OracleOrb — an obsidian neon sphere with a holographic cyan sheen.
 // States: idle, listening, thinking, speaking. Her colors are never fixed —
@@ -21,14 +22,17 @@ export default function OracleOrb({ state = "idle", size = 215 }) {
   const breatheDur = state === "speaking" ? "1.6s" : state === "thinking" ? "2.4s" : "4s";
   // She changes hue all by herself — faster while she speaks.
   const hueDur = state === "speaking" ? "9s" : "16s";
+  // On phones the orb shrinks with the screen instead of overflowing it.
+  const vw = useViewportWidth();
+  const effective = vw < 768 ? Math.min(size, Math.round(vw * 0.6)) : size;
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div className="relative flex items-center justify-center" style={{ width: effective, height: effective }}>
       <div
         className="relative rounded-full"
         style={{
-          width: size,
-          height: size,
+          width: effective,
+          height: effective,
           background: CORE[state] || CORE.idle,
           boxShadow: AURA[state] || AURA.idle,
           animation: `breathe ${breatheDur} ease-in-out infinite, hueDrift ${hueDur} linear infinite alternate`,
@@ -39,7 +43,7 @@ export default function OracleOrb({ state = "idle", size = 215 }) {
         <div
           className="absolute rounded-full"
           style={{
-            inset: size * 0.056,
+            inset: effective * 0.056,
             border: "1px solid var(--gold-leaf)",
             background: "linear-gradient(130deg, transparent 35%, rgba(0,229,255,.3), transparent 62%)",
             animation: "sheen 4s ease-in-out infinite",
@@ -49,7 +53,7 @@ export default function OracleOrb({ state = "idle", size = 215 }) {
         <div
           className="absolute rounded-full"
           style={{
-            inset: size * 0.14,
+            inset: effective * 0.14,
             background:
               "radial-gradient(circle at 54% 42%, color-mix(in srgb, var(--gold-leaf) 70%, transparent), transparent 3%, transparent 27%, rgba(0,229,255,.22) 28%, transparent 65%)",
             filter: "blur(6px)",
