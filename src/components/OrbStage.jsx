@@ -1,5 +1,5 @@
 import React from "react";
-import OracleOrb from "@/components/OracleOrb";
+import OracleSphere from "@/components/OracleSphere";
 import useViewportWidth from "@/hooks/useViewportWidth";
 
 // The orb suspended inside counter-rotating gold gyroscope rings.
@@ -31,7 +31,7 @@ export default function OrbStage({ state = "idle", size = 215, height = 370 }) {
           animation: "gyroReverse 10s linear infinite",
         }}
       />
-      <OracleOrb state={state} size={effective} />
+      <OracleSphere state={state} size={effective} />
     </div>
   );
 }

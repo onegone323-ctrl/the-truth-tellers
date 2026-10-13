@@ -96,8 +96,8 @@ export default function OracleSphere({ state = "idle", size = 215 }) {
     // Dark core — occludes the far side of the network so it reads as a solid
     // mystical globe with depth.
     const core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.92, 32, 24),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color("#07050a"), transparent: true, opacity: 0.94 })
+      new THREE.SphereGeometry(0.88, 32, 24),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color("#0a060d"), transparent: true, opacity: 0.92 })
     );
     scene.add(core);
 
@@ -118,7 +118,7 @@ export default function OracleSphere({ state = "idle", size = 215 }) {
     const globeGeo = new THREE.BufferGeometry();
     globeGeo.setAttribute("position", new THREE.BufferAttribute(globePos, 3));
     const globeMat = new THREE.PointsMaterial({
-      size: 0.052, map: spark, color: GOLD, transparent: true, opacity: 0.95,
+      size: 0.072, map: spark, color: new THREE.Color("#f0d98c"), transparent: true, opacity: 1,
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
     const globe = new THREE.Points(globeGeo, globeMat);
@@ -127,7 +127,7 @@ export default function OracleSphere({ state = "idle", size = 215 }) {
     const lineGeo = new THREE.BufferGeometry();
     lineGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(buildFilaments(globePts)), 3));
     const lineMat = new THREE.LineBasicMaterial({
-      color: GOLD, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false,
+      color: new THREE.Color("#c9a227"), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false,
     });
     const filaments = new THREE.LineSegments(lineGeo, lineMat);
 
@@ -247,9 +247,9 @@ export default function OracleSphere({ state = "idle", size = 215 }) {
 
       // Globe + halo react: warm up and swell with the voice.
       globeMat.color.copy(tmpColor).lerp(GOLD, 0.5);
-      globeMat.size = 0.052 + energy * 0.03 + burst * 0.04;
-      globeMat.opacity = speaking ? 0.65 + energy * 0.35 : 0.95;
-      lineMat.opacity = speaking ? 0.1 + energy * 0.12 : 0.16;
+      globeMat.size = 0.072 + energy * 0.04 + burst * 0.05;
+      globeMat.opacity = speaking ? 0.65 + energy * 0.35 : 1;
+      lineMat.opacity = speaking ? 0.12 + energy * 0.15 : 0.3;
       const swell = 1 + energy * 0.06 + burst * 0.1 + Math.sin(clock.t * 1.4) * 0.012;
       core.scale.setScalar(swell);
       core.material.color.setRGB(0.028 + heat * 0.05, 0.02 + heat * 0.03, 0.04);

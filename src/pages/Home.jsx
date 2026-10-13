@@ -4,6 +4,7 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
+import OracleSphere from "@/components/OracleSphere";
 import OrbStage from "@/components/OrbStage";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
@@ -483,7 +484,7 @@ export default function Home() {
       {phase === "reading" && (
         <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
           <div style={{ animation: "orbRise 0.9s ease-out both" }}>
-            <OracleOrb state={orbState} size={300} />
+            <OracleSphere state={orbState} size={300} />
           </div>
           <p className="text-muted-foreground font-body text-sm max-w-md">
             {readingError

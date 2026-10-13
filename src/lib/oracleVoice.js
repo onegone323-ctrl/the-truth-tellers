@@ -8,6 +8,14 @@ const VOICE_RATE = 1.15;
 const FIRST_PART_CHARS = 450;
 const PART_CHARS = 600;
 
+// Live audio energy for the Oracle's visuals: one AudioContext + analyser
+// wired to the single voice element, so the fire can react to his actual
+// voice while he speaks. Purely additive — if it fails, his voice is fine.
+let audioCtx = null;
+let analyserNode = null;
+let sourceNode = null;
+export function getVoiceAnalyser() { return analyserNode; }
+
 // Breaks the reading into sentence-aligned pieces that cover ALL of the text.
 export function splitForSpeech(text) {
   const flat = (text || "").replace(/\s+/g, " ").trim();
@@ -119,8 +127,28 @@ export function createOraclePlayer() {
     });
 
   return {
+    // Wires the shared voice element into an analyser (inside a tap gesture,
+    // where the browser allows audio contexts to start).
+    ensureAnalyser() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+        if (!sourceNode) {
+          sourceNode = audioCtx.createMediaElementSource(audio());
+          analyserNode = audioCtx.createAnalyser();
+          analyserNode.fftSize = 256;
+          analyserNode.smoothingTimeConstant = 0.72;
+          sourceNode.connect(analyserNode);
+          analyserNode.connect(audioCtx.destination);
+        }
+      } catch (e) {
+        // The analyser is optional — his voice plays with or without it.
+      }
+    },
+
     // Call inside a tap (before any await) so later playback is allowed.
     unlock() {
+      this.ensureAnalyser();
       const a = audio();
       a.src = silentWav();
       a.play().catch(() => {});
