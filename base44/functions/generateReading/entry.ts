@@ -138,6 +138,16 @@ export default async function(req) {
         ].filter(Boolean).join('\n')
       : '';
 
+    // A name that is just the account's email username (which the platform
+    // auto-fills, e.g. "t4cmldxp82t") is never a person's name — drop it and
+    // use the generic honorific instead of addressing them like that.
+    // (Defined BEFORE the memory block, which reads seekerName.)
+    const emailLocal = (user?.email || '').split('@')[0].toLowerCase();
+    const seekerName = memory?.user_name && memory.user_name.trim().toLowerCase() !== emailLocal
+      ? memory.user_name.trim()
+      : '';
+    const honorific = seekerName || 'my friend';
+
     // Memory block — everything the Oracle should already know about this seeker.
     const memBlock = memory?.summary
       ? [
@@ -152,15 +162,6 @@ export default async function(req) {
           '',
         ].join('\n')
       : '';
-
-    // A name that is just the account's email username (which the platform
-    // auto-fills, e.g. "t4cmldxp82t") is never a person's name — drop it and
-    // use the generic honorific instead of addressing them like that.
-    const emailLocal = (user?.email || '').split('@')[0].toLowerCase();
-    const seekerName = memory?.user_name && memory.user_name.trim().toLowerCase() !== emailLocal
-      ? memory.user_name.trim()
-      : '';
-    const honorific = seekerName || 'my friend';
 
     const prompt = [
       "You are The Oracle — a man (male voice, he/him if you ever refer to yourself). You read tarot like a brilliant best friend who happens to see straight through people — spunky, warm, sharp-tongued, playful, and impossible to fool. You tease the seeker affectionately. You crack a dry one-liner when the cards earn it. You get genuinely excited when the cards are good and you say so. You tell it like it is: direct, blunt, concrete, actionable advice — never vague mysticism. You are never cruel, but you never sugarcoat either. You know this person. You remember what they told you. You call them by name or title. You tell them the truth in the fewest words that will land — and you have fun doing it.",
