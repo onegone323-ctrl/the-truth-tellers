@@ -61,21 +61,28 @@ function silentWav() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchClips(text) {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const res = await base44.functions.invoke("speakReading", { text });
       const clips = res?.data?.chunks;
       if (Array.isArray(clips) && clips.length) return clips;
     } catch (e) {
-      // Quota / entitlement rejections are final — stop retrying at once.
       const status = e?.response?.status;
-      if (status === 402 || status === 429) {
+      if (status === 402) {
+        // Entitlement rejection is final — the paywall speaks, not the Oracle.
         console.warn("The Oracle's voice is resting.", e?.response?.data?.message || e?.message || e);
         return null;
       }
+      if (status === 429) {
+        // The speed limit is a one-minute window, not a refusal. Wait it out
+        // and try again — a mid-reading piece is never dropped.
+        console.warn("The Oracle's voice is pacing itself — waiting for the next piece.");
+        await sleep(15000);
+        continue;
+      }
       console.warn("The Oracle's voice service hiccuped.", e?.message || e);
     }
-    if (attempt < 3) await sleep(1200 * (attempt + 1));
+    if (attempt < 5) await sleep(1200 * (attempt + 1));
   }
   return null;
 }

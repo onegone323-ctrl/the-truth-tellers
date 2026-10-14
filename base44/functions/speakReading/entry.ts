@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
+import { getGateState, reserveVoice, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
 
 // The Oracle's voice: ElevenLabs primary (the seeker's chosen voice), with
 // OpenAI as the backup voice. "engine: openai" speaks with OpenAI only —
@@ -29,15 +29,11 @@ export default async function(req) {
 
     // ===== ACCESS + QUOTA GATE =====
     const isAdmin = user?.role === 'admin';
-    // Throttle hammering — synthesis costs the app money on every call.
-    if (!isAdmin) {
-      // Per-minute speed limit. Both paid functions share one counter, so
-      // this and generateReading must use the SAME number to stay consistent.
-      const throttled = !(await checkRateLimit(base44, user.id, 4));
-      if (throttled) {
-        return Response.json({ error: 'rate_limited', message: "You're moving faster than the cards allow — pause a moment." }, { status: 429 });
-      }
-    }
+    // No per-minute throttle here: a spoken reading is inherently a burst of
+    // small chunk calls, and the shared 4/minute cap (shared with
+    // generateReading) was cutting readings off mid-flow. Voice consumption
+    // is still bounded below by the per-user daily character budget and the
+    // global free-tier ceiling — the throttle is not the guard that matters.
     const { ent, freeLeft } = await getGateState(base44, user);
     // Voice is part of the reading experience: premium subscribers, credit
     // holders, and anyone still inside their free readings may synthesize.
