@@ -42,7 +42,7 @@ export default function OracleSphere({ state = 'idle', size = 215, immersive = f
       }
       visual.heat += (target - visual.heat) * (1 - Math.exp(-dt * 9));
       visual.level += ((speaking ? 1 : 0) - visual.level) * (1 - Math.exp(-dt * 3));
-      if (immersive || (!speaking && visual.level < .025)) visual.angle = (visual.angle + dt * 18) % 360;
+      if (!speaking && visual.level < .025) visual.angle = (visual.angle + dt * 18) % 360;
       if (speaking) visual.hue = (visual.hue + dt * (12 + visual.heat * 60)) % 360;
       root.style.setProperty('--angle', `${visual.angle}deg`);
       root.style.setProperty('--fire', `${visual.level * (.65 + visual.heat * .35)}`);
@@ -67,13 +67,17 @@ export default function OracleSphere({ state = 'idle', size = 215, immersive = f
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
   }, [immersive]);
-  const imageStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen', pointerEvents: 'none', userSelect: 'none', transformOrigin: '50% 49%' };
+  // The photos are squares with black backgrounds — fade their corners out so
+  // the flames behind the globe stay visible around it instead of being blocked
+  // by an invisible square "box".
+  const FADE = 'radial-gradient(circle at 50% 49%, #000 62%, transparent 72%)';
+  const imageStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen', pointerEvents: 'none', userSelect: 'none', transformOrigin: '50% 49%', WebkitMaskImage: FADE, maskImage: FADE };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
       <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: immersive ? 'visible' : 'hidden', background: 'transparent', borderRadius: immersive ? 0 : '50%', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
         <Image src={CALM} alt='' draggable={false} onError={() => setError('The calm globe image could not load.')} style={{ ...imageStyle, transform: 'rotate(var(--angle))' }} />
-        {!immersive && <Image src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />}
-        {!immersive && <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />}
+        <Image src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />
+        <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', WebkitMaskImage: FADE, maskImage: FADE }} />
       </div>
       {error && <p role='alert' style={{ color: '#edb5a4', fontSize: 12 }}>{error}</p>}
     </div>
