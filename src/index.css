@@ -331,9 +331,7 @@
   }
 
   .neo-hero {
-    background:
-      linear-gradient(90deg, rgba(5,5,5,.96) 0 39%, rgba(5,5,5,.52)),
-      url("https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/9e993b970_generated_85ff2aa7.jpg") center/cover;
+    background: #000000;
   }
   .neo-h1 {
     color: var(--ivory); font-size: 58px; line-height: 1.02; letter-spacing: 9px;
