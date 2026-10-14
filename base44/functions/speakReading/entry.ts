@@ -66,13 +66,11 @@ export default async function(req) {
       return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Voice configuration: the model comes from the app's secrets, but the
-    // voice itself IS the persona — a warm, older woman (the Oracle) — so it
-    // is fixed here rather than read from a setting.
-    const model = secrets.get('OPENAI_TTS_MODEL') || 'gpt-4o-mini-tts';
-    const voice = 'shimmer';
-    const speedRaw = parseFloat(secrets.get('OPENAI_TTS_SPEED') || '1.0');
-    const speed = Number.isFinite(speedRaw) && speedRaw >= 0.25 && speedRaw <= 4 ? speedRaw : 1.0;
+    // A stock synthetic voice with its own identity, not an actor imitation.
+    // Pin the expressive model so the delivery direction is always applied.
+    const model = 'gpt-4o-mini-tts';
+    const voice = 'sage';
+    const speed = 0.94;
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
@@ -106,7 +104,7 @@ export default async function(req) {
           // gpt-4o-mini-tts accepts direction — this is what makes her sound
           // like the wise older woman she is, not just any female voice.
           ...(model === 'gpt-4o-mini-tts' ? {
-            instructions: "You are the Oracle — an older Black woman, everybody's grandmother. Stern, sharp-tongued, authoritative and matter-of-fact: you have seen everything, you do not repeat yourself, and you say exactly what you mean. The warmth is underneath — inviting, protective, a little knowing amusement when it is earned — but the delivery is firm and direct. Unhurried, never rushed, never robotic, never chirpy.",
+            instructions: "Use an original mature feminine voice with a low, warm register and a lightly textured, lived-in timbre. Speak conversationally, like a wise older woman talking across a kitchen table: relaxed, grounded, gently amused, quietly certain. Use measured pauses and natural falling intonation. The authority is effortless, never theatrical; the affection is real, never sugary. Deliver blunt truths with calm confidence and a little dry humor. Keep a natural American cadence, no exaggerated accent, no breathy youthfulness, no chirpy uplift or announcer delivery. Do not imitate any actor or identifiable person.",
           } : {}),
         }),
         signal: AbortSignal.timeout(60000),

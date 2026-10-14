@@ -6,12 +6,12 @@ import { Image } from "@/components/ui/image";
 // themes. Used in the app header and the public page footers.
 const LOGO_URL = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/297c1ce17_adpovtvlogo.jpg";
 
-export default function CompanyMark({ height = 32, className = "" }) {
+export default function CompanyMark({ height = 32, className = "", compact = false }) {
   return (
     <span
       className={`inline-block ${className}`}
       style={{
-        padding: "6px 11px",
+        padding: compact ? "2px 4px" : "6px 11px",
         borderRadius: 6,
         border: "1px solid color-mix(in srgb, var(--gold-leaf) 35%, transparent)",
         background: "rgba(5,5,5,0.9)",

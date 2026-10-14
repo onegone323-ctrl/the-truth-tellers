@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import OracleSphere from "@/components/OracleSphere";
+import OracleFlames from "@/components/OracleFlames";
 import { Link } from "react-router-dom";
 import { Pause, Play, RotateCcw, RefreshCw, Volume2, X } from "lucide-react";
 
@@ -14,34 +16,37 @@ export default function ReadingStage({
 }) {
   const [size, setSize] = useState(200);
   useEffect(() => {
-    const fit = () => setSize(Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.42));
+    const fit = () => setSize(Math.round(Math.min(window.innerWidth * 0.4, window.innerHeight * 0.36)));
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     fit();
     window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("resize", fit);
+    };
   }, []);
 
   const speaking = state === "speaking";
 
-  return (
-    <div className="fixed inset-0 z-40 flex flex-col items-center" style={{ background: "#000000" }}>
-      {/* the flame breathes through the whole page while she speaks */}
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle at 50% 47%, rgba(212,175,55,0.3) 0%, rgba(139,26,43,0.16) 34%, transparent 62%)",
-          opacity: speaking || busy ? 0.95 : 0.35,
-          animation: speaking ? "hueDrift 7s linear infinite alternate" : "none",
-          transition: "opacity 1.2s ease",
-        }} />
+  return createPortal(
+    <div data-reading-stage className="fixed inset-0 z-[100] flex h-[100dvh] flex-col items-center overflow-hidden bg-reading-void"
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
 
       {/* quiet escape hatch — the page has no chrome of its own */}
       <button onClick={onReset} aria-label="Leave the reading"
-        className="neo-pill absolute top-4 right-4 flex items-center justify-center"
-        style={{ width: 34, height: 34, padding: 0 }}><X className="w-3.5 h-3.5" /></button>
+        className="neo-pill absolute right-3 z-20 flex items-center justify-center"
+        style={{ top: "max(12px, env(safe-area-inset-top))", width: 34, height: 34, padding: 0 }}><X className="w-3.5 h-3.5" /></button>
 
-      <div className="relative flex-1 w-full flex items-center justify-center"
-        style={{ animation: "orbRise 0.9s ease-out both" }}>
-        <OracleSphere state={state} size={size} />
+      <div className="relative flex-1 min-h-0 w-full flex items-center justify-center">
+        <OracleFlames active={speaking && !voicePaused} radius={size * 0.57} />
+        <div className="relative pointer-events-none" style={{ animation: "orbRise 0.9s ease-out both" }}>
+          <OracleSphere state={voicePaused ? "idle" : state} size={size} immersive />
+        </div>
       </div>
+
+      {/* Reading failures and playback controls remain above the fire. */}
+
 
       {error && !busy && (
         <p className="relative px-6 pb-3 text-center" style={{ color: "#b1a38b", fontSize: 12, maxWidth: 420 }}>
@@ -89,6 +94,7 @@ export default function ReadingStage({
           to { transform: translateY(0) scale(1); opacity: 1; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

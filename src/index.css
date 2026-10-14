@@ -42,6 +42,7 @@
     --sidebar-border: 43 60% 40%;
     --sidebar-ring: 43 74% 58%;
 
+    --reading-void: 0 0% 0%;
     --void: #0a0a0f;
     --void-deep: #050505;
     --gold-leaf: #d4af37;
@@ -56,6 +57,10 @@
     --neo-muted: #827b6d;
     --neo-panel-bg: linear-gradient(140deg, rgba(21,19,25,.88), rgba(5,5,7,.93));
     --neo-field-bg: rgba(0,0,0,.65);
+  }
+
+  .dark {
+    --reading-void: 0 0% 0%;
   }
 
   :root.light {

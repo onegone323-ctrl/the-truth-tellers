@@ -514,7 +514,7 @@ export default function Home() {
       {phase !== "reading" && (
         <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
       )}
-      <AmbientSound />
+      {phase !== "reading" && <AmbientSound />}
     </div>
   );
 }

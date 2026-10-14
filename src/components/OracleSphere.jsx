@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getVoiceAnalyser } from '@/lib/oracleVoice';
+import { Image } from '@/components/ui/image';
 
 const CALM = 'https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/891c987d1_globe.jpg';
 const FIRE = 'https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg';
 
-export default function OracleSphere({ state = 'idle', size = 215 }) {
+export default function OracleSphere({ state = 'idle', size = 215, immersive = false }) {
   const rootRef = useRef(null);
   const stateRef = useRef(state);
   const visualRef = useRef({ angle: 0, hue: 0, heat: 0, level: 0 });
@@ -14,13 +15,13 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
     const root = rootRef.current;
     if (!root) return;
     const canvas = root.querySelector('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas?.getContext('2d');
     let width = 1, height = 1, frame = 0, last = performance.now(), bins = null;
     const visual = visualRef.current;
     const resize = () => {
       width = root.clientWidth; height = root.clientHeight;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+      if (canvas) { canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr); }
       if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     const observer = new ResizeObserver(resize); observer.observe(root); resize();
@@ -41,7 +42,7 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
       }
       visual.heat += (target - visual.heat) * (1 - Math.exp(-dt * 9));
       visual.level += ((speaking ? 1 : 0) - visual.level) * (1 - Math.exp(-dt * 3));
-      if (!speaking && visual.level < .025) visual.angle = (visual.angle + dt * 18) % 360;
+      if (immersive || (!speaking && visual.level < .025)) visual.angle = (visual.angle + dt * 18) % 360;
       if (speaking) visual.hue = (visual.hue + dt * (12 + visual.heat * 60)) % 360;
       root.style.setProperty('--angle', `${visual.angle}deg`);
       root.style.setProperty('--fire', `${visual.level * (.65 + visual.heat * .35)}`);
@@ -65,14 +66,14 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
     };
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
-  }, []);
+  }, [immersive]);
   const imageStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen', pointerEvents: 'none', userSelect: 'none', transformOrigin: '50% 49%' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
-      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: 'hidden', background: 'transparent', borderRadius: '50%', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
-        <img src={CALM} alt='' draggable={false} onError={() => setError('The calm globe image could not load.')} style={{ ...imageStyle, transform: 'rotate(var(--angle))' }} />
-        <img src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />
-        <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
+      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: immersive ? 'visible' : 'hidden', background: 'transparent', borderRadius: immersive ? 0 : '50%', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
+        <Image src={CALM} alt='' draggable={false} onError={() => setError('The calm globe image could not load.')} style={{ ...imageStyle, transform: 'rotate(var(--angle))' }} />
+        {!immersive && <Image src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />}
+        {!immersive && <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />}
       </div>
       {error && <p role='alert' style={{ color: '#edb5a4', fontSize: 12 }}>{error}</p>}
     </div>
