@@ -126,6 +126,15 @@ export default function Layout() {
             >
               Truth 4 Clarity
             </span>
+            <img
+              src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg"
+              alt=""
+              className="rounded-full"
+              style={{
+                width: 56, height: 56, objectFit: "cover",
+                boxShadow: "0 0 18px rgba(212,175,55,0.4), 0 0 40px rgba(139,26,43,0.35)",
+              }}
+            />
           </Link>
           {/* Bottom — nav, evenly spread, smaller font */}
           <nav className="flex items-center justify-center" style={{ gap: "clamp(12px, 2.4vw, 30px)" }}>
