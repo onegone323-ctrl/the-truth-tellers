@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { CARDS, DECKS, getCardByName } from "@/lib/tarotData";
+import { dailyGlimpse } from "@/lib/dailyGlimpse";
 import CardFace from "@/components/CardFace";
 import { Sparkles } from "lucide-react";
 
@@ -59,9 +60,9 @@ export default function DailyCard({ memory, setMemory, userName }) {
   };
 
   return (
-    <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(34,15,58,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
+    <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
       <div>
-        <label className="block" style={{ color: "#00e5ff", fontSize: 14, letterSpacing: 3, textTransform: "uppercase" }}>Today's Card</label>
+        <label className="block" style={{ color: "#f5e6b8", fontSize: 14, letterSpacing: 3, textTransform: "uppercase" }}>Today's Card</label>
         <p className="mt-2.5 italic" style={{ color: "var(--neo-muted)", fontSize: 13 }}>
           {fresh
             ? "One card a day. Come back when the window resets."
@@ -81,8 +82,8 @@ export default function DailyCard({ memory, setMemory, userName }) {
             <h3 className="font-display text-xl" style={{ color: "var(--ivory)" }}>
               {cardInfo.name}{isReversed ? " — Reversed" : ""}
             </h3>
-            <p className="text-sm text-foreground/85 mt-2 leading-relaxed">
-              {isReversed ? cardInfo.reversed : cardInfo.upright}
+            <p className="font-serif text-[15px] leading-relaxed mt-2" style={{ color: "#e9dfc8" }}>
+              {dailyGlimpse(cardInfo, isReversed)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-3">
               New card in {hoursLeft}h {minsLeft}m

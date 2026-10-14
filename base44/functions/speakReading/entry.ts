@@ -56,7 +56,7 @@ export default async function(req) {
       const globalCap = ent?.plan === 'premium' || (ent?.credits || 0) >= 1 ? null : GLOBAL_DAILY_VOICE_CHARS;
       const reserved = await reserveVoice(base44, user.id, text.length, cap, globalCap);
       if (!reserved) {
-        return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — his voice rests until tomorrow." }, { status: 429 });
+        return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — her voice rests until tomorrow." }, { status: 429 });
       }
     }
     // ===== END GATE =====
@@ -66,12 +66,11 @@ export default async function(req) {
       return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Voice configuration comes from the app's secrets, with sane defaults:
-    // a warm, expressive MALE voice at natural speed.
-    const model = secrets.get('OPENAI_TTS_MODEL') || 'gpt-4o-mini-tts';
-    const voice = secrets.get('OPENAI_TTS_VOICE') || 'ash';
-    const speedRaw = parseFloat(secrets.get('OPENAI_TTS_SPEED') || '1.0');
-    const speed = Number.isFinite(speedRaw) && speedRaw >= 0.25 && speedRaw <= 4 ? speedRaw : 1.0;
+    // A stock synthetic voice with its own identity, not an actor imitation.
+    // Pin the expressive model so the delivery direction is always applied.
+    const model = 'gpt-4o-mini-tts';
+    const voice = 'sage';
+    const speed = 0.94;
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
@@ -102,6 +101,11 @@ export default async function(req) {
           input: chunk,
           response_format: 'mp3',
           speed,
+          // gpt-4o-mini-tts accepts direction — this is what makes her sound
+          // like the wise older woman she is, not just any female voice.
+          ...(model === 'gpt-4o-mini-tts' ? {
+            instructions: "Use an original mature feminine voice with a low, warm register and a lightly textured, lived-in timbre. Speak conversationally, like a wise older woman talking across a kitchen table: relaxed, grounded, gently amused, quietly certain. Use measured pauses and natural falling intonation. The authority is effortless, never theatrical; the affection is real, never sugary. Deliver blunt truths with calm confidence and a little dry humor. Keep a natural American cadence, no exaggerated accent, no breathy youthfulness, no chirpy uplift or announcer delivery. Do not imitate any actor or identifiable person.",
+          } : {}),
         }),
         signal: AbortSignal.timeout(60000),
       });

@@ -8,6 +8,7 @@ export const DECKS = [
     description: "The classic 1909 deck — the universal language of tarot.",
     accent: "#d4af37",
     backGlyph: "☀",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/c0d4f3cb1_generated_image.png",
   },
   {
     id: "egyptian",
@@ -16,6 +17,7 @@ export const DECKS = [
     description: "Ancient Egyptian symbolism — gods, ankhs, and the Book of the Dead.",
     accent: "#e6c068",
     backGlyph: "𓂀",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/91990cfd4_generated_image.png",
   },
   {
     id: "thoth",
@@ -24,6 +26,7 @@ export const DECKS = [
     description: "Crowley & Harris — alchemy, Thelema, and cosmic geometry.",
     accent: "#c9a227",
     backGlyph: "✦",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/11c032035_generated_image.png",
   },
   {
     id: "marseille",
@@ -32,14 +35,16 @@ export const DECKS = [
     description: "The old French woodcut style — stark, symbolic, unadorned.",
     accent: "#b8860b",
     backGlyph: "✶",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/49bbe63f5_generated_image.png",
   },
   {
     id: "isis",
     name: "Isis",
     tradition: "Temple of Isis",
     description: "The great goddess deck — throne and veil, moon magic, and hermetic Egypt.",
-    accent: "#4fb3bf",
+    accent: "#e8c976",
     backGlyph: "𓋹",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/3c83db2c4_generated_image.png",
   },
   {
     id: "golden-dawn",
@@ -48,14 +53,16 @@ export const DECKS = [
     description: "Ceremonial magic — Kabbalah, astrology, and the esoteric Rosy Cross.",
     accent: "#f0c75e",
     backGlyph: "✸",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/ed96444e0_generated_image.png",
   },
   {
     id: "wildwood",
     name: "Wildwood",
     tradition: "Wildwood / Greenwood",
     description: "Primal forest tarot — seasons, archetypes, and the green world beneath.",
-    accent: "#7da05a",
+    accent: "#e8354f",
     backGlyph: "❧",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/dc7835809_generated_image.png",
   },
   {
     id: "deviant-moon",
@@ -64,6 +71,7 @@ export const DECKS = [
     description: "Gothic shadow tarot — moonlit figures, honest edges, no softening.",
     accent: "#c3ccd4",
     backGlyph: "☾",
+    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4625f98ff_generated_image.png",
   },
 ];
 

@@ -158,7 +158,7 @@ export default function Memory() {
           </p>
         </div>
         <div className="hidden sm:flex justify-center">
-          <div style={{ fontSize: 72, color: "#00e5ff", textShadow: "0 0 30px #00e5ff" }}>✶</div>
+          <div style={{ fontSize: 72, color: "#f5e6b8", textShadow: "0 0 30px #f5e6b8" }}>✶</div>
         </div>
       </div>
 
@@ -191,7 +191,7 @@ export default function Memory() {
               <MessageBubble key={i} message={m} />
             ))}
             {waiting && (
-              <p className="neo-note" style={{ color: "#00e5ff" }}>
+              <p className="neo-note" style={{ color: "#f5e6b8" }}>
                 The Oracle is leafing through your records…
               </p>
             )}

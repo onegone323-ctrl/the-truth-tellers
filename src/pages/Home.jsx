@@ -4,13 +4,13 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
-import OracleSphere from "@/components/OracleSphere";
 import OrbStage from "@/components/OrbStage";
+import ReadingStage from "@/components/ReadingStage";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import { Link } from "react-router-dom";
-import { Mic, MicOff, Pause, Play, RefreshCw, RotateCcw, Sparkles, Volume2 } from "lucide-react";
+import { Mic, MicOff, Sparkles } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import { createOraclePlayer } from "@/lib/oracleVoice";
 import CaptionScroll from "@/components/CaptionScroll";
@@ -306,14 +306,13 @@ export default function Home() {
         <section
           className="neo-hero grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
-          <div style={{ animation: "materialize 1s .12s ease both" }}>
-            <div className="neo-eyebrow mb-5">Consult</div>
-            <h1 className="neo-h1 m-0 max-w-[520px] text-[30px] tracking-[4px] sm:text-[58px] sm:tracking-[9px]">
-              {phase === "setup" ? "Consult the Oracle" : "The Cards Are Drawn"}
+          <div className="text-center" style={{ animation: "materialize 1s .12s ease both" }}>
+            <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[560px] text-[30px] tracking-[3px] sm:text-[46px] sm:tracking-[4px]">
+              {phase === "setup" ? "Let the Oracle Deliver the Message the Universe Wants You to Know" : "The Cards Are Drawn"}
             </h1>
-            <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px 0 0" }}>
+            <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
               {phase === "setup"
-                ? `${greeting} Speak your question, choose your deck and spread, and let him read the cards.`
+                ? `${greeting} Speak your question, choose the deck and spread, and let the Oracle read your cards.`
                 : "The cards are dealing. Watch them reveal — then ask him to read."}
             </p>
           </div>
@@ -331,13 +330,13 @@ export default function Home() {
           </section>
 
           <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
-            {/* Question + voice */}
-            <div className="neo-panel">
+            {/* Question + voice — the box fills the panel, footer pinned to the bottom */}
+            <div className="neo-panel flex flex-col" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Your Question</h2>
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
                 placeholder="What do you need the truth about?"
-                rows={3}
-                className="neo-field min-h-[105px]" />
+                rows={9}
+                className="neo-field flex-1 min-h-[260px]" />
               <div className="flex items-center justify-between gap-4 mt-[17px]">
                 <button onClick={listening ? stopListening : startListening}
                   className="neo-button flex items-center gap-2">
@@ -349,7 +348,7 @@ export default function Home() {
             </div>
 
             {/* Deck selection */}
-            <div className="neo-panel">
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Choose Your Deck</h2>
                 <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 14 }}>
@@ -365,67 +364,80 @@ export default function Home() {
                 {DECKS.map((d) => (
                   <button key={d.id} onClick={() => { setDeck(d); setBlendDecks(false); }}
                     className={`neo-tile ${!blendDecks && deck.id === d.id ? "is-active" : ""}`}>
-                    <div className="neo-art" />
-                    {d.name}
+                    <div className="neo-art" style={{ backgroundImage: `url(${d.art})` }} />
+                    <span className="neo-deck-name">{d.name}</span>
                   </button>
                 ))}
               </div>
               {blendDecks && (
-                <div className="neo-tile is-active mt-[9px] py-3">
-                  <div className="text-2xl" style={{ color: BLENDED_DECK.accent }}>{BLENDED_DECK.backGlyph}</div>
-                  <div className="mt-1">Blended — all eight decks, one reading</div>
+                <div className="mt-[9px] flex items-center justify-center gap-2"
+                  style={{
+                    border: "1px solid var(--gold-leaf)",
+                    background: "linear-gradient(100deg, #6f4d0b, var(--gold-leaf), #8b1a2b)",
+                    color: "#050505",
+                    padding: "6px 10px",
+                    textTransform: "uppercase",
+                    letterSpacing: "1.5px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    boxShadow: "0 0 16px rgba(212,175,55,.35)",
+                  }}>
+                  <span style={{ fontSize: 13 }}>{BLENDED_DECK.backGlyph}</span>
+                  <span>Blended — all eight decks, one reading</span>
                 </div>
               )}
               <p className="neo-note mt-3">{activeDeck.description}</p>
             </div>
           </section>
 
-          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
-            {/* Spread selection */}
-            <div className="neo-panel">
+          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6">
+            {/* Spread selection — one full-width panel */}
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Choose Your Spread</h2>
               <div className="flex flex-wrap gap-2 mb-4">
                 {categories.map((c) => (
                   <button key={c} onClick={() => { setSpreadCategory(c); const first = SPREADS.filter((s) => s.category === c)[0]; if (first) setSpread(first); }}
-                    className={`neo-pill ${spreadCategory === c ? "is-active" : ""}`}>{c}</button>
+                    className={`neo-pill-gold ${spreadCategory === c ? "is-active" : ""}`}>{c}</button>
                 ))}
               </div>
               {spreadCategory === "Custom" ? (
                 <CustomSpreadBuilder onBuild={(s) => setSpread(s)} />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {spreadsInCat.map((s) => (
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
-                      <strong className="block font-serif text-[15px] font-normal" style={{ color: "#eadfbf" }}>{s.name}</strong>
-                      <span className="block mt-[5px]" style={{ color: "#817a6d", fontSize: 14 }}>{s.description}</span>
+                      <strong className="block font-serif text-[13px] font-bold" style={{ color: "#000000" }}>{s.name}</strong>
+                      <span className="block mt-[3px] font-bold" style={{ color: "#000000", fontSize: 13 }}>{s.description}</span>
                     </button>
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* Clarifiers */}
-            <div className="neo-panel">
-              <div className="flex items-center justify-between">
-                <h2 className="neo-label m-0">Clarification Cards</h2>
+              {/* Clarifiers — slim strip across the bottom of this panel */}
+              <div style={{
+                marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(212,175,55,.25)",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap",
+              }}>
+                <h2 className="neo-label m-0" style={{ fontSize: 13 }}>Clarification Cards</h2>
+                <p className="neo-note" style={{ margin: 0, flex: 1, minWidth: 200 }}>
+                  {clarifyOn ? `${clarifyCount} clarifier card${clarifyCount > 1 ? "s" : ""} will be drawn beside each card, adding nuance.` : "Off — each card stands alone."}
+                </p>
+                {clarifyOn && (
+                  <div className="flex gap-[9px]">
+                    {[1, 2, 3].map((n) => (
+                      <button key={n} onClick={() => setClarifyCount(n)}
+                        className={`neo-count ${clarifyCount === n ? "is-active" : ""}`}
+                        style={{ flex: "none", padding: "6px 14px" }}>{n}</button>
+                    ))}
+                  </div>
+                )}
                 <button onClick={() => setClarifyOn((v) => !v)}
                   type="button"
                   aria-label="Clarification Cards"
                   aria-pressed={clarifyOn}
                   className={`neo-toggle ${clarifyOn ? "on" : ""}`}><i /></button>
               </div>
-              {clarifyOn && (
-                <div className="flex gap-[9px] mt-[15px]">
-                  {[1, 2, 3].map((n) => (
-                    <button key={n} onClick={() => setClarifyCount(n)}
-                      className={`neo-count ${clarifyCount === n ? "is-active" : ""}`}>{n}</button>
-                  ))}
-                </div>
-              )}
-              <p className="neo-note mt-3">
-                {clarifyOn ? `${clarifyCount} clarifier card${clarifyCount > 1 ? "s" : ""} will be drawn beside each card, adding nuance.` : "Off — each card stands alone."}
-              </p>
             </div>
           </section>
 
@@ -478,80 +490,31 @@ export default function Home() {
         </div>
       )}
 
-      {/* READING PHASE — she takes the stage: the orb rises and spins while
-          she reads, then she speaks and her words roll along the bottom.
-          No cards, no text on screen — pure voice. */}
+      {/* READING PHASE — nothing but the Oracle: a full black page, her fire
+          globe filling it, colors drifting with her voice, tiny controls at
+          the bottom edge. */}
       {phase === "reading" && (
-        <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
-          <div style={{ animation: "orbRise 0.9s ease-out both" }}>
-            <OracleSphere state={orbState} size={300} />
-          </div>
-          <p className="text-muted-foreground font-body text-sm max-w-md">
-            {readingError
-              ? readingError
-              : busy
-              ? "The Oracle is reading the cards…"
-              : voiceBusy
-              ? "He's looking into the cards…"
-              : orbState === "speaking"
-              ? "Listen. The truth is in his voice."
-              : "His words are yours to keep."}
-          </p>
-
-          {(voiceBusy || orbState === "speaking") && !readingError && (
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                onClick={() => {
-                  if (voicePaused) { player.resume(); setVoicePaused(false); }
-                  else { player.pause(); setVoicePaused(true); }
-                }}
-                className="neo-button flex items-center gap-2 px-6">
-                {voicePaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                {voicePaused ? "Resume His Voice" : "Pause His Voice"}
-              </button>
-              <button onClick={() => player.rewind()}
-                className="neo-pill flex items-center gap-2 px-6 py-2.5">
-                <RotateCcw className="w-3.5 h-3.5" /> Rewind
-              </button>
-            </div>
-          )}
-
-          {readingError && !busy && (
-            <div className="flex flex-wrap justify-center gap-3">
-              {outOfCredits ? (
-                <Link to="/pricing" className="neo-button px-6">Get More Readings</Link>
-              ) : (
-                <button onClick={handleRead} className="neo-button px-6">Try This Reading Again</button>
-              )}
-              <button onClick={reset} className="neo-pill px-6 py-2.5">Another Reading</button>
-            </div>
-          )}
-
-
-
-          {!readingError && !busy && !voiceBusy && orbState !== "speaking" && (
-            <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={() => speak(reading)}
-                className="neo-button flex items-center gap-2 px-6">
-                <Volume2 className="w-3.5 h-3.5" /> Hear His Voice
-              </button>
-              <button onClick={reset}
-                className="neo-pill flex items-center gap-2 px-6 py-2.5">
-                <RefreshCw className="w-3.5 h-3.5" /> Another Reading
-              </button>
-            </div>
-          )}
-
-          <style>{`
-            @keyframes orbRise {
-              from { transform: translateY(60px) scale(0.85); opacity: 0; }
-              to { transform: translateY(0) scale(1); opacity: 1; }
-            }
-          `}</style>
-        </div>
+        <ReadingStage
+          state={orbState}
+          busy={busy}
+          voiceBusy={voiceBusy}
+          voicePaused={voicePaused}
+          error={readingError}
+          outOfCredits={outOfCredits}
+          onPauseToggle={() => {
+            if (voicePaused) { player.resume(); setVoicePaused(false); }
+            else { player.pause(); setVoicePaused(true); }
+          }}
+          onRewind={() => player.rewind()}
+          onSpeak={() => speak(reading)}
+          onReset={reset}
+          onRetry={handleRead}
+        />
       )}
-      <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
-      <AmbientSound />
+      {phase !== "reading" && (
+        <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
+      )}
+      {phase !== "reading" && <AmbientSound />}
     </div>
   );
 }

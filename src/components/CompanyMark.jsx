@@ -4,12 +4,12 @@ import React from "react";
 // and the public page footers.
 const LOGO_URL = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg";
 
-export default function CompanyMark({ height = 32, className = "" }) {
+export default function CompanyMark({ height = 32, className = "", compact = false }) {
   return (
     <span
       className={`inline-block ${className}`}
       style={{
-        padding: 3,
+        padding: compact ? 2 : 3,
         borderRadius: "50%",
         border: "1px solid color-mix(in srgb, var(--gold-leaf) 35%, transparent)",
         background: "rgba(5,5,5,0.9)",
