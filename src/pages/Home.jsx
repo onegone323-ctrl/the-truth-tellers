@@ -371,10 +371,20 @@ export default function Home() {
                 ))}
               </div>
               {blendDecks && (
-                <div className="neo-tile is-active mt-[9px] flex items-center justify-center gap-2"
-                  style={{ minHeight: 0, padding: "6px 10px" }}>
-                  <span style={{ fontSize: 13, color: BLENDED_DECK.accent }}>{BLENDED_DECK.backGlyph}</span>
-                  <span style={{ fontSize: 12 }}>Blended — all eight decks, one reading</span>
+                <div className="mt-[9px] flex items-center justify-center gap-2"
+                  style={{
+                    border: "1px solid var(--gold-leaf)",
+                    background: "linear-gradient(100deg, #6f4d0b, var(--gold-leaf), #8b1a2b)",
+                    color: "#050505",
+                    padding: "6px 10px",
+                    textTransform: "uppercase",
+                    letterSpacing: "1.5px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    boxShadow: "0 0 16px rgba(212,175,55,.35)",
+                  }}>
+                  <span style={{ fontSize: 13 }}>{BLENDED_DECK.backGlyph}</span>
+                  <span>Blended — all eight decks, one reading</span>
                 </div>
               )}
               <p className="neo-note mt-3">{activeDeck.description}</p>
