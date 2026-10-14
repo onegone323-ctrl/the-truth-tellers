@@ -19,8 +19,18 @@
 //   GLOBAL daily free readings:         { user_id: '__global__', day: today }
 //   GLOBAL daily free-tier voice chars: { user_id: '__global__', day: 'v-<today>' }
 
-// Everyone's first three readings are free, metered server-side.
-export const FREE_READINGS = 3;
+// Everyone's first reading is free, metered server-side. After it, a seeker
+// with no premium plan and no credits still gets a reading — but only the
+// opening snippet, cut off before any real truth lands (see SNIPPET_*).
+export const FREE_READINGS = 1;
+
+// How much of a reading a non-paying seeker gets: the opening (~45–70 words,
+// roughly 15–20 seconds spoken), clipped at a sentence boundary.
+export const SNIPPET_MAX_CHARS = 320;
+// Voice is bounded the same way: a teaser-tier seeker may synthesize only a
+// snippet-sized piece of speech — anything longer is refused with the
+// sign-up message.
+export const SNIPPET_VOICE_CHARS = 400;
 
 // Daily voice-synthesis budget per user, in characters. A full spoken reading
 // is ~2,000-4,000 chars, so free users get ~3 readings of voice a day,

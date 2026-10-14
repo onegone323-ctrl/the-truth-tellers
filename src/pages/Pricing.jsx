@@ -59,7 +59,7 @@ export default function Pricing() {
           Pricing
         </h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md mx-auto">
-          Your first three readings are free. After that, go unlimited or pay per reading.
+          Your first reading is free. After that, each reading opens and then cuts off — go unlimited or pay per reading to hear the whole truth.
         </p>
       </div>
 
@@ -82,15 +82,21 @@ export default function Pricing() {
               {entitlement.status === "ending" ? " (auto-renewal off, ends this billing cycle)" : ""}.
             </span>
           </div>
-        ) : readingsUsed < 3 ? (
+        ) : readingsUsed < 1 ? (
           <p className="neo-note">
-            {3 - readingsUsed} of your 3 free readings left — no purchase needed for those.
+            Your first reading is free — no purchase needed.
             {(entitlement?.credits || 0) > 0
               ? ` Plus ${(entitlement.credits || 0)} bought credit${(entitlement.credits || 0) === 1 ? "" : "s"}.`
               : ""}
           </p>
         ) : entitlement === null ? (
-          <p className="neo-note">Your free readings are used up — buy below to keep reading.</p>
+          <p className="neo-note">
+            Your free reading is used up — every reading now cuts off after a short preview. Buy below to hear the whole reading.
+          </p>
+        ) : (entitlement.credits || 0) < 1 ? (
+          <p className="neo-note">
+            Every reading opens free, then cuts off after a short preview — buy credits below to hear the whole reading.
+          </p>
         ) : (
           <p className="neo-note">
             {entitlement.credits || 0} reading credit{(entitlement.credits || 0) === 1 ? "" : "s"} left. Each reading uses one.

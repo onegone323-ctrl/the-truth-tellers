@@ -166,9 +166,14 @@ export default function Home() {
         throw new Error("The reading service returned no reading.");
       }
       setReading(text);
-      // Mirror the server-side spend locally: the first three readings are
-      // free, premium reads freely, after that each reading spends a credit.
-      if (user?.role !== "admin" && entitlement && entitlement.plan !== "premium" && readingsUsed >= 3) {
+      // A snippet reading: the Oracle stops early and the paywall speaks.
+      if (res?.data?.snippet) {
+        setOutOfCredits(true);
+        setReadingError(res?.data?.message || "The Oracle stops here — sign up to hear the whole reading.");
+      }
+      // Mirror the server-side spend locally: the first reading is free,
+      // premium reads freely, after that each full reading spends a credit.
+      if (!res?.data?.snippet && user?.role !== "admin" && entitlement && entitlement.plan !== "premium" && readingsUsed >= 1) {
         setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
       }
       setReadingsUsed((r) => r + 1);
@@ -265,7 +270,7 @@ export default function Home() {
 
   const reset = () => {
     player.stop();
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false); setVoicePaused(false);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false); setVoicePaused(false); setOutOfCredits(false);
   };
 
   // Names: the platform auto-fills the account name from the email address,
@@ -448,19 +453,19 @@ export default function Home() {
               <Sparkles className="w-4 h-4" />Draw the Cards
             </button>
           </div>
-          {(user?.role === "admin" || entitlement || readingsUsed < 3) && (
+          {(user?.role === "admin" || entitlement || readingsUsed < 1) && (
             <div className="enter delay3 mx-4 sm:mx-[54px] mt-2 text-center">
               {user?.role === "admin" ? (
                 <span className="neo-note">Admin — unlimited readings, everything unlocked.</span>
               ) : entitlement?.plan === "premium" ? (
                 <span className="neo-note">Premium — unlimited readings.</span>
-              ) : readingsUsed < 3 ? (
-                <span className="neo-note">
-                  {3 - readingsUsed} free reading{3 - readingsUsed === 1 ? "" : "s"} left — on the house.
-                </span>
+              ) : readingsUsed < 1 ? (
+                <span className="neo-note">Your first reading is free — on the house.</span>
               ) : (
                 <span className="neo-note">
-                  {entitlement?.credits || 0} reading credit{(entitlement?.credits || 0) === 1 ? "" : "s"} left.
+                  {(entitlement?.credits || 0) > 0
+                    ? `${entitlement.credits} reading credit${entitlement.credits === 1 ? "" : "s"} left.`
+                    : "Readings open free, then cut off — sign up to hear the whole truth."}
                   {(entitlement?.credits || 0) < 1 && (
                     <Link to="/pricing" className="neo-pill px-3 py-1 ml-3">Get More</Link>
                   )}

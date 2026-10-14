@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS } from '../../shared/gate.ts';
+import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
 
 // The Oracle's voice: ElevenLabs primary (the seeker's chosen voice), with
 // OpenAI as the backup voice. "engine: openai" speaks with OpenAI only —
@@ -43,8 +43,15 @@ export default async function(req) {
     // holders, and anyone still inside their free readings may synthesize.
     // (No credit is debited here — voice ships with a reading already paid
     // for; the daily budget below is what bounds consumption.)
-    if (!isAdmin && ent?.plan !== 'premium' && (ent?.credits || 0) < 1 && freeLeft === 0) {
-      return Response.json({ error: 'out_of_credits', message: 'Voice is part of your readings — open Pricing to keep it.' }, { status: 402 });
+    // A seeker past their one free reading gets only the teaser: a few
+    // seconds of the Oracle's voice, then it stops. Anything longer is
+    // refused with the sign-up message.
+    const teaser = !isAdmin && ent?.plan !== 'premium' && (ent?.credits || 0) < 1 && freeLeft === 0;
+    if (teaser && text.length > SNIPPET_VOICE_CHARS) {
+      return Response.json({
+        error: 'out_of_credits',
+        message: "Only the first few seconds of the Oracle's voice are free — open Pricing to hear the whole reading.",
+      }, { status: 402 });
     }
     // ATOMIC daily character budget: scripted abuse cannot drain the app's
     // OpenAI spend. The reserve is a conditional increment verified by its

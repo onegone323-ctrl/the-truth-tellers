@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, claimFreeReading, spendCredit, checkRateLimit, FREE_READINGS } from '../../shared/gate.ts';
+import { getGateState, claimFreeReading, spendCredit, checkRateLimit, FREE_READINGS, SNIPPET_MAX_CHARS } from '../../shared/gate.ts';
 
 // redeploy marker: picks up the shared gate fix (minute meter row creation)
 // The Oracle generates a full tarot reading on OpenAI.
@@ -20,6 +20,9 @@ export default async function(req) {
     // anything a browser does. After the free three, each reading spends one
     // credit. The admin (builder) account is always free.
     const isAdmin = user?.role === 'admin';
+    // When the free reading AND any credits are gone, the seeker still gets
+    // a reading — but only the opening snippet, cut off mid-flow.
+    let snippetMode = false;
     // Throttle hammering before anything else runs — each call costs the
     // app money, and a script firing nonstop must be slowed down first.
     if (!isAdmin) {
@@ -44,12 +47,7 @@ export default async function(req) {
         const spent = entitlement && entitlement.credits >= 1
           ? await spendCredit(base44, user.id)
           : false;
-        if (!spent) {
-          return Response.json({
-            error: 'out_of_credits',
-            message: "Your three free readings are used up — open Pricing to get more.",
-          }, { status: 402 });
-        }
+        if (!spent) snippetMode = true;
       }
     }
 
@@ -209,6 +207,26 @@ export default async function(req) {
       `Now speak the reading. Do NOT restate these instructions, do NOT preface. Begin directly, addressed to ${honorific}.`,
     ].join('\n');
 
+    // TEASER MODE: the Oracle gives only the opening — a hook that cuts off
+    // right as the real reading begins. Same persona, a fraction of the cost.
+    let finalPrompt = prompt;
+    let maxTokens = 6000;
+    if (snippetMode) {
+      finalPrompt = [
+        "You are The Oracle — an older Black woman, everybody's grandmother. Stern, sharp-tongued, warm underneath; you tease the seeker affectionately and speak in plain flowing paragraphs. NO markdown, NO bullets, NO emojis, NO headers. NEVER name tarot cards.",
+        "",
+        `TEASER — this seeker's free reading is used up and they are not a member. Write ONLY the very beginning of the reading, 45–70 words: address them by name ("${honorific}"), restate their question, name the deck set and the spread they chose, then begin the first position — and STOP mid-flow, mid-thought. Do not conclude anything, do not finish the reading.`,
+        "",
+        `THE SEEKER: ${honorific}`,
+        `THEIR QUESTION: "${question}"`,
+        `DECK MODE: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''}`,
+        `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
+        "",
+        `Now speak the teaser. Do NOT restate these instructions, do NOT preface. Begin directly, addressed to ${honorific}.`,
+      ].join('\n');
+      maxTokens = 220;
+    }
+
     // Keep the provider credential server-side in Base44 secrets.
     const apiKey = secrets.get('OPENAI_API_KEY');
     if (!apiKey) {
@@ -251,11 +269,11 @@ export default async function(req) {
             model: modelId,
             messages: [
               { role: 'system', content: oracleInstructions },
-              { role: 'user', content: prompt },
+              { role: 'user', content: finalPrompt },
             ],
             // Generous ceiling so the reading is never cut off mid-thought
             // (reasoning models spend part of this budget thinking first).
-            max_completion_tokens: 6000,
+            max_completion_tokens: maxTokens,
           }),
           signal: AbortSignal.timeout(60000),
         });
@@ -326,6 +344,9 @@ export default async function(req) {
       );
     }
 
+    // The teaser is clipped at a sentence boundary — it must feel cut off.
+    if (snippetMode) text = trimSnippet(text);
+
     // SERVER-SIDE usage record: the reading is logged BEFORE it is handed
     // back, so direct API and MCP callers are counted too — the free-tier
     // counter can no longer be bypassed by skipping the app's UI. Uses this
@@ -350,8 +371,26 @@ export default async function(req) {
       return Response.json({ error: 'Could not record the reading — try again.' }, { status: 500 });
     }
 
+    if (snippetMode) {
+      return Response.json({
+        reading: text,
+        model: usedModel,
+        snippet: true,
+        message: "Your one free reading is done — every reading after it cuts off here. Sign up in Pricing to hear the whole truth.",
+      });
+    }
     return Response.json({ reading: text, model: usedModel });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
+}
+
+// Clip the teaser at the last sentence end inside the budget — never
+// mid-word, and never long enough to give the reading away.
+function trimSnippet(text) {
+  const cut = text.slice(0, SNIPPET_MAX_CHARS);
+  const stops = [cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? ')]
+    .filter((i) => i > SNIPPET_MAX_CHARS * 0.4);
+  const at = stops.length ? Math.max(...stops) + 1 : cut.length;
+  return cut.slice(0, at).trim();
 }
