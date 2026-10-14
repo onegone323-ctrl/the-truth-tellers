@@ -331,13 +331,13 @@ export default function Home() {
           </section>
 
           <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
-            {/* Question + voice */}
-            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
+            {/* Question + voice — the box fills the panel, footer pinned to the bottom */}
+            <div className="neo-panel flex flex-col" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Your Question</h2>
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
                 placeholder="What do you need the truth about?"
-                rows={3}
-                className="neo-field min-h-[105px]" />
+                rows={9}
+                className="neo-field flex-1 min-h-[260px]" />
               <div className="flex items-center justify-between gap-4 mt-[17px]">
                 <button onClick={listening ? stopListening : startListening}
                   className="neo-button flex items-center gap-2">
