@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Settings } from "lucide-react";
 import { Image } from "@/components/ui/image";
 
-const ADPOV_LOGO = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/887c082c6_ADPOVMEDIAENTLOGO.png";
+const T4C_LOGO = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/925825601_DOWNSIZET4C.png";
 
 export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle, goBack, onLogout }) {
   return (
@@ -14,7 +14,7 @@ export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle
       </div>}
       <div className={`${isTabRoot ? "flex" : "hidden md:flex"} shrink-0 items-center gap-2`}>
         <Link to="/" className="flex items-center gap-1.5" aria-label="Truth 4 Clarity home">
-          <Image src={ADPOV_LOGO} alt="" className="shrink-0" style={{ width: 29, height: 20 }} fittingType="fit" />
+          <Image src={T4C_LOGO} alt="Truth 4 Clarity" className="shrink-0" style={{ width: 24, height: 24 }} fittingType="fit" />
           <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[1px] text-primary">Truth 4 Clarity</span>
         </Link>
       </div>
