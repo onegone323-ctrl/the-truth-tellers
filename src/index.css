@@ -161,6 +161,10 @@
   }
 }
 
+/* Keep the slim navigation touch-scrollable without a second visual strip. */
+.compact-nav { scrollbar-width: none; }
+.compact-nav::-webkit-scrollbar { display: none; }
+
 /* Small screens / reduced motion: drop the always-on decorative overlays */
 @media (prefers-reduced-motion: reduce), (max-width: 767px) {
   .obsidian-page::after { display: none; }
