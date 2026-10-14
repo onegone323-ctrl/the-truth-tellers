@@ -59,7 +59,7 @@ export default function DailyCard({ memory, setMemory, userName }) {
   };
 
   return (
-    <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(34,15,58,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
+    <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))", padding: "30px 40px" }}>
       <div>
         <label className="block" style={{ color: "#f5e6b8", fontSize: 14, letterSpacing: 3, textTransform: "uppercase" }}>Today's Card</label>
         <p className="mt-2.5 italic" style={{ color: "var(--neo-muted)", fontSize: 13 }}>
