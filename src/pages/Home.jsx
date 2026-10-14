@@ -332,7 +332,7 @@ export default function Home() {
 
           <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
             {/* Question + voice */}
-            <div className="neo-panel">
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Your Question</h2>
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
                 placeholder="What do you need the truth about?"
@@ -349,7 +349,7 @@ export default function Home() {
             </div>
 
             {/* Deck selection */}
-            <div className="neo-panel">
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Choose Your Deck</h2>
                 <span className="flex items-center gap-2" style={{ color: "#98907d", fontSize: 14 }}>
@@ -382,7 +382,7 @@ export default function Home() {
 
           <section className="enter delay3 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
             {/* Spread selection */}
-            <div className="neo-panel">
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Choose Your Spread</h2>
               <div className="flex flex-wrap gap-2 mb-4">
                 {categories.map((c) => (
@@ -406,7 +406,7 @@ export default function Home() {
             </div>
 
             {/* Clarifiers */}
-            <div className="neo-panel">
+            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <div className="flex items-center justify-between">
                 <h2 className="neo-label m-0">Clarification Cards</h2>
                 <button onClick={() => setClarifyOn((v) => !v)}
