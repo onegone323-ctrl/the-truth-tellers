@@ -9,7 +9,6 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
   const stateRef = useRef(state);
   const visualRef = useRef({ angle: 0, hue: 0, heat: 0, level: 0 });
   const [error, setError] = useState('');
-  const [motion, setMotion] = useState(() => typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   stateRef.current = state;
   useEffect(() => {
     const root = rootRef.current;
@@ -42,15 +41,15 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
       }
       visual.heat += (target - visual.heat) * (1 - Math.exp(-dt * 9));
       visual.level += ((speaking ? 1 : 0) - visual.level) * (1 - Math.exp(-dt * 3));
-      if (motion && !speaking && visual.level < .025) visual.angle = (visual.angle + dt * 18) % 360;
-      if (motion && speaking) visual.hue = (visual.hue + dt * (12 + visual.heat * 60)) % 360;
+      if (!speaking && visual.level < .025) visual.angle = (visual.angle + dt * 18) % 360;
+      if (speaking) visual.hue = (visual.hue + dt * (12 + visual.heat * 60)) % 360;
       root.style.setProperty('--angle', `${visual.angle}deg`);
       root.style.setProperty('--fire', `${visual.level * (.65 + visual.heat * .35)}`);
       root.style.setProperty('--hue', `${visual.hue}deg`);
       root.style.setProperty('--scale', `${1.28 * (1 + visual.heat * .055)}`);
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
-      if (!motion || visual.level < .01) return;
+      if (visual.level < .01) return;
       for (const p of particles) {
         p.life += dt * p.rate * (1 + visual.heat);
         if (p.life > 1) { p.life = 0; p.a = Math.random() * Math.PI * 2; }
@@ -66,19 +65,16 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
     };
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [motion]);
+  }, []);
   const imageStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen', pointerEvents: 'none', userSelect: 'none', transformOrigin: '50% 49%' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
-      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: 'hidden', isolation: 'isolate', background: '#000', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
+      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: 'hidden', isolation: 'isolate', background: 'transparent', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
         <img src={CALM} alt='' draggable={false} onError={() => setError('The calm globe image could not load.')} style={{ ...imageStyle, transform: 'rotate(var(--angle))' }} />
         <img src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />
         <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
       </div>
       {error && <p role='alert' style={{ color: '#edb5a4', fontSize: 12 }}>{error}</p>}
-      <button type='button' aria-pressed={motion} onClick={() => setMotion(v => !v)} style={{ background: 'transparent', color: '#bca06a', border: '1px solid #77623c', borderRadius: 20, fontSize: 11, padding: '6px 12px', marginTop: 8 }}>
-        {motion ? 'Pause globe motion' : 'Enable globe motion'}
-      </button>
     </div>
   );
 }

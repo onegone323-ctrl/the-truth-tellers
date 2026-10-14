@@ -363,7 +363,7 @@
   }
 
   .neo-hero {
-    background: #000000;
+    background: transparent;
   }
   .neo-h1 {
     color: var(--ivory); font-size: 58px; line-height: 1.02; letter-spacing: 9px;

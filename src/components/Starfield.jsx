@@ -4,30 +4,28 @@ import useLiteMotion from "@/hooks/useLiteMotion";
 // Animated starfield + drifting gold particles + nebula glow.
 // Stars are painted as CSS radial-gradient layers instead of one span per
 // star (a fraction of the DOM nodes — much cheaper in Android WebView).
-// Two layers hold disjoint stars and twinkle out of phase, so the sky still
+// Tiny gold, red and white sparkles that twinkle out of phase, so the sky
 // shimmers. Rising gold particles keep their spans; lite mode: fewer stars,
 // no particle layer.
 export default function Starfield() {
   const lite = useLiteMotion();
   const starLayers = useMemo(() => {
-    const count = lite ? 18 : 90;
+    const count = lite ? 30 : 160;
     const stars = Array.from({ length: count }, () => ({
       top: Math.random() * 100,
       left: Math.random() * 100,
-      size: Math.random() * 4 + 2,
-      bright: Math.random() < 0.22,
-      gold: Math.random() < 0.25,
+      size: Math.random() * 1.3 + 0.5,
+      tint: Math.random() < 0.32 ? "gold" : Math.random() < 0.3 ? "red" : "white",
     }));
     const paint = (s) => {
       const r = s.size / 2;
-      const core = s.gold ? "var(--gold-leaf)" : s.bright ? "#ffffff" : "var(--star-color)";
-      const glow = s.gold
-        ? "rgba(245,215,122,0.95)"
-        : s.bright
-        ? "rgba(180,220,255,0.5)"
-        : "rgba(255,255,255,0.85)";
-      const spread = s.bright ? 10 : 6;
-      return `radial-gradient(circle at ${s.left.toFixed(2)}% ${s.top.toFixed(2)}%, ${core} 0 ${r.toFixed(1)}px, ${glow} ${(r + 1.5).toFixed(1)}px ${(r + spread).toFixed(1)}px, transparent ${(r + spread + 2).toFixed(1)}px)`;
+      const core = s.tint === "gold" ? "#f5e6b8" : s.tint === "red" ? "#e8354f" : "#ffffff";
+      const glow = s.tint === "gold"
+        ? "rgba(212,175,55,0.45)"
+        : s.tint === "red"
+        ? "rgba(232,53,79,0.4)"
+        : "rgba(255,255,255,0.4)";
+      return `radial-gradient(circle at ${s.left.toFixed(2)}% ${s.top.toFixed(2)}%, ${core} 0 ${r.toFixed(1)}px, ${glow} ${(r + 0.5).toFixed(1)}px ${(r + 1.5).toFixed(1)}px, transparent ${(r + 2.4).toFixed(1)}px)`;
     };
     return [
       stars.filter((_, i) => i % 2 === 0).map(paint).join(", "),
