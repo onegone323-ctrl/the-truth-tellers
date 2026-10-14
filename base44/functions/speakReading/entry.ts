@@ -2,8 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS } from '../../shared/gate.ts';
 
-// redeploy marker: picks up the shared gate fix (minute meter row creation)
-// Turns the Oracle's reading into warm OpenAI TTS audio.
+// The Oracle's voice: ElevenLabs — the seeker's chosen voice from the voice lab.
 // The reading arrives as already-cleaned spoken text; we split it into
 // sentence-sized chunks (the TTS input cap is ~4096 chars), synthesize each
 // chunk, and return the base64 MP3 pieces so the app can play them back to
@@ -61,16 +60,15 @@ export default async function(req) {
     }
     // ===== END GATE =====
 
-    const apiKey = secrets.get('OPENAI_API_KEY');
+    const apiKey = secrets.get('ELEVEN_LABS_API_KEY');
     if (!apiKey) {
-      return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
+      return Response.json({ error: 'ElevenLabs is not configured — missing API key.' }, { status: 500 });
     }
 
-    // A stock synthetic voice with its own identity, not an actor imitation.
-    // Pin the expressive model so the delivery direction is always applied.
-    const model = 'gpt-4o-mini-tts';
-    const voice = 'sage';
-    const speed = 0.94;
+    // The voice the seeker chose in ElevenLabs, with a model that keeps
+    // latency low and delivery expressive.
+    const model = 'eleven_turbo_v2_5';
+    const voice = 'hvhlTWefioYsKeeQjLfm';
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
@@ -89,26 +87,29 @@ export default async function(req) {
     // per-request ceiling and the daily budget above.
     const audio = [];
     for (const chunk of chunks) {
-      const res = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: chunk,
+            model_id: model,
+            // Even-out stability, strong clone similarity, a touch of style —
+            // warm and grounded, never theatrical.
+            voice_settings: {
+              stability: 0.45,
+              similarity_boost: 0.8,
+              style: 0.3,
+              use_speaker_boost: true,
+            },
+          }),
+          signal: AbortSignal.timeout(60000),
         },
-        body: JSON.stringify({
-          model,
-          voice,
-          input: chunk,
-          response_format: 'mp3',
-          speed,
-          // gpt-4o-mini-tts accepts direction — this is what makes her sound
-          // like the wise older woman she is, not just any female voice.
-          ...(model === 'gpt-4o-mini-tts' ? {
-            instructions: "Use an original mature feminine voice with a low, warm register and a lightly textured, lived-in timbre. Speak conversationally, like a wise older woman talking across a kitchen table: relaxed, grounded, gently amused, quietly certain. Use measured pauses and natural falling intonation. The authority is effortless, never theatrical; the affection is real, never sugary. Deliver blunt truths with calm confidence and a little dry humor. Keep a natural American cadence, no exaggerated accent, no breathy youthfulness, no chirpy uplift or announcer delivery. Do not imitate any actor or identifiable person.",
-          } : {}),
-        }),
-        signal: AbortSignal.timeout(60000),
-      });
+      );
       if (!res.ok) {
         const errText = await res.text();
         // The provider's raw body stays server-side — it can carry model ids
