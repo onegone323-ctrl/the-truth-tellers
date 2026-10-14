@@ -1,5 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
+import VoicePlayButton from "@/components/agent/VoicePlayButton";
 
 const FAILED = /error|failed/i;
 
@@ -30,6 +31,7 @@ export default function MessageBubble({ message }) {
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </div>
           ))}
+        {!isUser && message.content && <VoicePlayButton text={message.content} />}
         {isUser && message.pending && (
           <div className="flex items-center justify-end gap-1 mt-1.5" aria-label="Sending">
             {[0, 1, 2].map((d) => (

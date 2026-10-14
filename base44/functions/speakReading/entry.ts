@@ -2,7 +2,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { getGateState, reserveVoice, checkRateLimit, TTS_DAILY_CAP_CHARS, GLOBAL_DAILY_VOICE_CHARS } from '../../shared/gate.ts';
 
-// The Oracle's voice: ElevenLabs — the seeker's chosen voice from the voice lab.
+// The Oracle's voice: ElevenLabs primary (the seeker's chosen voice), with
+// OpenAI as the backup voice. "engine: openai" speaks with OpenAI only —
+// that is the Memory Parlor player's voice.
 // The reading arrives as already-cleaned spoken text; we split it into
 // sentence-sized chunks (the TTS input cap is ~4096 chars), synthesize each
 // chunk, and return the base64 MP3 pieces so the app can play them back to
@@ -60,8 +62,8 @@ export default async function(req) {
     }
     // ===== END GATE =====
 
-    const apiKey = secrets.get('ELEVEN_LABS_API_KEY');
-    if (!apiKey) {
+    const engine = body?.engine === 'openai' ? 'openai' : 'elevenlabs';
+    if (engine === 'elevenlabs' && !secrets.get('ELEVEN_LABS_API_KEY')) {
       return Response.json({ error: 'ElevenLabs is not configured — missing API key.' }, { status: 500 });
     }
 
@@ -87,41 +89,19 @@ export default async function(req) {
     // per-request ceiling and the daily budget above.
     const audio = [];
     for (const chunk of chunks) {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`,
-        {
-          method: 'POST',
-          headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: chunk,
-            model_id: model,
-            // Even-out stability, strong clone similarity, a touch of style —
-            // warm and grounded, never theatrical.
-            voice_settings: {
-              stability: 0.45,
-              similarity_boost: 0.8,
-              style: 0.3,
-              use_speaker_boost: true,
-            },
-          }),
-          signal: AbortSignal.timeout(60000),
-        },
-      );
-      if (!res.ok) {
-        const errText = await res.text();
+      const bytes = engine === 'openai'
+        ? await speakWithOpenAI(chunk)
+        : (await speakWithElevenLabs(chunk) ?? await speakWithOpenAI(chunk));
+      if (bytes === null) {
         // The provider's raw body stays server-side — it can carry model ids
         // and account identifiers. The client gets a stable, generic error.
-        console.error('speakReading: provider rejected request', { status: res.status, body: errText.slice(0, 500) });
+        console.error('speakReading: voice providers failed', { engine });
         return Response.json(
           { error: 'provider_error', message: "The Oracle's voice couldn't be created — try again in a moment." },
           { status: 502 },
         );
       }
-      const audioBytes = await res.arrayBuffer();
-      audio.push(arrayBufferToBase64(audioBytes));
+      audio.push(arrayBufferToBase64(bytes));
     }
 
     return Response.json({ chunks: audio, model, voice, spoken_chunks: chunks.length });
@@ -140,4 +120,80 @@ function arrayBufferToBase64(buffer) {
     binary += String.fromCharCode.apply(null, bytes.subarray(i, i + sliceSize));
   }
   return btoa(binary);
+}
+
+// Primary voice: ElevenLabs, the seeker's chosen voice. Returns raw MP3
+// bytes, or null when the provider refuses — then OpenAI takes over.
+async function speakWithElevenLabs(chunk) {
+  const apiKey = secrets.get('ELEVEN_LABS_API_KEY');
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(
+      'https://api.elevenlabs.io/v1/text-to-speech/hvhlTWefioYsKeeQjLfm?output_format=mp3_44100_128',
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: chunk,
+          model_id: 'eleven_turbo_v2_5',
+          // Even-out stability, strong clone similarity, a touch of style —
+          // warm and grounded, never theatrical.
+          voice_settings: {
+            stability: 0.45,
+            similarity_boost: 0.8,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
+        }),
+        signal: AbortSignal.timeout(60000),
+      },
+    );
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('speakReading: ElevenLabs rejected request', { status: res.status, body: errText.slice(0, 300) });
+      return null;
+    }
+    return await res.arrayBuffer();
+  } catch (error) {
+    console.error('speakReading: ElevenLabs request failed', String(error).slice(0, 200));
+    return null;
+  }
+}
+
+// Backup voice: the same warm older-woman delivery the Oracle always had.
+async function speakWithOpenAI(chunk) {
+  const apiKey = secrets.get('OPENAI_API_KEY');
+  if (!apiKey) return null;
+  try {
+    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-tts',
+        voice: 'sage',
+        input: chunk,
+        response_format: 'mp3',
+        speed: 0.94,
+        // gpt-4o-mini-tts accepts direction — this keeps her the wise older
+        // woman she is, not just any female voice.
+        instructions: "Use an original mature feminine voice with a low, warm register and a lightly textured, lived-in timbre. Speak conversationally, like a wise older woman talking across a kitchen table: relaxed, grounded, gently amused, quietly certain. Use measured pauses and natural falling intonation. The authority is effortless, never theatrical; the affection is real, never sugary. Deliver blunt truths with calm confidence and a little dry humor. Keep a natural American cadence, no exaggerated accent, no breathy youthfulness, no chirpy uplift or announcer delivery. Do not imitate any actor or identifiable person.",
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('speakReading: OpenAI rejected request', { status: res.status, body: errText.slice(0, 300) });
+      return null;
+    }
+    return await res.arrayBuffer();
+  } catch (error) {
+    console.error('speakReading: OpenAI request failed', String(error).slice(0, 200));
+    return null;
+  }
 }
