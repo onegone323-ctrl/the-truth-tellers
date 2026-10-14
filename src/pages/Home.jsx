@@ -398,7 +398,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {categories.map((c) => (
                   <button key={c} onClick={() => { setSpreadCategory(c); const first = SPREADS.filter((s) => s.category === c)[0]; if (first) setSpread(first); }}
-                    className={`neo-pill ${spreadCategory === c ? "is-active" : ""}`}>{c}</button>
+                    className={`neo-pill-gold ${spreadCategory === c ? "is-active" : ""}`}>{c}</button>
                 ))}
               </div>
               {spreadCategory === "Custom" ? (
@@ -408,8 +408,8 @@ export default function Home() {
                   {spreadsInCat.map((s) => (
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
-                      <strong className="block font-serif text-[15px] font-bold" style={{ color: "#000000" }}>{s.name}</strong>
-                      <span className="block mt-[5px] font-bold" style={{ color: "#000000", fontSize: 14 }}>{s.description}</span>
+                      <strong className="block font-serif text-[13px] font-bold" style={{ color: "#000000" }}>{s.name}</strong>
+                      <span className="block mt-[3px] font-bold" style={{ color: "#000000", fontSize: 13 }}>{s.description}</span>
                     </button>
                   ))}
                 </div>
