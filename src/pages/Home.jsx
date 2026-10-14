@@ -371,9 +371,10 @@ export default function Home() {
                 ))}
               </div>
               {blendDecks && (
-                <div className="neo-tile is-active mt-[9px] py-3">
-                  <div className="text-2xl" style={{ color: BLENDED_DECK.accent }}>{BLENDED_DECK.backGlyph}</div>
-                  <div className="mt-1">Blended — all eight decks, one reading</div>
+                <div className="neo-tile is-active mt-[9px] flex items-center justify-center gap-2"
+                  style={{ minHeight: 0, padding: "6px 10px" }}>
+                  <span style={{ fontSize: 13, color: BLENDED_DECK.accent }}>{BLENDED_DECK.backGlyph}</span>
+                  <span style={{ fontSize: 12 }}>Blended — all eight decks, one reading</span>
                 </div>
               )}
               <p className="neo-note mt-3">{activeDeck.description}</p>
