@@ -77,7 +77,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                 <span style={{ fontSize: "clamp(20px, 6.4vw, 30px)", color: accent, textShadow: `0 0 12px ${accent}aa` }}>{suitGlyph}</span>
               </div>
               <div className="mb-2 px-1">
-                <div className="text-sm font-serif leading-tight" style={{ color: "var(--ivory)" }}>
+                <div className="text-sm font-serif leading-tight" style={{ color: "#f5e6b8" }}>
                   {deckCardTitle(deck?.id, card?.name) || card?.name}{card?.reversed ? " (R)" : ""}
                 </div>
                 {deckCardTitle(deck?.id, card?.name) && (
@@ -108,7 +108,7 @@ export default function CardFace({ card, deck, revealed = false, index = 0, clar
                   boxShadow: `0 0 8px color-mix(in srgb, ${accent} 27%, transparent)`,
                 }}>
                 <span style={{ fontSize: 16, color: accent }}>{c.card?.arcana === "Major" ? "✶" : "•"}</span>
-                <div className="text-sm font-serif leading-tight mt-0.5" style={{ color: "var(--neo-ink)" }}>
+                <div className="text-sm font-serif leading-tight mt-0.5" style={{ color: "#f5e6b8" }}>
                   {deckCardTitle(deck?.id, c.name) || c.name}{c.reversed ? " (R)" : ""}
                 </div>
               </div>
