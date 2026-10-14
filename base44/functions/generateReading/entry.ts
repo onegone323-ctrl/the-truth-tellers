@@ -150,7 +150,7 @@ export default async function(req) {
     const memBlock = memory?.summary
       ? [
           '',
-          'WHAT YOU ALREADY KNOW ABOUT THIS SEEKER (USE THIS — reference it naturally):',
+          'WHAT YOU ALREADY KNOW ABOUT THIS SEEKER (BACKGROUND ONLY — you already TOLD them all of this in past readings; never recite, never reference it aloud unless a card in THIS spread makes it unavoidable):',
           `- Name/title: ${seekerName || 'unknown'}`,
           `- Prior context: ${memory.summary}`,
           `- Recurring themes: ${(memory.recurring_themes || []).join(', ') || 'none yet'}`,
@@ -174,6 +174,7 @@ export default async function(req) {
       "- NEVER use stock lines or signature phrases: no \"the cards are loud\", no \"Translation:\", no formula verdicts, no repeated imperative couplets like \"Ship it. Stop doubting.\"",
       "- Change your opening, your rhythm, and your closing line every single time. Invent the language fresh for THIS person and THIS question.",
       (memory?.last_advice ? `- Last time you told them: "${memory.last_advice}". Do NOT repeat or rephrase that advice. If the situation is unchanged, go deeper, get more specific, or call it out directly.` : ""),
+      "- THEIR HISTORY IS PRIVATE CONTEXT, NOT MATERIAL: everything you already know about them (in the memory section below) has ALREADY been said to them in past readings. NEVER restate it — no \"as you know\", no recapping their loss, their work, their situation, their past readings. Retelling it makes every reading sound identical, and this one must sound like the first. Use that knowledge SILENTLY, only to sharpen what the cards are saying NOW. The only time personal history may surface is when THIS spread's cards make it unavoidable, and even then only inside a brand-new insight, never as its own sentence.",
       "",
       "============================================",
       "FORMAT — THIS WILL BE SPOKEN ALOUD",
