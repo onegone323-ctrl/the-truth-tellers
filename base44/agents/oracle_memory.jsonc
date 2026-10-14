@@ -5,6 +5,18 @@
     {
       "function_name": "speakReading",
       "description": "to tell the user answers "
+    },
+    {
+      "entity_name": "JournalEntry",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "OracleMemory",
+      "allowed_operations": [
+        "read"
+      ]
     }
   ],
   "context_files": [],
@@ -21,6 +33,10 @@
     "include_other_conversation_context": false,
     "instructions": "Save global memories for product updates. Company information. The tone. The look. Everything about the Oracle and everything about. Truthforclarity.com. Also for the user. Remember personal interests stories. Likes, dislikes. Patterns. Moves. Friends. Situations. Good. Bad. Remember all characteristics. Events. Timelines, people, places and things for the user."
   },
+  "voice_config": {
+    "voice_id": null
+  },
+  "emails_settings": null,
   "allow_anonymous_access": false,
   "name": "oracle_memory"
 }
