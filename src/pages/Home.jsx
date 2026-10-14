@@ -391,8 +391,8 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
-            {/* Spread selection */}
+          <section className="enter delay3 mx-4 sm:mx-[54px] mb-6">
+            {/* Spread selection — one full-width panel */}
             <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Choose Your Spread</h2>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -404,7 +404,7 @@ export default function Home() {
               {spreadCategory === "Custom" ? (
                 <CustomSpreadBuilder onBuild={(s) => setSpread(s)} />
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {spreadsInCat.map((s) => (
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
@@ -414,29 +414,31 @@ export default function Home() {
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* Clarifiers */}
-            <div className="neo-panel" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
-              <div className="flex items-center justify-between">
-                <h2 className="neo-label m-0">Clarification Cards</h2>
+              {/* Clarifiers — slim strip across the bottom of this panel */}
+              <div style={{
+                marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(212,175,55,.25)",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap",
+              }}>
+                <h2 className="neo-label m-0" style={{ fontSize: 13 }}>Clarification Cards</h2>
+                <p className="neo-note" style={{ margin: 0, flex: 1, minWidth: 200 }}>
+                  {clarifyOn ? `${clarifyCount} clarifier card${clarifyCount > 1 ? "s" : ""} will be drawn beside each card, adding nuance.` : "Off — each card stands alone."}
+                </p>
+                {clarifyOn && (
+                  <div className="flex gap-[9px]">
+                    {[1, 2, 3].map((n) => (
+                      <button key={n} onClick={() => setClarifyCount(n)}
+                        className={`neo-count ${clarifyCount === n ? "is-active" : ""}`}
+                        style={{ flex: "none", padding: "6px 14px" }}>{n}</button>
+                    ))}
+                  </div>
+                )}
                 <button onClick={() => setClarifyOn((v) => !v)}
                   type="button"
                   aria-label="Clarification Cards"
                   aria-pressed={clarifyOn}
                   className={`neo-toggle ${clarifyOn ? "on" : ""}`}><i /></button>
               </div>
-              {clarifyOn && (
-                <div className="flex gap-[9px] mt-[15px]">
-                  {[1, 2, 3].map((n) => (
-                    <button key={n} onClick={() => setClarifyCount(n)}
-                      className={`neo-count ${clarifyCount === n ? "is-active" : ""}`}>{n}</button>
-                  ))}
-                </div>
-              )}
-              <p className="neo-note mt-3">
-                {clarifyOn ? `${clarifyCount} clarifier card${clarifyCount > 1 ? "s" : ""} will be drawn beside each card, adding nuance.` : "Off — each card stands alone."}
-              </p>
             </div>
           </section>
 
