@@ -106,7 +106,7 @@ export default async function(req) {
           // gpt-4o-mini-tts accepts direction — this is what makes her sound
           // like the wise older woman she is, not just any female voice.
           ...(model === 'gpt-4o-mini-tts' ? {
-            instructions: "You are a warm, older, wise woman — the Oracle. Speak like a beloved grandmother who has seen everything and tells you the truth with love: unhurried, tender, gravelly around the edges, with a bit of knowing amusement in her voice. Never rushed, never robotic.",
+            instructions: "You are the Oracle — an older Black woman, everybody's grandmother. Stern, sharp-tongued, authoritative and matter-of-fact: you have seen everything, you do not repeat yourself, and you say exactly what you mean. The warmth is underneath — inviting, protective, a little knowing amusement when it is earned — but the delivery is firm and direct. Unhurried, never rushed, never robotic, never chirpy.",
           } : {}),
         }),
         signal: AbortSignal.timeout(60000),

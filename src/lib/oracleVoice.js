@@ -1,7 +1,8 @@
 import { base44 } from "@/api/base44Client";
 
-// How much faster than the raw voice he talks (1 = exactly as generated).
-const VOICE_RATE = 1.15;
+// Playback speed for her voice (1 = exactly as generated — unhurried, so
+// the authority in the delivery stays intact).
+const VOICE_RATE = 1.0;
 // The first piece gives the next piece time to load while he talks;
 // later pieces are small enough that each arrives long before the
 // current one finishes playing — even on a slow mobile connection.
