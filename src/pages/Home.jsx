@@ -318,7 +318,7 @@ export default function Home() {
             </p>
           </div>
           <div style={{ animation: "materialize 1s .3s ease both" }}>
-            <OrbStage state={orbState} size={215} height={370} />
+            <OrbStage state={orbState} size={340} height={430} />
           </div>
         </section>
       )}

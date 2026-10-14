@@ -87,7 +87,11 @@ export default function Layout() {
           </div>
         )}
         <Link to="/" className={`${isTabRoot ? "flex" : "hidden md:flex"} items-center`} style={{ gap: 13 }}>
-          <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
+          <img
+            src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg"
+            alt="Truth 4 Clarity"
+            style={{ width: 36, height: 36, objectFit: "cover", borderRadius: "50%", boxShadow: "0 0 12px rgba(255,120,30,.45)" }}
+          />
           <span
             style={{
               color: "var(--gold-leaf)",
