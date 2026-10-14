@@ -277,8 +277,20 @@
   .neo-art {
     height: 75px; margin-bottom: 8px;
     background: url("https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/7c0f89e3e_generated_bf7c5b16.jpg") center/cover;
-    border: 1px solid color-mix(in srgb, var(--gold-leaf) 40%, transparent); filter: saturate(1.35);
-    box-shadow: 0 0 16px rgba(212,175,55,.5), 0 0 34px rgba(139,26,43,.4), inset 0 0 12px rgba(0,0,0,.5);
+    border: 1px solid rgba(255,250,225,.9); filter: saturate(1.35);
+    box-shadow: 0 0 10px rgba(255,250,220,.6), 0 0 24px rgba(212,175,55,.55), 0 0 44px rgba(139,26,43,.4), inset 0 0 12px rgba(0,0,0,.5);
+    animation: artSparkle 2.6s ease-in-out infinite;
+  }
+  /* the deck label under each picture — small and one fixed height so every
+     picture sits on the same line */
+  .neo-deck-name {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; line-height: 1.15; letter-spacing: .5px;
+    min-height: 28px; color: var(--neo-ink);
+  }
+  @keyframes artSparkle {
+    0%, 100% { box-shadow: 0 0 8px rgba(255,250,220,.45), 0 0 18px rgba(212,175,55,.4), 0 0 36px rgba(139,26,43,.3), inset 0 0 12px rgba(0,0,0,.5); }
+    50% { box-shadow: 0 0 14px rgba(255,250,220,.8), 0 0 30px rgba(212,175,55,.75), 0 0 52px rgba(139,26,43,.5), inset 0 0 12px rgba(0,0,0,.5); }
   }
   .neo-pill {
     cursor: pointer; transition: .25s;

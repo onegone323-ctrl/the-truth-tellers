@@ -366,7 +366,7 @@ export default function Home() {
                   <button key={d.id} onClick={() => { setDeck(d); setBlendDecks(false); }}
                     className={`neo-tile ${!blendDecks && deck.id === d.id ? "is-active" : ""}`}>
                     <div className="neo-art" style={{ backgroundImage: `url(${d.art})` }} />
-                    {d.name}
+                    <span className="neo-deck-name">{d.name}</span>
                   </button>
                 ))}
               </div>
