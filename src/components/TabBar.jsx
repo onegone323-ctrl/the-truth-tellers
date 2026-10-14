@@ -77,7 +77,7 @@ export default function TabBar() {
           <Link key={to} to={to} aria-current={active ? "page" : undefined}
             onClick={(e) => { e.preventDefault(); openTab(to); }}
             className="tab-link flex-1 flex flex-col items-center justify-center gap-1 min-h-[56px] text-sm tracking-wide transition-colors"
-            style={{ color: active ? "#f5e6b8" : "var(--neo-muted)", textShadow: active ? "0 0 10px rgba(245,230,184,.5)" : "none" }}>
+            style={{ color: active ? "#e8354f" : "var(--neo-muted)", textShadow: active ? "0 0 10px rgba(232,53,79,.5)" : "none" }}>
             <Icon className="w-5 h-5" />
             <span className="tab-label text-sm leading-none">{label}</span>
           </Link>
