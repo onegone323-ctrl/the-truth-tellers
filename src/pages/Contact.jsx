@@ -52,7 +52,7 @@ export default function Contact() {
       ) : (
         <header className="px-4 sm:px-[54px] py-6 flex items-center justify-between" style={{ borderBottom: "1px solid var(--neo-border)" }}>
           <Link to="/" className="flex items-center" style={{ gap: 13 }}>
-            <span style={{ fontSize: 27, color: "#00e5ff", textShadow: "0 0 14px #00e5ff" }}>✶</span>
+            <span style={{ fontSize: 27, color: "#d4af37", textShadow: "0 0 14px #d4af37" }}>✶</span>
             <span style={{ color: "var(--gold-leaf)", fontSize: 18, letterSpacing: 4, textTransform: "uppercase", fontWeight: 500 }}>
               Truth 4 Clarity
             </span>

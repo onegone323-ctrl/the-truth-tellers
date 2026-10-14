@@ -139,7 +139,7 @@ export default function AdminSections() {
               style={{ borderBottom: "1px solid rgba(212,175,55,0.12)", paddingBottom: 6 }}>
               <span style={{ color: "#c7bda4" }}>{u.full_name || "—"}</span>
               <span style={{ color: "#817a6d", fontSize: 14 }}>{u.email}</span>
-              <span style={{ color: u.role === "admin" ? "#00e5ff" : "#817a6d", fontSize: 14 }}>
+              <span style={{ color: u.role === "admin" ? "#f5e6b8" : "#817a6d", fontSize: 14 }}>
                 {u.role} · {String(u.created_date || "").slice(0, 10)}
               </span>
             </div>

@@ -18,7 +18,7 @@ export default function MessageBubble({ message }) {
         }`}
         style={
           isUser
-            ? { background: "linear-gradient(120deg, rgba(123,44,255,.28), rgba(0,229,255,.14))", border: "1px solid rgba(0,229,255,.35)" }
+            ? { background: "linear-gradient(120deg, rgba(139,26,43,.28), rgba(212,175,55,.14))", border: "1px solid rgba(212,175,55,.35)" }
             : { background: "var(--neo-field-bg)", border: "1px solid var(--neo-border)" }
         }
       >
@@ -34,7 +34,7 @@ export default function MessageBubble({ message }) {
           <div className="flex items-center justify-end gap-1 mt-1.5" aria-label="Sending">
             {[0, 1, 2].map((d) => (
               <span key={d} className="w-1 h-1 rounded-full animate-pulse"
-                style={{ background: "rgba(0,229,255,.8)", animationDelay: `${d * 180}ms` }} />
+                style={{ background: "rgba(212,175,55,.8)", animationDelay: `${d * 180}ms` }} />
             ))}
           </div>
         )}

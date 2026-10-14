@@ -39,9 +39,9 @@ export default function PullToRefresh({ onRefresh, children }) {
       <div aria-live="polite" className="absolute left-0 right-0 flex justify-center pointer-events-none"
         style={{ top: -56, opacity: Math.min(1, pull / THRESHOLD) }}>
         <div className="w-11 h-11 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.8)", border: `1px solid ${ready ? "#00e5ff" : "rgba(212,175,55,0.5)"}`, boxShadow: ready ? "0 0 14px rgba(0,229,255,.35)" : "none" }}>
+          style={{ background: "rgba(0,0,0,0.8)", border: `1px solid ${ready ? "#f5e6b8" : "rgba(212,175,55,0.5)"}`, boxShadow: ready ? "0 0 14px rgba(245,230,184,.35)" : "none" }}>
           <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`}
-            style={{ color: ready ? "#00e5ff" : "#d4af37", transform: refreshing ? undefined : `rotate(${pull * 3}deg)` }} />
+            style={{ color: ready ? "#f5e6b8" : "#d4af37", transform: refreshing ? undefined : `rotate(${pull * 3}deg)` }} />
         </div>
       </div>
       {children}
