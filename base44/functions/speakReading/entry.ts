@@ -56,7 +56,7 @@ export default async function(req) {
       const globalCap = ent?.plan === 'premium' || (ent?.credits || 0) >= 1 ? null : GLOBAL_DAILY_VOICE_CHARS;
       const reserved = await reserveVoice(base44, user.id, text.length, cap, globalCap);
       if (!reserved) {
-        return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — his voice rests until tomorrow." }, { status: 429 });
+        return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — her voice rests until tomorrow." }, { status: 429 });
       }
     }
     // ===== END GATE =====
@@ -66,10 +66,11 @@ export default async function(req) {
       return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
     }
 
-    // Voice configuration comes from the app's secrets, with sane defaults:
-    // a warm, expressive MALE voice at natural speed.
+    // Voice configuration: the model comes from the app's secrets, but the
+    // voice itself IS the persona — a warm, older woman (the Oracle) — so it
+    // is fixed here rather than read from a setting.
     const model = secrets.get('OPENAI_TTS_MODEL') || 'gpt-4o-mini-tts';
-    const voice = secrets.get('OPENAI_TTS_VOICE') || 'ash';
+    const voice = 'shimmer';
     const speedRaw = parseFloat(secrets.get('OPENAI_TTS_SPEED') || '1.0');
     const speed = Number.isFinite(speedRaw) && speedRaw >= 0.25 && speedRaw <= 4 ? speedRaw : 1.0;
 
@@ -102,6 +103,11 @@ export default async function(req) {
           input: chunk,
           response_format: 'mp3',
           speed,
+          // gpt-4o-mini-tts accepts direction — this is what makes her sound
+          // like the wise older woman she is, not just any female voice.
+          ...(model === 'gpt-4o-mini-tts' ? {
+            instructions: "You are a warm, older, wise woman — the Oracle. Speak like a beloved grandmother who has seen everything and tells you the truth with love: unhurried, tender, gravelly around the edges, with a bit of knowing amusement in her voice. Never rushed, never robotic.",
+          } : {}),
         }),
         signal: AbortSignal.timeout(60000),
       });

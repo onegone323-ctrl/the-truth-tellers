@@ -4,13 +4,13 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleOrb from "@/components/OracleOrb";
-import OracleSphere from "@/components/OracleSphere";
 import OrbStage from "@/components/OrbStage";
+import ReadingStage from "@/components/ReadingStage";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import { Link } from "react-router-dom";
-import { Mic, MicOff, Pause, Play, RefreshCw, RotateCcw, Sparkles, Volume2 } from "lucide-react";
+import { Mic, MicOff, Sparkles } from "lucide-react";
 import { toSpokenText } from "@/lib/speechText";
 import { createOraclePlayer } from "@/lib/oracleVoice";
 import CaptionScroll from "@/components/CaptionScroll";
@@ -490,79 +490,30 @@ export default function Home() {
         </div>
       )}
 
-      {/* READING PHASE — she takes the stage: the orb rises and spins while
-          she reads, then she speaks and her words roll along the bottom.
-          No cards, no text on screen — pure voice. */}
+      {/* READING PHASE — nothing but the Oracle: a full black page, her fire
+          globe filling it, colors drifting with her voice, tiny controls at
+          the bottom edge. */}
       {phase === "reading" && (
-        <div className="flex flex-col items-center justify-center text-center min-h-[55vh] space-y-8">
-          <div style={{ animation: "orbRise 0.9s ease-out both" }}>
-            <OracleSphere state={orbState} size={300} />
-          </div>
-          <p className="text-muted-foreground font-body text-sm max-w-md">
-            {readingError
-              ? readingError
-              : busy
-              ? "The Oracle is reading the cards…"
-              : voiceBusy
-              ? "He's looking into the cards…"
-              : orbState === "speaking"
-              ? "Listen. The truth is in his voice."
-              : "His words are yours to keep."}
-          </p>
-
-          {(voiceBusy || orbState === "speaking") && !readingError && (
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                onClick={() => {
-                  if (voicePaused) { player.resume(); setVoicePaused(false); }
-                  else { player.pause(); setVoicePaused(true); }
-                }}
-                className="neo-button flex items-center gap-2 px-6">
-                {voicePaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                {voicePaused ? "Resume His Voice" : "Pause His Voice"}
-              </button>
-              <button onClick={() => player.rewind()}
-                className="neo-pill flex items-center gap-2 px-6 py-2.5">
-                <RotateCcw className="w-3.5 h-3.5" /> Rewind
-              </button>
-            </div>
-          )}
-
-          {readingError && !busy && (
-            <div className="flex flex-wrap justify-center gap-3">
-              {outOfCredits ? (
-                <Link to="/pricing" className="neo-button px-6">Get More Readings</Link>
-              ) : (
-                <button onClick={handleRead} className="neo-button px-6">Try This Reading Again</button>
-              )}
-              <button onClick={reset} className="neo-pill px-6 py-2.5">Another Reading</button>
-            </div>
-          )}
-
-
-
-          {!readingError && !busy && !voiceBusy && orbState !== "speaking" && (
-            <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={() => speak(reading)}
-                className="neo-button flex items-center gap-2 px-6">
-                <Volume2 className="w-3.5 h-3.5" /> Hear His Voice
-              </button>
-              <button onClick={reset}
-                className="neo-pill flex items-center gap-2 px-6 py-2.5">
-                <RefreshCw className="w-3.5 h-3.5" /> Another Reading
-              </button>
-            </div>
-          )}
-
-          <style>{`
-            @keyframes orbRise {
-              from { transform: translateY(60px) scale(0.85); opacity: 0; }
-              to { transform: translateY(0) scale(1); opacity: 1; }
-            }
-          `}</style>
-        </div>
+        <ReadingStage
+          state={orbState}
+          busy={busy}
+          voiceBusy={voiceBusy}
+          voicePaused={voicePaused}
+          error={readingError}
+          outOfCredits={outOfCredits}
+          onPauseToggle={() => {
+            if (voicePaused) { player.resume(); setVoicePaused(false); }
+            else { player.pause(); setVoicePaused(true); }
+          }}
+          onRewind={() => player.rewind()}
+          onSpeak={() => speak(reading)}
+          onReset={reset}
+          onRetry={handleRead}
+        />
       )}
-      <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
+      {phase !== "reading" && (
+        <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
+      )}
       <AmbientSound />
     </div>
   );
