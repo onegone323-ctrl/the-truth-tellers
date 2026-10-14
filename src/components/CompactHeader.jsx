@@ -1,10 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Settings } from "lucide-react";
-import CompanyMark from "@/components/CompanyMark";
 import { Image } from "@/components/ui/image";
 
-const GLOBE = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg";
+const ADPOV_LOGO = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/887c082c6_ADPOVMEDIAENTLOGO.png";
 
 export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle, goBack, onLogout }) {
   return (
@@ -14,11 +13,9 @@ export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle
         <span className="truncate text-xs uppercase tracking-widest text-primary">{pageTitle}</span>
       </div>}
       <div className={`${isTabRoot ? "flex" : "hidden md:flex"} shrink-0 items-center gap-2`}>
-        <CompanyMark height={16} compact />
         <Link to="/" className="flex items-center gap-1.5" aria-label="Truth 4 Clarity home">
-          <Image src={GLOBE} alt="" className="h-5 w-5 shrink-0 overflow-hidden rounded-full" />
+          <Image src={ADPOV_LOGO} alt="" className="shrink-0" style={{ width: 29, height: 20 }} fittingType="fit" />
           <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[1px] text-primary">Truth 4 Clarity</span>
-          <Image src={GLOBE} alt="" className="hidden h-5 w-5 shrink-0 overflow-hidden rounded-full lg:inline-block" />
         </Link>
       </div>
       <nav aria-label="Main navigation" className="compact-nav hidden min-w-0 flex-1 items-center overflow-x-auto md:flex">

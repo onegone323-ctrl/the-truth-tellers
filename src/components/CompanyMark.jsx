@@ -1,27 +1,29 @@
 import React from "react";
 
-// The Truth 4 Clarity mark — the Oracle's fire globe. Shown in the app header
+// The ADPOV Media & Ent company mark. Shown in the app header
 // and the public page footers.
-const LOGO_URL = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4eec5cc5e_globe1.jpg";
+const LOGO_URL = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/887c082c6_ADPOVMEDIAENTLOGO.png";
 
+// The logo file is a wide ~10:7 image on black.
 export default function CompanyMark({ height = 32, className = "", compact = false }) {
+  const width = Math.round((height * 10) / 7);
   return (
     <span
       className={`inline-block ${className}`}
       style={{
         padding: compact ? 2 : 3,
-        borderRadius: "50%",
+        borderRadius: 4,
         border: "1px solid color-mix(in srgb, var(--gold-leaf) 35%, transparent)",
         background: "rgba(5,5,5,0.9)",
         boxShadow: "0 0 12px color-mix(in srgb, var(--gold-leaf) 10%, transparent)",
         lineHeight: 0,
       }}
-      title="Truth 4 Clarity"
+      title="ADPOV Media & Ent"
     >
       <img
         src={LOGO_URL}
-        alt="Truth 4 Clarity"
-        style={{ height, width: height, display: "block", objectFit: "cover", borderRadius: "50%" }}
+        alt="ADPOV Media & Ent"
+        style={{ height, width, display: "block", objectFit: "cover", borderRadius: 3 }}
       />
     </span>
   );
