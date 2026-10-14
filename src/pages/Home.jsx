@@ -306,11 +306,11 @@ export default function Home() {
         <section
           className="neo-hero grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
-          <div style={{ animation: "materialize 1s .12s ease both" }}>
-            <h1 className="neo-h1 text-gold-leaf m-0 max-w-[560px] text-[24px] tracking-[2px] sm:text-[34px] sm:tracking-[4px]">
+          <div className="text-center" style={{ animation: "materialize 1s .12s ease both" }}>
+            <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[560px] text-[30px] tracking-[3px] sm:text-[46px] sm:tracking-[4px]">
               {phase === "setup" ? "Let the Oracle Deliver the Message the Universe Wants You to Know" : "The Cards Are Drawn"}
             </h1>
-            <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px 0 0" }}>
+            <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
               {phase === "setup"
                 ? `${greeting} Speak your question, choose the deck and spread, and let the Oracle read your cards.`
                 : "The cards are dealing. Watch them reveal — then ask him to read."}
