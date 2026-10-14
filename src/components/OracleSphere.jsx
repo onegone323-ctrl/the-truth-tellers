@@ -69,7 +69,7 @@ export default function OracleSphere({ state = 'idle', size = 215 }) {
   const imageStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'screen', pointerEvents: 'none', userSelect: 'none', transformOrigin: '50% 49%' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%' }}>
-      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: 'hidden', isolation: 'isolate', background: 'transparent', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
+      <div ref={rootRef} role='img' aria-label={`truth4clarity globe: ${state}`} style={{ position: 'relative', width: `min(${Math.round(size * 1.55)}px, 90vw)`, maxWidth: '100%', aspectRatio: '1', overflow: 'hidden', background: 'transparent', borderRadius: '50%', '--angle': '0deg', '--fire': 0, '--hue': '0deg', '--scale': 1.28 }}>
         <img src={CALM} alt='' draggable={false} onError={() => setError('The calm globe image could not load.')} style={{ ...imageStyle, transform: 'rotate(var(--angle))' }} />
         <img src={FIRE} alt='' draggable={false} onError={() => setError('The fire image could not load.')} style={{ ...imageStyle, opacity: 'var(--fire)', transform: 'scale(var(--scale))', filter: 'hue-rotate(var(--hue)) saturate(1.2)' }} />
         <canvas aria-hidden='true' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
