@@ -308,12 +308,12 @@ export default function Home() {
         >
           <div style={{ animation: "materialize 1s .12s ease both" }}>
             <div className="neo-eyebrow mb-5">Consult</div>
-            <h1 className="neo-h1 m-0 max-w-[520px] text-[30px] tracking-[4px] sm:text-[58px] sm:tracking-[9px]">
-              {phase === "setup" ? "Consult the Oracle" : "The Cards Are Drawn"}
+            <h1 className="neo-h1 m-0 max-w-[560px] text-[26px] tracking-[2px] sm:text-[42px] sm:tracking-[5px]">
+              {phase === "setup" ? "Let the Oracle Deliver the Message the Universe Wants You to Know" : "The Cards Are Drawn"}
             </h1>
             <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px 0 0" }}>
               {phase === "setup"
-                ? `${greeting} Speak your question, choose your deck and spread, and let him read the cards.`
+                ? `${greeting} Speak your question, choose the deck and spread, and let the Oracle read your cards.`
                 : "The cards are dealing. Watch them reveal — then ask him to read."}
             </p>
           </div>
