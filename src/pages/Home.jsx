@@ -408,8 +408,8 @@ export default function Home() {
                   {spreadsInCat.map((s) => (
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
-                      <strong className="block font-serif text-[15px] font-normal" style={{ color: "#eadfbf" }}>{s.name}</strong>
-                      <span className="block mt-[5px]" style={{ color: "#817a6d", fontSize: 14 }}>{s.description}</span>
+                      <strong className="block font-serif text-[15px] font-normal" style={{ color: "#050505" }}>{s.name}</strong>
+                      <span className="block mt-[5px]" style={{ color: "rgba(5,5,5,.78)", fontSize: 14 }}>{s.description}</span>
                     </button>
                   ))}
                 </div>
