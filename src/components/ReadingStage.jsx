@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import OracleSphere from "@/components/OracleSphere";
-import OracleFlames from "@/components/OracleFlames";
 import { Link } from "react-router-dom";
 import { Pause, Play, RotateCcw, RefreshCw, Volume2, X } from "lucide-react";
 
@@ -39,7 +38,6 @@ export default function ReadingStage({
         style={{ top: "max(12px, env(safe-area-inset-top))", width: 34, height: 34, padding: 0 }}><X className="w-3.5 h-3.5" /></button>
 
       <div className="relative flex-1 min-h-0 w-full flex items-center justify-center">
-        <OracleFlames active={speaking && !voicePaused} radius={size * 0.57} />
         <div className="relative pointer-events-none" style={{ animation: "orbRise 0.9s ease-out both" }}>
           <OracleSphere state={voicePaused ? "idle" : state} size={size} immersive />
         </div>
