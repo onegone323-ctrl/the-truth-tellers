@@ -63,6 +63,16 @@ const CLIENTS = [
     ],
   },
   {
+    id: "docker",
+    label: "Docker Gateway",
+    steps: [
+      "Create a profile for the gateway (Docker Desktop 4.62+): docker mcp profile create --name truth4clarity.",
+      "Define the Oracle as a remote server in a file called truth4clarity.yaml: set name to truth4clarity, and under a remote: block set url to the server URL below.",
+      "Add it to the profile: docker mcp profile server add truth4clarity --server file://./truth4clarity.yaml",
+      "Point your client at the gateway over stdio — run docker mcp gateway run --profile truth4clarity as the server command (or docker mcp client connect vscode --profile truth4clarity). Approve the sign-in when it opens this app's consent page.",
+    ],
+  },
+  {
     id: "custom",
     label: "Custom",
     steps: [
@@ -116,7 +126,7 @@ export default function Connect() {
           Connect Your Assistant
         </h1>
         <p className="text-muted-foreground mt-2 font-body text-sm max-w-md mx-auto">
-          Let Claude, ChatGPT, Cursor, VS Code, Windsurf, Gemini, or any MCP client consult the Oracle on your behalf.
+          Let Claude, ChatGPT, Cursor, VS Code, Windsurf, Gemini, Docker's MCP Gateway, or any MCP client consult the Oracle on your behalf.
         </p>
       </div>
 
