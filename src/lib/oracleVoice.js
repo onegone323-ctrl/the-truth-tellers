@@ -16,6 +16,9 @@ let audioCtx = null;
 let analyserNode = null;
 let sourceNode = null;
 export function getVoiceAnalyser() { return analyserNode; }
+// The same (already unlocked) context, so the ignition sound can play the
+// instant the voice starts without needing another tap.
+export function getVoiceAudioContext() { return audioCtx; }
 
 // Breaks the reading into sentence-aligned pieces that cover ALL of the text.
 export function splitForSpeech(text) {
