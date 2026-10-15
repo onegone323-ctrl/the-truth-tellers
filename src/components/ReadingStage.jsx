@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import OracleSphere from '@/components/OracleSphere';
-import OracleFlames from '@/components/OracleFlames';
 import { Link } from 'react-router-dom';
 import { Pause, Play, RotateCcw, RefreshCw, Volume2, X } from 'lucide-react';
 
@@ -28,9 +27,8 @@ export default function ReadingStage({
     <div data-reading-stage className='fixed inset-0 z-[100] flex h-[100dvh] flex-col items-center overflow-hidden bg-reading-void' style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <button onClick={onReset} aria-label='Leave the reading' className='neo-pill absolute right-3 z-20 flex items-center justify-center' style={{ top: 'max(12px, env(safe-area-inset-top))', width: 34, height: 34, padding: 0 }}><X className='w-3.5 h-3.5' /></button>
       <div className='relative flex-1 min-h-0 w-full flex items-center justify-center'>
-        <OracleFlames active={speaking && !voicePaused} radius={size * 0.57} />
         <div className='relative pointer-events-none' style={{ animation: 'orbRise 0.9s ease-out both' }}>
-          <OracleSphere state={voicePaused ? 'idle' : state} size={size} immersive />
+          <OracleSphere state={state} paused={voicePaused} size={size} immersive />
         </div>
       </div>
       {error && !busy && <p className='relative px-6 pb-3 text-center' style={{ color: '#b1a38b', fontSize: 12, maxWidth: 420 }}>{error}</p>}
