@@ -9,6 +9,7 @@ import FireReading from "@/components/FireReading";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
+import OracleFirePicker from "@/components/OracleFirePicker";
 import { Link } from "react-router-dom";
 import { Mic, MicOff, Sparkles } from "lucide-react";
 import AmbientSound from "@/components/AmbientSound";
@@ -24,6 +25,7 @@ export default function Home() {
   const [blendDecks, setBlendDecks] = useState(true);
   const [spreadCategory, setSpreadCategory] = useState("General");
   const [spread, setSpread] = useState(SPREADS[0]);
+  const [aura, setAura] = useState("dance");
   const [clarifyOn, setClarifyOn] = useState(false);
   const [clarifyCount, setClarifyCount] = useState(1);
   const [question, setQuestion] = useState("");
@@ -302,7 +304,7 @@ export default function Home() {
               </div>
             )}
             <div style={phase === "setup" ? { display: "none" } : undefined}>
-              <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
+              <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} aura={aura} width={300} />
             </div>
           </div>
         </section>
@@ -331,6 +333,7 @@ export default function Home() {
                 </button>
                 <span className="neo-note">Or type your question above.</span>
               </div>
+              <OracleFirePicker value={aura} onChange={setAura} />
             </div>
 
             {/* Deck selection */}
@@ -490,6 +493,7 @@ export default function Home() {
       {phase === "reading" && (
         <FireReading
           fireRef={fireRef}
+          aura={aura}
           busy={busy}
           voiceBusy={voiceBusy}
           error={readingError}

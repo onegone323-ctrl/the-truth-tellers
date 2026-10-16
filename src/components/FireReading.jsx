@@ -5,7 +5,7 @@ import OracleFire from "@/components/OracleFire";
 
 const tinyBtn = { padding: "5px 12px", fontSize: 12, minHeight: 34, letterSpacing: 1.5 };
 
-export default function FireReading({ fireRef, busy, voiceBusy, error, outOfCredits, onReset, onRetry }) {
+export default function FireReading({ fireRef, aura, busy, voiceBusy, error, outOfCredits, onReset, onRetry }) {
   const [paused, setPaused] = useState(false);
   return (
     <div
@@ -21,7 +21,7 @@ export default function FireReading({ fireRef, busy, voiceBusy, error, outOfCred
         <X className="w-3.5 h-3.5" />
       </button>
       <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden px-3">
-        <OracleFire ref={fireRef} width="min(54vh, 92vw)" />
+        <OracleFire ref={fireRef} aura={aura} width="min(54vh, 92vw)" />
       </div>
       {error && !busy && (
         <p className="relative px-6 pb-3 text-center" style={{ color: "#b1a38b", fontSize: 12, maxWidth: 420 }}>

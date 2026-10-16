@@ -8,6 +8,15 @@ const LAYERS = ["dormant", "open", "spark", "ignite", "gold", "red", "blue", "gr
 const FIRE_LAYERS = ["open", "spark", "ignite", "gold", "red", "blue", "green", "purple"];
 const COLORS = ["gold", "red", "blue", "green", "purple"];
 const CROSS = { open: 1500, spark: 1000, ignite: 1000, simmer: 1800, dormant: 2200, color: 900 };
+// The Oracle Fire picker: "dance" cycles every flame; a single color holds.
+const AURA_COLORS = {
+  dance: COLORS,
+  gold: ["gold"],
+  violet: ["purple"],
+  azure: ["blue"],
+  ember: ["red"],
+  emerald: ["green"],
+};
 
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,6 +31,7 @@ const fire = {
   topZ: 1,
   fades: [],
   state: "dormant",
+  aura: "dance",
   level: 0,
   levels: [],
   cycle: null,
@@ -104,12 +114,24 @@ const cycleDuration = () => {
 };
 
 const advanceColor = (now) => {
-  const idx = fire.cycle ? (fire.cycle.idx + 1) % COLORS.length : 0;
-  const c = COLORS[idx];
+  const palette = AURA_COLORS[fire.aura] || COLORS;
+  if (palette.length === 1) {
+    // A single aura holds only its color — no cycling.
+    const c = palette[0];
+    fade(c, 1, CROSS.color);
+    for (const l of COLORS) if (l !== c && fire.opacity[l] > 0) fade(l, 0, CROSS.color);
+    fire.cycle = { color: c, holdUntil: Infinity };
+    return;
+  }
+  const prev = fire.cycle ? fire.cycle.color : null;
+  let idx = prev ? palette.indexOf(prev) + 1 : 0;
+  if (idx < 0 || idx >= palette.length) idx = 0;
+  const c = palette[idx];
   fade(c, 1, CROSS.color);
-  const prev = idx === 0 ? null : COLORS[(idx + COLORS.length - 1) % COLORS.length];
-  if (prev) fade(prev, 0, CROSS.color);
-  fire.cycle = { idx, holdUntil: now + cycleDuration() };
+  // Fade out anything not in the current palette — covers an aura switched
+  // mid-speech.
+  for (const l of COLORS) if (l !== c && fire.opacity[l] > 0) fade(l, 0, CROSS.color);
+  fire.cycle = { color: c, holdUntil: now + cycleDuration() };
 };
 
 // Plays one audio clip; resolves "ended" | "error" | "blocked".
@@ -279,7 +301,7 @@ const speakChain = async () => {
   await toRest();
 };
 
-const OracleFire = forwardRef(function OracleFire({ mode = "dormant", width, className = "" }, ref) {
+const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "dance", width, className = "" }, ref) {
   const stageRef = useRef(null);
   const [state, setState] = useState(fire.state);
   const [caption, setCaption] = useState(() => fire.captionParts.slice());
@@ -306,6 +328,12 @@ const OracleFire = forwardRef(function OracleFire({ mode = "dormant", width, cla
       fade("open", 0, 1200);
     }
   }, [mode]);
+
+  // The seeker's chosen fire: applied instantly, even mid-speech.
+  useEffect(() => {
+    fire.aura = aura;
+    if (fire.state === "speaking" && !fire.paused) advanceColor(performance.now());
+  }, [aura]);
 
   // The single animation loop: crossfades, voice-reactive level, color cycle,
   // and the flicker/scale on the stage. Reduced motion keeps only crossfades.
