@@ -1,3 +1,5 @@
+import { drawOracleFire } from '@/lib/drawOracleFire';
+
 // The Oracle's living light, in four acts:
 //   calm    — the globe alone, slowly turning.
 //   ignite  — a burst of real fire wraps the globe (with sound) the moment
@@ -58,7 +60,8 @@ export function animateOracleAura(canvas, live, options = {}) {
   let frame = 0, last = 0, ratio = 1, disposed = false;
   let time = 0, heat = 0, level = 0, blinkAmp = 0, hueT = 0, prevMode = "calm", prevHeat = 0;
   let igniteAt = -1; // time the fire was lit, -1 when cold
-  const flames = [], sparks = [];
+  let fireLevel = 0, fireTime = 0;
+  const sparks = [];
   const rnd = (a, b) => a + Math.random() * (b - a);
 
   const resize = () => {
@@ -68,13 +71,7 @@ export function animateOracleAura(canvas, live, options = {}) {
   };
   const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
 
-  const spawnFlame = (cx, cy, r, hot) => {
-    const a = rnd(0, TAU), rim = r * rnd(.86, 1.04);
-    const ux = Math.cos(a), uy = Math.sin(a);
-    const out = r * rnd(.25, 1.1), up = r * rnd(.5, 1.6);
-    flames.push({ x: cx + ux * rim, y: cy + uy * rim, vx: ux * out, vy: uy * out * .55 - up,
-      life: 0, ttl: rnd(.6, 1.5) * (hot ? 1 : .7), size: r * rnd(.05, .15), seed: rnd(0, TAU), temp: rnd(.7, .95) });
-  };
+
   const spawnSpark = (cx, cy, r, speed) => {
     const a = rnd(0, TAU), ux = Math.cos(a), uy = Math.sin(a);
     sparks.push({ x: cx + ux * r * 1.02, y: cy + uy * r * 1.02, vx: ux * r * speed * rnd(.6, 1.6), vy: uy * r * speed * rnd(.6, 1.6) - r * rnd(.2, .8),
@@ -83,7 +80,7 @@ export function animateOracleAura(canvas, live, options = {}) {
 
   const ignite = () => {
     if (reduced.matches) return;
-    igniteAt = time; flames.length = 0; sparks.length = 0;
+    igniteAt = time; sparks.length = 0;
     onIgnite();
   };
 
@@ -117,8 +114,12 @@ export function animateOracleAura(canvas, live, options = {}) {
     const targetLevel = mode === "live" ? 1 : mode === "paused" ? .55 : mode === "warming" ? .22 : 0;
     const lagging = burning && sinceIgnite < .7 && mode === "live"; // let the flash own the first beat
     level += ((lagging ? 0 : targetLevel) - level) * (1 - Math.exp(-dt * (mode === "calm" ? 1.6 : 2.2)));
-    blinkAmp += ((mode === "live" && !reduced.matches ? 1 : 0) - blinkAmp) * (1 - Math.exp(-dt * 2));
+    blinkAmp += ((mode === "live" && !reduced.matches ? .15 : 0) - blinkAmp) * (1 - Math.exp(-dt * 2));
     hueT += dt * (mode === "live" ? 1 + heat * .6 : .35);
+    // The fire stays visible without audio energy; speech only adds height.
+    const targetFire = mode === "live" ? 1 : mode === "warming" ? .8 : mode === "paused" ? .35 : 0;
+    fireLevel += (targetFire - fireLevel) * (1 - Math.exp(-dt * 3.5));
+    if (!reduced.matches && mode !== "paused") fireTime += dt;
 
     // Words: a jump in loudness throws a few sparks off the rim.
     if (mode === "live" && !burning && heat - prevHeat > .035 && sparks.length < 90)
@@ -186,35 +187,16 @@ export function animateOracleAura(canvas, live, options = {}) {
         ctx.fillStyle = g; ctx.globalAlpha = 1;
         ctx.fillRect(cx - r * 3, cy - r * 3, r * 6, r * 6);
       }
-      // Fuel: heavy for the first second, then starved.
       const fuel = t < 1 ? 1 : Math.max(0, 1 - (t - 1) / .9);
-      for (let i = 0, n = Math.round(fuel * 22 * (dt * 60)); i < n; i++) spawnFlame(cx, cy, r, t < .9);
-      if (t < 1.4) for (let i = 0, n = Math.round(fuel * 5 * (dt * 60)); i < n; i++) spawnSpark(cx, cy, r, 2.2);
-    } else if (mode === "live" && !reduced.matches) {
-      // The steady burn: while her voice runs the fire keeps rising off the
-      // rim — a thinner crown than the ignition burst, breathing with the
-      // words (heat pushes more flames up).
-      for (let i = 0, n = Math.round(6 + heat * 14); i < n; i++) spawnFlame(cx, cy, r, true);
-    } else if (mode === "warming" && !reduced.matches) {
-      // While she thinks (the reading being prepared): slow embers, so the
-      // globe is never bare while the seeker waits.
-      for (let i = 0, n = Math.round(3 + Math.random() * 3); i < n; i++) spawnFlame(cx, cy, r, false);
+      if (t < 1.4 && sparks.length < 70)
+        for (let i = 0, n = Math.round(fuel * 2 * dt * 60); i < n; i++) spawnSpark(cx, cy, r, 2.2);
     }
 
-    // ---- Particles ------------------------------------------------------------
-    for (let i = flames.length - 1; i >= 0; i--) {
-      const p = flames[i]; p.life += dt;
-      if (p.life >= p.ttl) { flames.splice(i, 1); continue; }
-      const k = p.life / p.ttl;
-      // Turbulence and buoyancy: flames curl and lift as they cool.
-      p.vx += (Math.sin(time * 6.5 + p.seed + p.y * .02) * .9 + Math.sin(time * 11 + p.seed * 3) * .4) * r * dt * 1.8;
-      p.vy -= r * dt * (1.6 + k * 1.4);
-      p.vx *= 1 - dt * 1.4; p.vy *= 1 - dt * .55;
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      const temp = Math.max(0, p.temp * (1 - k * 1.05));
-      const size = p.size * (0.7 + Math.sin(k * Math.PI) * 1.1 + k * .9);
-      drawSprite(p, temp, (1 - k) * (k < .12 ? k / .12 : 1) * .55, size);
-    }
+    // Connected, curling fire surrounds the rim for the whole active state.
+    // A steady white-gold core keeps it legible while the outer magic shifts hue.
+    drawOracleFire(ctx, { cx, cy, r, time: fireTime, heat, strength: fireLevel, hue: auraHue(hueT) });
+
+    // A few floating sparks complement the flames, never replace them.
     for (let i = sparks.length - 1; i >= 0; i--) {
       const p = sparks[i]; p.life += dt;
       if (p.life >= p.ttl) { sparks.splice(i, 1); continue; }
