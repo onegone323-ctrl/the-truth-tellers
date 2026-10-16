@@ -59,11 +59,18 @@ function silentWav() {
   return "data:audio/wav;base64," + btoa(bin);
 }
 
+// Computed once, reused by every player that needs to unlock audio in a tap.
+let silentSrcCache = null;
+export function getSilentWavSrc() {
+  if (!silentSrcCache) silentSrcCache = silentWav();
+  return silentSrcCache;
+}
+
 // Asks the voice service for one piece; keeps retrying with a short pause
 // between attempts so a hiccup never swallows part of the reading. Never throws.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchClips(text) {
+export async function fetchClips(text) {
   for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const res = await base44.functions.invoke("speakReading", { text });

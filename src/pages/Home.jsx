@@ -3,17 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
-import OracleOrb from "@/components/OracleOrb";
-import OrbStage from "@/components/OrbStage";
-import ReadingStage from "@/components/ReadingStage";
+import OracleFire from "@/components/OracleFire";
+import FireReading from "@/components/FireReading";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
 import { Link } from "react-router-dom";
 import { Mic, MicOff, Sparkles } from "lucide-react";
-import { toSpokenText } from "@/lib/speechText";
-import { createOraclePlayer } from "@/lib/oracleVoice";
-import CaptionScroll from "@/components/CaptionScroll";
 import AmbientSound from "@/components/AmbientSound";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -33,27 +29,22 @@ export default function Home() {
   const [cards, setCards] = useState([]);
   const [reading, setReading] = useState("");
   const [readingError, setReadingError] = useState("");
-  const [orbState, setOrbState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [entitlement, setEntitlement] = useState(null);
   const [readingsUsed, setReadingsUsed] = useState(0);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const [voicePaused, setVoicePaused] = useState(false);
-  const [captionText, setCaptionText] = useState("");
-  const [captionProgress, setCaptionProgress] = useState(0);
   const recogRef = useRef(null);
   const busyRef = useRef(false);
-  // ONE audio player for the whole page, so two voices can never sound at once.
-  const playerRef = useRef(null);
-  if (!playerRef.current) playerRef.current = createOraclePlayer();
-  const player = playerRef.current;
+  // The Oracle's fire — one shared fire for the hero, the drawing view and
+  // the reading. It owns the reading request, her voice and every visual.
+  const fireRef = useRef(null);
 
-  // Stop any in-flight audio on unmount so the Oracle never keeps talking
+  // Stop any in-flight voice on unmount so the Oracle never keeps talking
   // after the seeker leaves the page.
   useEffect(() => {
-    return () => { player.stop(); };
+    return () => { fireRef.current?.reset(); };
   }, []);
 
   // Load user + memory — re-run by pull-to-refresh on mobile.
@@ -93,21 +84,125 @@ export default function Home() {
     r.continuous = false;
     r.interimResults = false;
     r.lang = "en-US";
-    r.onstart = () => { setListening(true); setOrbState("listening"); };
+    r.onstart = () => { setListening(true); };
     r.onresult = (e) => {
       const text = e.results[0][0].transcript;
       setQuestion((q) => (q ? q + " " : "") + text);
     };
-    r.onend = () => { setListening(false); setOrbState("idle"); };
-    r.onerror = () => { setListening(false); setOrbState("idle"); };
+    r.onend = () => { setListening(false); };
+    r.onerror = () => { setListening(false); };
     recogRef.current = r;
     r.start();
   };
   const stopListening = () => { recogRef.current?.stop(); };
 
   // ---- Draw cards ----
+  const buildPayload = (q, drawnCards) => ({
+    question: q, deck: activeDeck, spread,
+    cards: drawnCards.map((c) => ({
+      name: c.name, reversed: c.reversed, position: c.position,
+      deck_name: (c.cardDeck || activeDeck).name,
+      deck_tradition: (c.cardDeck || activeDeck).tradition,
+      deck_title: deckCardTitle((c.cardDeck || activeDeck).id, c.name),
+      clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
+    })),
+    profile: profile ? {
+      full_name: profile.full_name,
+      occupation: profile.occupation,
+      goals: profile.goals,
+      trigger: profile.trigger,
+      makes_happy: profile.makes_happy,
+      hard_memory: profile.hard_memory,
+    } : null,
+    memory: memory ? {
+      user_name: seekerName,
+      summary: memory.summary,
+      recurring_themes: memory.recurring_themes,
+      last_question: memory.last_question,
+      last_advice: memory.last_advice,
+      reading_count: memory.reading_count,
+    } : null,
+  });
+
+  // When the reading lands: mirror the server-side spend and keep her memory
+  // of this seeker current. The journal entry itself is written by the SERVER
+  // inside generateReading (before the reading is returned) so usage can't be
+  // bypassed — the client must not duplicate it.
+  const handleReadingComplete = async ({ reading: text, snippet, message }) => {
+    setReading(text);
+    setReadingError("");
+    setOutOfCredits(false);
+    if (snippet) {
+      setOutOfCredits(true);
+      setReadingError(message || "The Oracle stops here — sign up to hear the whole reading.");
+    }
+    // Mirror the server-side spend locally: the first reading is free,
+    // premium reads freely, after that each full reading spends a credit.
+    if (!snippet && user?.role !== "admin" && entitlement && entitlement.plan !== "premium" && readingsUsed >= 1) {
+      setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
+    }
+    setReadingsUsed((r) => r + 1);
+    busyRef.current = false;
+    setBusy(false);
+    try {
+      const adviceSnippet = text.slice(-280);
+      if (memory) {
+        await base44.entities.OracleMemory.update(memory.id, {
+          summary: text.slice(0, 600),
+          last_question: question,
+          last_advice: adviceSnippet,
+          reading_count: (memory.reading_count || 0) + 1,
+          user_name: seekerName,
+          recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
+        });
+      } else {
+        const created = await base44.entities.OracleMemory.create({
+          user_name: seekerName,
+          summary: text.slice(0, 600),
+          recurring_themes: [spread.category],
+          recurring_cards: cards.map((c) => c.name).slice(0, 12),
+          last_question: question,
+          last_advice: adviceSnippet,
+          reading_count: 1,
+        });
+        setMemory(created);
+      }
+    } catch (persistenceError) {
+      console.error("Reading succeeded but could not be saved.", persistenceError);
+    }
+  };
+
+  const handleReadingError = (e) => {
+    console.error(e);
+    // Surface the actual server-side error so we can see what's failing
+    // (missing API key, 401, rate-limit, timeout, etc.). The Base44 SDK
+    // packs the function's JSON error body into a few different shapes
+    // depending on how it hit — dig for whichever one has the real message.
+    const detail =
+      e?.response?.data?.message ||
+      e?.response?.data?.error ||
+      e?.response?.data?.detail ||
+      (typeof e?.response?.data === "string" ? e.response.data : "") ||
+      e?.data?.error ||
+      e?.message ||
+      String(e || "unknown error");
+    if (e?.response?.status === 402 || /out_of_credits/i.test(detail)) {
+      setOutOfCredits(true);
+      setReadingError("You're out of readings. The Oracle waits for no one — grab credits or go Premium to keep going.");
+    } else {
+      setReadingError(
+        /timed out|timeout/i.test(detail)
+          ? `The reading took too long to arrive — try again. (${detail})`
+          : `The reading couldn't be completed — try again. Reason: ${detail}`
+      );
+    }
+    busyRef.current = false;
+    setBusy(false);
+  };
+
   const handleDraw = () => {
-    if (!question.trim()) return;
+    if (!question.trim() || busy || busyRef.current) return;
+    busyRef.current = true;
     const drawn = drawSpread(spread).map((c) => ({
       ...c,
       cardDeck: blendDecks ? DECKS[Math.floor(Math.random() * DECKS.length)] : deck,
@@ -115,162 +210,29 @@ export default function Home() {
     }));
     setCards(drawn);
     setPhase("drawing");
-    setOrbState("thinking");
-  };
-
-  // ---- Generate reading ----
-  const handleRead = async () => {
-    // A ref (not state) so a fast double-tap can't start two readings — two
-    // readings means two voices.
-    if (busy || busyRef.current) return;
-    busyRef.current = true;
-    // This tap is the one moment the browser lets us unlock audio, so the
-    // voice can start by itself when the reading arrives.
-    player.unlock();
-    setPhase("reading");
-    setOrbState("thinking");
-    setBusy(true);
     setReading("");
     setReadingError("");
     setOutOfCredits(false);
-    try {
-      const payload = {
-        question, deck: activeDeck, spread,
-        cards: cards.map((c) => ({
-          name: c.name, reversed: c.reversed, position: c.position,
-          deck_name: (c.cardDeck || activeDeck).name,
-          deck_tradition: (c.cardDeck || activeDeck).tradition,
-          deck_title: deckCardTitle((c.cardDeck || activeDeck).id, c.name),
-          clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
-        })),
-        profile: profile ? {
-          full_name: profile.full_name,
-          occupation: profile.occupation,
-          goals: profile.goals,
-          trigger: profile.trigger,
-          makes_happy: profile.makes_happy,
-          hard_memory: profile.hard_memory,
-        } : null,
-        memory: memory ? {
-          user_name: seekerName,
-          summary: memory.summary,
-          recurring_themes: memory.recurring_themes,
-          last_question: memory.last_question,
-          last_advice: memory.last_advice,
-          reading_count: memory.reading_count,
-        } : null,
-      };
-      const res = await base44.functions.invoke("generateReading", payload);
-      const text = res?.data?.reading;
-      if (typeof text !== "string" || !text.trim()) {
-        throw new Error("The reading service returned no reading.");
-      }
-      setReading(text);
-      // A snippet reading: the Oracle stops early and the paywall speaks.
-      if (res?.data?.snippet) {
-        setOutOfCredits(true);
-        setReadingError(res?.data?.message || "The Oracle stops here — sign up to hear the whole reading.");
-      }
-      // Mirror the server-side spend locally: the first reading is free,
-      // premium reads freely, after that each full reading spends a credit.
-      if (!res?.data?.snippet && user?.role !== "admin" && entitlement && entitlement.plan !== "premium" && readingsUsed >= 1) {
-        setEntitlement({ ...entitlement, credits: Math.max(0, (entitlement.credits || 0) - 1) });
-      }
-      setReadingsUsed((r) => r + 1);
-      // His voice starts right now — saving to the journal happens in the
-      // background below and never holds it up.
-      speak(text);
-
-      try {
-        // The journal entry is written by the SERVER inside generateReading
-        // (before the reading is returned) so usage can't be bypassed by
-        // calling the function directly — the client must not duplicate it.
-
-        const adviceSnippet = text.slice(-280);
-        if (memory) {
-          await base44.entities.OracleMemory.update(memory.id, {
-            summary: text.slice(0, 600),
-            last_question: question,
-            last_advice: adviceSnippet,
-            reading_count: (memory.reading_count || 0) + 1,
-            user_name: seekerName,
-            recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
-          });
-        } else {
-          const created = await base44.entities.OracleMemory.create({
-            user_name: seekerName,
-            summary: text.slice(0, 600),
-            recurring_themes: [spread.category],
-            recurring_cards: cards.map((c) => c.name).slice(0, 12),
-            last_question: question,
-            last_advice: adviceSnippet,
-            reading_count: 1,
-          });
-          setMemory(created);
-        }
-      } catch (persistenceError) {
-        console.error("Reading succeeded but could not be saved.", persistenceError);
-      }
-    } catch (e) {
-      console.error(e);
-      // Surface the actual server-side error so we can see what's failing
-      // (missing API key, 401, rate-limit, timeout, etc.). The Base44 SDK
-      // packs the function's JSON error body into a few different shapes
-      // depending on how it hit — dig for whichever one has the real message.
-      const detail =
-        e?.response?.data?.message ||
-        e?.response?.data?.error ||
-        e?.response?.data?.detail ||
-        (typeof e?.response?.data === "string" ? e.response.data : "") ||
-        e?.data?.error ||
-        e?.message ||
-        String(e || "unknown error");
-      if (e?.response?.status === 402 || /out_of_credits/i.test(detail)) {
-        setOutOfCredits(true);
-        setReadingError("You're out of readings. The Oracle waits for no one — grab credits or go Premium to keep going.");
-      } else {
-        setReadingError(
-          /timed out|timeout/i.test(detail)
-            ? `The reading took too long to arrive — try again. (${detail})`
-            : `The reading couldn't be completed — try again. Reason: ${detail}`
-        );
-      }
-      setOrbState("idle");
-    }
-    busyRef.current = false;
-    setBusy(false);
+    // Submitting the question is the moment the fire awakens — and the
+    // reading request starts right now, in parallel with the dealing.
+    fireRef.current?.startOracle(buildPayload(question, drawn), {
+      onComplete: handleReadingComplete,
+      onError: handleReadingError,
+      onVoiceStart: () => setVoiceBusy(true),
+      onVoiceEnd: () => setVoiceBusy(false),
+      onBlocked: () => {},
+    });
   };
 
-  // ---- Oracle voice: OpenAI TTS only ----
-  // The whole reading is spoken piece by piece: the first piece arrives in a
-  // couple of seconds and the rest load while he talks. The words on screen
-  // begin at the exact moment the first sound plays, and track his voice.
-  // If the browser blocks the sound, "Hear His Voice" is a fresh tap.
-  const speak = async (sourceText) => {
-    if (!sourceText) return;
-    const spoken = toSpokenText(sourceText);
-    setVoiceBusy(true);
-    setVoicePaused(false);
-    setOrbState("thinking");
-    setCaptionText("");
-    setCaptionProgress(0);
-
-    const result = await player.speak(spoken, {
-      onStart: () => { setCaptionText(spoken); setOrbState("speaking"); },
-      onProgress: setCaptionProgress,
-    });
-
-    // A newer speak() or a reset took over — it owns the cleanup.
-    if (result === "aborted") return;
-    setCaptionProgress(1);
-    setOrbState("idle");
-    setVoiceBusy(false);
-    setVoicePaused(false);
+  // ---- Hear the reading: the fire ignites, thinks, then speaks ----
+  const handleRead = () => {
+    setPhase("reading");
+    fireRef.current?.play();
   };
 
   const reset = () => {
-    player.stop();
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setOrbState("idle"); setQuestion(""); setCaptionText(""); setCaptionProgress(0); setVoiceBusy(false); setVoicePaused(false); setOutOfCredits(false);
+    fireRef.current?.reset();
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setQuestion(""); setVoiceBusy(false); setOutOfCredits(false);
   };
 
   // Names: the platform auto-fills the account name from the email address,
@@ -296,7 +258,7 @@ export default function Home() {
     return (
       <div className="space-y-8">
         <div className="flex flex-col items-center text-center pt-4">
-          <OracleOrb state="idle" size={160} />
+          <OracleFire width={170} />
         </div>
         <OnboardingQuestionnaire onComplete={setProfile} defaultName={notEmailUsername(user?.full_name)} />
         <AmbientSound />
@@ -322,7 +284,7 @@ export default function Home() {
             </p>
           </div>
           <div style={{ animation: "materialize 1s .3s ease both" }}>
-            <OrbStage state={orbState} size={340} height={430} />
+            <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
           </div>
         </section>
       )}
@@ -447,7 +409,7 @@ export default function Home() {
           </section>
 
           <div className="enter delay3 mx-4 sm:mx-[54px] mt-3.5">
-            <button onClick={handleDraw} disabled={!question.trim()}
+            <button onClick={handleDraw} disabled={!question.trim() || busy}
               className="neo-button w-full flex items-center justify-center gap-3"
               style={{ height: 62, fontSize: 13, letterSpacing: 5 }}>
               <Sparkles className="w-4 h-4" />Draw the Cards
@@ -492,32 +454,30 @@ export default function Home() {
             <button onClick={() => setPhase("setup")} className="neo-pill px-6 py-2.5">Redraw Setup</button>
             <button onClick={handleRead} className="neo-button px-8">Hear the Reading</button>
           </div>
+          {readingError && (
+            <div className="text-center">
+              <p style={{ color: "#b1a38b", fontSize: 13 }}>{readingError}</p>
+              {outOfCredits
+                ? <Link to="/pricing" className="neo-button" style={{ display: "inline-block", marginTop: 10 }}>Get More Readings</Link>
+                : <button onClick={handleRead} className="neo-button" style={{ marginTop: 10 }}>Try Again</button>}
+            </div>
+          )}
         </div>
       )}
 
       {/* READING PHASE — nothing but the Oracle: a full black page, her fire
-          globe filling it, colors drifting with her voice, tiny controls at
-          the bottom edge. */}
+          filling a tall stage, colors cycling with her voice, the reading's
+          words fading in beneath, tiny controls at the bottom edge. */}
       {phase === "reading" && (
-        <ReadingStage
-          state={orbState}
+        <FireReading
+          fireRef={fireRef}
           busy={busy}
           voiceBusy={voiceBusy}
-          voicePaused={voicePaused}
           error={readingError}
           outOfCredits={outOfCredits}
-          onPauseToggle={() => {
-            if (voicePaused) { player.resume(); setVoicePaused(false); }
-            else { player.pause(); setVoicePaused(true); }
-          }}
-          onRewind={() => player.rewind()}
-          onSpeak={() => speak(reading)}
           onReset={reset}
           onRetry={handleRead}
         />
-      )}
-      {phase !== "reading" && (
-        <CaptionScroll text={captionText} progress={captionProgress} active={orbState === "speaking"} />
       )}
       {phase !== "reading" && <AmbientSound />}
     </div>

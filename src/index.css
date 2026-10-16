@@ -427,3 +427,9 @@
 @media (prefers-reduced-motion: reduce) {
   .oracle-speaking { animation: none; }
 }
+
+/* The reading's words fade in beneath her fire as she speaks them. */
+@keyframes captionFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
