@@ -1,9 +1,10 @@
 // The Oracle's living light, in four acts:
 //   calm    — the globe alone, slowly turning.
-//   ignite  — one burst of real fire wraps the globe (with sound) the moment
-//             the voice begins. It burns once and dies back.
-//   simmer  — what the fire leaves behind: a blinking aura hugging the globe
-//             that drifts through colours and swells with every spoken word.
+//   ignite  — a burst of real fire wraps the globe (with sound) the moment
+//             the voice begins.
+//   simmer  — the fire NEVER goes out while she speaks: flames keep rising
+//             off the rim for the whole reading (brighter with every word),
+//             over a blinking aura that drifts through colours.
 //   cool    — the aura fades and the globe turns again.
 //
 // Everything here is Canvas 2D with additive blending — no WebGL, no image
@@ -189,6 +190,11 @@ export function animateOracleAura(canvas, live, options = {}) {
       const fuel = t < 1 ? 1 : Math.max(0, 1 - (t - 1) / .9);
       for (let i = 0, n = Math.round(fuel * 22 * (dt * 60)); i < n; i++) spawnFlame(cx, cy, r, t < .9);
       if (t < 1.4) for (let i = 0, n = Math.round(fuel * 5 * (dt * 60)); i < n; i++) spawnSpark(cx, cy, r, 2.2);
+    } else if (mode === "live" && !reduced.matches) {
+      // The steady burn: while her voice runs the fire keeps rising off the
+      // rim — a thinner crown than the ignition burst, breathing with the
+      // words (heat pushes more flames up).
+      for (let i = 0, n = Math.round(2 + heat * 6); i < n; i++) spawnFlame(cx, cy, r, true);
     }
 
     // ---- Particles ------------------------------------------------------------
