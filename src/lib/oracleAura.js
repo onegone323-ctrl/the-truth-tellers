@@ -194,7 +194,11 @@ export function animateOracleAura(canvas, live, options = {}) {
       // The steady burn: while her voice runs the fire keeps rising off the
       // rim — a thinner crown than the ignition burst, breathing with the
       // words (heat pushes more flames up).
-      for (let i = 0, n = Math.round(2 + heat * 6); i < n; i++) spawnFlame(cx, cy, r, true);
+      for (let i = 0, n = Math.round(6 + heat * 14); i < n; i++) spawnFlame(cx, cy, r, true);
+    } else if (mode === "warming" && !reduced.matches) {
+      // While she thinks (the reading being prepared): slow embers, so the
+      // globe is never bare while the seeker waits.
+      for (let i = 0, n = Math.round(3 + Math.random() * 3); i < n; i++) spawnFlame(cx, cy, r, false);
     }
 
     // ---- Particles ------------------------------------------------------------
