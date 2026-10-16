@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import ReadingText from "@/components/ReadingText";
+import JournalAudioPlayer from "@/components/JournalAudioPlayer";
 import { Trash2, Calendar, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import useGoBack from "@/hooks/useGoBack";
@@ -99,9 +100,7 @@ export default function JournalDetail() {
           ))}
         </div>
         <ReadingText text={entry.interpretation} />
-        {entry.audio_url && (
-          <audio controls src={entry.audio_url} className="w-full mt-4" />
-        )}
+        {entry.audio_url && <JournalAudioPlayer src={entry.audio_url} />}
       </div>
     </div>
   );
