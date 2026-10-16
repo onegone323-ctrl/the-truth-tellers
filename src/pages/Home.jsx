@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { Image } from "@/components/ui/image";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
@@ -284,7 +285,25 @@ export default function Home() {
             </p>
           </div>
           <div style={{ animation: "materialize 1s .3s ease both" }}>
-            <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
+            {/* The home-page hero: the Oracle's own card, large and still. The
+                fire stays mounted but hidden — its reading engine must stay
+                wired for the draw. */}
+            {phase === "setup" && (
+              <div className="flex justify-center">
+                <Image
+                  src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/6f1556556_oracle-card.png"
+                  alt="The Oracle's card, face down"
+                  fittingType="fill"
+                  originWidth={363}
+                  originHeight={633}
+                  className="w-full max-w-[460px]"
+                  draggable={false}
+                />
+              </div>
+            )}
+            <div style={phase === "setup" ? { display: "none" } : undefined}>
+              <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
+            </div>
           </div>
         </section>
       )}
