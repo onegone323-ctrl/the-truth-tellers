@@ -440,8 +440,8 @@
   animation: heroDrift 44s ease-in-out infinite alternate;
 }
 @keyframes heroDrift {
-  from { transform: scale(1) translateY(0); }
-  to { transform: scale(1.09) translateY(-1.5%); }
+  from { transform: scale(1.06) translateY(0); }
+  to { transform: scale(1.15) translateY(-1.5%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-drift { animation: none; }

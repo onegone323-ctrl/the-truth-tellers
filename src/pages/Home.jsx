@@ -281,6 +281,7 @@ export default function Home() {
               position: "absolute", inset: 0,
               backgroundImage: `url(${ORACLE_FIRE_FRAMES.dormant})`,
               backgroundSize: "cover", backgroundPosition: "center 22%",
+              filter: "blur(14px) brightness(.6) saturate(1.05)",
             }}
           />
           <div style={{
