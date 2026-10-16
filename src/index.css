@@ -417,3 +417,13 @@
   from { filter: hue-rotate(0deg) saturate(1.05); }
   to { filter: hue-rotate(230deg) saturate(1.25); }
 }
+/* While the Oracle speaks, the flames inside her drift through the whole
+   spectrum, then settle back to natural the moment she stops. */
+.oracle-speaking { animation: oracleSpeakHue 7s linear infinite; }
+@keyframes oracleSpeakHue {
+  from { filter: hue-rotate(0deg) saturate(1.05); }
+  to { filter: hue-rotate(360deg) saturate(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oracle-speaking { animation: none; }
+}
