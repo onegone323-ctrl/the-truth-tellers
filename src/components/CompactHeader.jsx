@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Settings } from "lucide-react";
 import { Image } from "@/components/ui/image";
 
-const T4C_LOGO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/d652c74b6_925825601_DOWNSIZET4C.png";
+const T4C_LOGO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/c745bf5c6_DOWNSIZET4C.png";
 
 export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle, goBack, onLogout }) {
   return (
