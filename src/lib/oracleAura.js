@@ -1,4 +1,4 @@
-import { drawOracleFire } from '@/lib/drawOracleFire';
+import { drawOracleFire, disposeOracleFire } from '@/lib/drawOracleFire';
 
 // The Oracle's living light, in four acts:
 //   calm    — the globe alone, slowly turning.
@@ -192,9 +192,9 @@ export function animateOracleAura(canvas, live, options = {}) {
         for (let i = 0, n = Math.round(fuel * 2 * dt * 60); i < n; i++) spawnSpark(cx, cy, r, 2.2);
     }
 
-    // Connected, curling fire surrounds the rim for the whole active state.
-    // A steady white-gold core keeps it legible while the outer magic shifts hue.
-    drawOracleFire(ctx, { cx, cy, r, time: fireTime, heat, strength: fireLevel, hue: auraHue(hueT) });
+    // Turbulent, translucent fire keeps its natural gold temperatures;
+    // the separate aura still provides the Oracle's subtle shifting colours.
+    drawOracleFire(ctx, { cx, cy, r, time: fireTime, heat, strength: fireLevel });
 
     // A few floating sparks complement the flames, never replace them.
     for (let i = sparks.length - 1; i >= 0; i--) {
@@ -216,6 +216,6 @@ export function animateOracleAura(canvas, live, options = {}) {
   return {
     ignite,
     level: () => level,
-    stop() { disposed = true; cancelAnimationFrame(frame); observer.disconnect(); },
+    stop() { disposed = true; cancelAnimationFrame(frame); observer.disconnect(); disposeOracleFire(ctx); },
   };
 }
