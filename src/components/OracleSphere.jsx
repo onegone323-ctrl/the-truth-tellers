@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Image } from '@/components/ui/image';
 import { ORACLE_ASSETS } from '@/lib/oracleAssets';
 import { getVoiceAudioContext } from '@/lib/oracleVoice';
 import { playIgnition } from '@/lib/ignitionSound';
 
-// The Oracle is ONE looping video globe — flames inside, always spinning.
-// While she speaks, the flames drift through the spectrum; the moment she
-// stops, she settles back to her natural colors (still spinning). Every
-// state shares this artwork; only the color treatment changes.
+// Two faces of the Oracle:
+// - Everywhere outside the reading (home, onboarding): her calm, still globe.
+// - Only during the reading (immersive): the looping flame video — spinning,
+//   drifting through the spectrum while she speaks, settling back when she
+//   stops. The flames are the reading's surprise.
 const ORACLE_VIDEO = 'https://media.base44.com/videos/public/6a97b3175d08a6bc8bc635af/d7456e2d6_oracle.mp4';
 
 export default function OracleSphere({ state = 'idle', paused = false, size = 215, immersive = false }) {
@@ -39,12 +41,19 @@ export default function OracleSphere({ state = 'idle', paused = false, size = 21
   return (
     <div className='flex max-w-full flex-col items-center'>
       <div role='img' aria-label={`truth4clarity globe: ${paused ? 'paused' : state}`}
-        className={`relative max-w-full aspect-square ${speaking ? 'oracle-speaking' : ''}`}
+        className={`relative max-w-full aspect-square ${immersive && speaking ? 'oracle-speaking' : ''}`}
         style={{ width: box }}>
-        <video ref={videoRef} src={ORACLE_VIDEO} poster={ORACLE_ASSETS.idle}
-          loop autoPlay playsInline preload='auto'
-          onError={() => setError('The Oracle could not load.')}
-          className='h-full w-full pointer-events-none select-none object-contain' />
+        {immersive ? (
+          <video ref={videoRef} src={ORACLE_VIDEO} poster={ORACLE_ASSETS.idle}
+            loop autoPlay playsInline preload='auto'
+            onError={() => setError('The Oracle could not load.')}
+            className='h-full w-full pointer-events-none select-none object-contain' />
+        ) : (
+          <Image src={ORACLE_ASSETS.idle} alt='' fittingType='fit' quality={95}
+            draggable={false} aria-hidden='true'
+            className='h-full w-full pointer-events-none select-none'
+            onError={() => setError('The Oracle could not load.')} />
+        )}
       </div>
       {error && <p role='alert' className='text-sm text-destructive'>{error}</p>}
     </div>
