@@ -2,7 +2,7 @@ import React from "react";
 
 // The ADPOV Media & Ent company mark. Shown in the app header
 // and the public page footers.
-const LOGO_URL = "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/887c082c6_ADPOVMEDIAENTLOGO.png";
+const LOGO_URL = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/f58dd7dc4_887c082c6_ADPOVMEDIAENTLOGO.png";
 
 // The logo file is a wide ~10:7 image on black.
 export default function CompanyMark({ height = 32, className = "", compact = false }) {

@@ -293,7 +293,7 @@
   }
   .neo-art {
     height: 75px; margin-bottom: 8px;
-    background: url("https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/7c0f89e3e_generated_bf7c5b16.jpg") center/cover;
+    background: url("https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/201911e08_7c0f89e3e_generated_bf7c5b16.jpg") center/cover;
     border: 1px solid rgba(255,250,225,.9); filter: saturate(1.35);
     box-shadow: 0 0 10px rgba(255,250,220,.6), 0 0 24px rgba(212,175,55,.55), 0 0 44px rgba(139,26,43,.4), inset 0 0 12px rgba(0,0,0,.5);
     animation: artSparkle 2.6s ease-in-out infinite;

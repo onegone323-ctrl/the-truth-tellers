@@ -8,7 +8,7 @@ export const DECKS = [
     description: "The classic 1909 deck — the universal language of tarot.",
     accent: "#d4af37",
     backGlyph: "☀",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/c0d4f3cb1_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/79c95a1d0_c0d4f3cb1_generated_image.png",
   },
   {
     id: "egyptian",
@@ -17,7 +17,7 @@ export const DECKS = [
     description: "Ancient Egyptian symbolism — gods, ankhs, and the Book of the Dead.",
     accent: "#e6c068",
     backGlyph: "𓂀",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/91990cfd4_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/9eda01db1_91990cfd4_generated_image.png",
   },
   {
     id: "thoth",
@@ -26,7 +26,7 @@ export const DECKS = [
     description: "Crowley & Harris — alchemy, Thelema, and cosmic geometry.",
     accent: "#c9a227",
     backGlyph: "✦",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/11c032035_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/9e2481501_11c032035_generated_image.png",
   },
   {
     id: "marseille",
@@ -35,7 +35,7 @@ export const DECKS = [
     description: "The old French woodcut style — stark, symbolic, unadorned.",
     accent: "#b8860b",
     backGlyph: "✶",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/49bbe63f5_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/ec1e72ed7_49bbe63f5_generated_image.png",
   },
   {
     id: "isis",
@@ -44,7 +44,7 @@ export const DECKS = [
     description: "The great goddess deck — throne and veil, moon magic, and hermetic Egypt.",
     accent: "#e8c976",
     backGlyph: "𓋹",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/3c83db2c4_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/d2646e83a_3c83db2c4_generated_image.png",
   },
   {
     id: "golden-dawn",
@@ -53,7 +53,7 @@ export const DECKS = [
     description: "Ceremonial magic — Kabbalah, astrology, and the esoteric Rosy Cross.",
     accent: "#f0c75e",
     backGlyph: "✸",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/ed96444e0_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/f5692a2d7_ed96444e0_generated_image.png",
   },
   {
     id: "wildwood",
@@ -62,7 +62,7 @@ export const DECKS = [
     description: "Primal forest tarot — seasons, archetypes, and the green world beneath.",
     accent: "#e8354f",
     backGlyph: "❧",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/dc7835809_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/5fe263524_dc7835809_generated_image.png",
   },
   {
     id: "deviant-moon",
@@ -71,7 +71,7 @@ export const DECKS = [
     description: "Gothic shadow tarot — moonlit figures, honest edges, no softening.",
     accent: "#c3ccd4",
     backGlyph: "☾",
-    art: "https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/4625f98ff_generated_image.png",
+    art: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/c7fb2b430_4625f98ff_generated_image.png",
   },
 ];
 
