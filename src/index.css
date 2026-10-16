@@ -433,16 +433,3 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-/* The Oracle's chamber breathes behind the whole page — a very slow,
-   cinematic drift. Reduced motion holds the scene still. */
-.hero-drift {
-  animation: heroDrift 44s ease-in-out infinite alternate;
-}
-@keyframes heroDrift {
-  from { transform: scale(1.06) translateY(0); }
-  to { transform: scale(1.15) translateY(-1.5%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-drift { animation: none; }
-}

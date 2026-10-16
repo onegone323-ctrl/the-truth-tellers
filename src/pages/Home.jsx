@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { ORACLE_FIRE_FRAMES } from "@/lib/oracleFireAssets";
+import { Image } from "@/components/ui/image";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
@@ -269,33 +269,13 @@ export default function Home() {
 
   return (
     <div>
-      {/* The Oracle's chamber fills the whole page behind everything — a slow
-          cinematic drift over the scene — while she stands interactive at its
-          center. The fire stays mounted through the draw so her reading
-          engine stays wired. */}
-      {phase !== "reading" && (
-        <div aria-hidden="true" className="fixed inset-0 overflow-hidden" style={{ zIndex: -1, pointerEvents: "none" }}>
-          <div
-            className="hero-drift"
-            style={{
-              position: "absolute", inset: 0,
-              backgroundImage: `url(${ORACLE_FIRE_FRAMES.dormant})`,
-              backgroundSize: "cover", backgroundPosition: "center 22%",
-              filter: "blur(14px) brightness(.6) saturate(1.05)",
-            }}
-          />
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.45) 38%, rgba(0,0,0,.86))",
-          }} />
-        </div>
-      )}
+      {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section
-          className="neo-hero relative flex flex-col items-center text-center px-4 sm:px-[54px] pt-12 pb-10 sm:pt-[54px]"
+          className="neo-hero grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
-          <div style={{ animation: "materialize 1s .12s ease both" }}>
-            <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[620px] text-[30px] tracking-[3px] sm:text-[46px] sm:tracking-[4px]">
+          <div className="text-center" style={{ animation: "materialize 1s .12s ease both" }}>
+            <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[560px] text-[30px] tracking-[3px] sm:text-[46px] sm:tracking-[4px]">
               {phase === "setup" ? "Let the Oracle Deliver the Message the Universe Wants You to Know" : "The Cards Are Drawn"}
             </h1>
             <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
@@ -304,21 +284,26 @@ export default function Home() {
                 : "The cards are dealing. Watch them reveal — then ask him to read."}
             </p>
           </div>
-          <div className="mt-8 flex flex-col items-center gap-5" style={{ animation: "materialize 1s .3s ease both" }}>
-            {phase === "setup" ? (
-              <>
-                <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
-                <button onClick={listening ? stopListening : startListening}
-                  className="neo-pill flex items-center gap-2">
-                  {listening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                  {listening ? "Listening…" : "Speak to Her"}
-                </button>
-              </>
-            ) : (
-              <div style={{ display: "none" }}>
-                <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
+          <div style={{ animation: "materialize 1s .3s ease both" }}>
+            {/* The home-page hero: the Oracle's own card, large and still. The
+                fire stays mounted but hidden — its reading engine must stay
+                wired for the draw. */}
+            {phase === "setup" && (
+              <div className="flex justify-center">
+                <Image
+                  src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/6f1556556_oracle-card.png"
+                  alt="The Oracle's card, face down"
+                  fittingType="fill"
+                  originWidth={363}
+                  originHeight={633}
+                  className="w-full max-w-[280px]"
+                  draggable={false}
+                />
               </div>
             )}
+            <div style={phase === "setup" ? { display: "none" } : undefined}>
+              <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} width={300} />
+            </div>
           </div>
         </section>
       )}
@@ -338,7 +323,14 @@ export default function Home() {
                 placeholder="What do you need the truth about?"
                 rows={9}
                 className="neo-field flex-1 min-h-[260px]" />
-              <p className="neo-note mt-[17px] text-center">Or speak your question to the Oracle above.</p>
+              <div className="flex items-center justify-between gap-4 mt-[17px]">
+                <button onClick={listening ? stopListening : startListening}
+                  className="neo-button flex items-center gap-2">
+                  {listening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  {listening ? "Listening…" : "Speak It"}
+                </button>
+                <span className="neo-note">Or type your question above.</span>
+              </div>
             </div>
 
             {/* Deck selection */}
