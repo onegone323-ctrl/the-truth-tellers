@@ -296,7 +296,7 @@ export default function Home() {
                   fittingType="fill"
                   originWidth={363}
                   originHeight={633}
-                  className="w-full max-w-[360px]"
+                  className="w-full max-w-[320px]"
                   draggable={false}
                 />
               </div>
