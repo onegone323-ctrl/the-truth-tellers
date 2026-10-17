@@ -307,6 +307,7 @@ const OracleFire = forwardRef(function OracleFire(
   ref
 ) {
   const stageRef = useRef(null);
+  const videoRef = useRef(null);
   const [state, setState] = useState(fire.state);
 
   // The latest mounted instance owns the shared listeners.
@@ -342,8 +343,11 @@ const OracleFire = forwardRef(function OracleFire(
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const freq = new Uint8Array(128);
     let raf;
+    let lastFrame = 0;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
+      const dt = Math.min(100, now - (lastFrame || now - 16));
+      lastFrame = now;
       for (const f of fire.fades) {
         const t = Math.min(1, (now - f.start) / f.dur);
         fire.opacity[f.layer] = f.from + (f.to - f.from) * easeInOut(t);
@@ -381,6 +385,20 @@ const OracleFire = forwardRef(function OracleFire(
         } else if (stage.style.filter) {
           stage.style.filter = "";
           stage.style.transform = "";
+        }
+      }
+
+      // While she speaks, the flames inside the video drift through the whole
+      // spectrum — faster and more saturated when her voice is loud — and
+      // settle back to natural the moment she stops.
+      const vid = videoRef.current;
+      if (vid) {
+        if (fire.state === "speaking" && !fire.paused && !reduced) {
+          fire.hue = (fire.hue || 0) + dt * (40 + fire.level * 120);
+          vid.style.filter = `hue-rotate(${(fire.hue % 360).toFixed(1)}deg) saturate(${(1.1 + fire.level * 0.3).toFixed(2)})`;
+        } else if (vid.style.filter) {
+          vid.style.filter = "";
+          fire.hue = 0;
         }
       }
     };
@@ -478,7 +496,7 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {showVideo ? <OracleReadingVideo /> : LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo videoRef={videoRef} /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {

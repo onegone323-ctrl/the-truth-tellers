@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 
 const VIDEO_URL = "https://media.base44.com/videos/public/6a97b3175d08a6bc8bc635af/2da5d204c_oracle_synced_full.mp4";
 
-export default function OracleReadingVideo() {
+// `videoRef` lets the Oracle's engine reach the video element so the flames
+// inside it can shift colors with her voice.
+export default function OracleReadingVideo({ videoRef: sharedRef }) {
   const videoRef = useRef(null);
   const [status, setStatus] = useState("loading");
   // Play is always started from code with a caught promise — never the
@@ -24,7 +26,8 @@ export default function OracleReadingVideo() {
   }, []);
   return (
     <div className="absolute inset-0 bg-reading-void" data-oracle-video-stage>
-      <video ref={videoRef} src={VIDEO_URL} muted loop playsInline preload="auto"
+      <video ref={(el) => { videoRef.current = el; if (sharedRef) sharedRef.current = el; }}
+        src={VIDEO_URL} muted loop playsInline preload="auto"
         aria-label="Oracle reading video" className="absolute inset-0 h-full w-full object-cover"
         onPlaying={() => setStatus("playing")} onError={() => setStatus("error")} />
       {status === "loading" && <div className="absolute inset-0 flex items-center justify-center" role="status" aria-label="Loading fire">
