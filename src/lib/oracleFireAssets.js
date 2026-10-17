@@ -13,3 +13,7 @@ export const ORACLE_FIRE_FRAMES = {
   purple: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/7550daeb7_224f4fbc1_purple.webp",
   simmer: "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/769718234_7c213e25c_simmer.webp",
 };
+
+// The Oracle's reading visual: one looping orb video, calm at both ends,
+// so it loops cleanly and settles on the calm frame when she is done.
+export const ORACLE_ORB_VIDEO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/779c837f8_oracle-orb.mp4";

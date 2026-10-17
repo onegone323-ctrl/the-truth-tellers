@@ -47,9 +47,6 @@ const fire = {
   captionParts: [],
   audio: null,
   mounts: 0,
-  videoMounted: false,
-  awakening: null,
-  resting: null,
   ctx: null,
   analyser: null,
   srcNode: null,
@@ -57,14 +54,6 @@ const fire = {
   onCaption: null,
 };
 const imgRefs = {};
-
-const videoCompletion = () => {
-  let resolve;
-  const promise = new Promise(done => { resolve = done; });
-  return { promise, resolve };
-};
-const finishAwakening = () => fire.awakening?.resolve();
-const finishResting = () => fire.resting?.resolve();
 
 const fade = (layer, to, dur) => {
   // Whatever fades in goes on top, so crossfades read correctly.
@@ -200,26 +189,21 @@ const runGeneration = async () => {
   }
 };
 
-// Speaking done (or failed): the fire simmers, rests, and returns to dormant.
+// Speaking done (or failed): the fire simmers, settles, and returns to dormant.
 const toRest = async () => {
   const myRun = fire.run;
   fire.cycle = null;
   fire.handlers?.onVoiceEnd?.();
-  fire.resting = fire.videoMounted ? videoCompletion() : null;
   setFireState("simmering");
   fade("simmer", 1, CROSS.simmer);
   for (const l of FIRE_LAYERS) fade(l, 0, CROSS.simmer);
-  // Let the actual resting video's ended event finish the reading, not a timer.
-  if (fire.resting) await fire.resting.promise;
-  else await wait(CROSS.simmer + 3200);
+  // The orb eases its effects back to neutral and settles on the calm frame.
+  await wait(1800);
   if (myRun !== fire.run) return;
-  setFireState("resting");
+  setFireState("dormant");
   fade("dormant", 1, CROSS.dormant);
   fade("simmer", 0, CROSS.dormant);
   for (const l of FIRE_LAYERS) fire.opacity[l] = 0;
-  if (!fire.videoMounted) await wait(CROSS.dormant);
-  if (myRun !== fire.run) return;
-  setFireState("dormant");
   fire.handlers?.onDone?.();
 };
 
@@ -231,9 +215,6 @@ const speakChain = async () => {
   fire.cycle = null;
   fire.captionParts = [];
   fire.onCaption?.([]);
-  // Fetch the voice while awakening plays once. Its ended event releases the
-  // first word, so the speaking loop and the voice begin together.
-  fire.awakening = videoCompletion();
   setFireState("thinking");
 
   const igniteNow = () => {
@@ -282,8 +263,6 @@ const speakChain = async () => {
     }
     // The fire ignites as her first words land, and burns for the whole reading.
     if (!ignited) {
-      await fire.awakening.promise;
-      if (myRun !== fire.run) return;
       ignited = true;
       igniteNow();
     }
@@ -313,8 +292,6 @@ const speakChain = async () => {
     if (myRun !== fire.run) return;
     if (!clips) continue;
     if (!ignited) {
-      await fire.awakening.promise;
-      if (myRun !== fire.run) return;
       ignited = true;
       igniteNow();
     }
@@ -340,7 +317,6 @@ const OracleFire = forwardRef(function OracleFire(
   ref
 ) {
   const stageRef = useRef(null);
-  const videoRef = useRef(null);
   const [state, setState] = useState(fire.state);
 
   // The latest mounted instance owns the shared listeners.
@@ -421,8 +397,7 @@ const OracleFire = forwardRef(function OracleFire(
         }
       }
 
-      // The reading video shifts its own colors now — the speaking clip
-      // carries the gold-through-teal drift natively, so no filter is added.
+      // The orb's live voice-reactive effects live in OracleReadingVideo.
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
@@ -432,19 +407,15 @@ const OracleFire = forwardRef(function OracleFire(
   // instances stops the shared voice; the handoff must never pause it.
   useEffect(() => {
     fire.mounts++;
-    if (showVideo) fire.videoMounted = true;
     return () => {
       fire.mounts--;
-      if (showVideo) fire.videoMounted = false;
       queueMicrotask(() => {
         if (fire.mounts) return;
         fire.run++;
         fire.audio?.pause();
-        finishAwakening();
-        finishResting();
       });
     };
-  }, [showVideo]);
+  }, []);
 
   useImperativeHandle(
     ref,
@@ -491,8 +462,6 @@ const OracleFire = forwardRef(function OracleFire(
       },
       reset() {
         fire.run++;
-        finishAwakening();
-        finishResting();
         fire.generating = false;
         fire.cycle = null;
         fire.paused = false;
@@ -529,8 +498,7 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {showVideo ? <OracleReadingVideo videoRef={videoRef} phase={state}
-          onAwakened={finishAwakening} onRested={finishResting} /> : LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo phase={state} getAnalyser={() => fire.analyser} /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {
