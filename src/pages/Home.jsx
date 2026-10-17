@@ -291,15 +291,20 @@ export default function Home() {
                 wired for the draw. */}
             {phase === "setup" && (
               <div className="flex justify-center">
-                <Image
-                  src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/6f1556556_oracle-card.png"
-                  alt="The Oracle's card, face down"
-                  fittingType="fill"
-                  originWidth={363}
-                  originHeight={633}
-                  className="w-full max-w-[280px]"
-                  draggable={false}
-                />
+                <div className="relative w-full max-w-[280px]">
+                  <Image
+                    src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/6f1556556_oracle-card.png"
+                    alt="The Oracle's card, face down"
+                    fittingType="fill"
+                    originWidth={363}
+                    originHeight={633}
+                    className="w-full"
+                    draggable={false}
+                  />
+                  {/* The Oracle's eye blinks every few seconds: an eyelid
+                      cut from the card's own brow pixels snaps shut. */}
+                  <div className="oracle-lid" aria-hidden="true" />
+                </div>
               </div>
             )}
             <div style={phase === "setup" ? { display: "none" } : undefined}>
