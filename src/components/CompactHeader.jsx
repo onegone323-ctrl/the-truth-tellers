@@ -19,7 +19,7 @@ export default function CompactHeader({ path, nav, isAdmin, isTabRoot, pageTitle
         </Link>
       </div>
       <nav aria-label="Main navigation" className="compact-nav hidden min-w-0 flex-1 items-center overflow-x-auto md:flex">
-        {[...nav, ...(isAdmin ? [{ to: "/admin", label: "Admin" }] : [])].map(({ to, label }) => (
+        {[...nav, ...(isAdmin ? [{ to: "/admin", label: "Admin" }, { to: "/issues", label: "Issues" }] : [])].map(({ to, label }) => (
           <Link key={to} to={to} aria-current={path === to ? "page" : undefined}
             className={`neo-navlink flex shrink-0 !px-2 !py-2 !text-[10px] !tracking-[1px] ${path === to ? "is-active" : ""}`}>
             {label}

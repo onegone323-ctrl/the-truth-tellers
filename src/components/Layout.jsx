@@ -41,7 +41,7 @@ export default function Layout() {
     const card = p.match(/^\/cards\/(.+)$/);
     if (card) return decodeURIComponent(card[1]);
     if (/^\/journal\/.+/.test(p)) return "Journal Entry";
-    const named = { "/settings": "Settings", "/pricing": "Pricing", "/admin": "Admin", "/pulls": "Pull Requests", "/about": "About", "/contact": "Contact" };
+    const named = { "/settings": "Settings", "/pricing": "Pricing", "/admin": "Admin", "/pulls": "Pull Requests", "/issues": "Issues", "/about": "About", "/contact": "Contact" };
     return named[p] || p.split("/").filter(Boolean).slice(-1)[0] || "Back";
   })();
   const goBack = useGoBack(

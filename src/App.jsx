@@ -19,6 +19,7 @@ const Cards = React.lazy(() => import('@/pages/Cards'));
 const CardDetail = React.lazy(() => import('@/pages/CardDetail'));
 const JournalDetail = React.lazy(() => import('@/pages/JournalDetail'));
 const PullRequests = React.lazy(() => import('@/pages/PullRequests'));
+const GithubIssues = React.lazy(() => import('@/pages/GithubIssues'));
 const Connect = React.lazy(() => import('@/pages/Connect'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
 const Pricing = React.lazy(() => import('@/pages/Pricing'));
@@ -103,6 +104,7 @@ const AuthenticatedApp = () => {
           <Route path="/cards" element={<Cards />} />
           <Route path="/cards/:name" element={<CardDetail />} />
           <Route path="/pulls" element={<PullRequests />} />
+          <Route path="/issues" element={<GithubIssues />} />
           <Route path="/connect" element={<Connect />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/pricing" element={<Pricing />} />
