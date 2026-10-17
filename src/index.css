@@ -457,3 +457,61 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ==========  CRYSTAL ORB — still image, pure CSS animation  ========== */
+/* One still crystal ball on its brass stand; the fire inside flows through
+   the palette on hue-rotate alone, the ball breathes on brightness/scale,
+   and the aura pulses on opacity/scale. Transform/opacity/filter only, so
+   phones stay smooth. No JS timing anywhere. */
+.orb-breathe {
+  position: absolute; inset: 0;
+  animation: orbBreathing 9s ease-in-out infinite;
+  will-change: filter, transform;
+}
+.orb-img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+  animation: orbFlow 26s linear infinite;
+  will-change: filter;
+}
+.orb-aura {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(232,120,60,.38), rgba(212,60,140,.2) 45%, transparent 68%);
+  mix-blend-mode: screen;
+  animation: orbAura 9s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+/* READING: vivid and alive — faster breath, stronger aura. */
+[data-orb-active="true"] .orb-img { animation-duration: 24s; }
+[data-orb-active="true"] .orb-breathe { animation-duration: 6s; }
+[data-orb-active="true"] .orb-aura { animation-duration: 6s; }
+/* IDLE: dim, calm, slow — the ball rests until the next reading. */
+[data-orb-active="false"] .orb-breathe { animation-name: orbBreathingIdle; animation-duration: 12s; }
+[data-orb-active="false"] .orb-aura { animation-name: orbAuraIdle; animation-duration: 12s; }
+
+/* The fire drifts gold -> orange -> magenta -> violet -> teal -> gold:
+   one full negative hue loop back to the exact starting colors. */
+@keyframes orbFlow {
+  from { filter: hue-rotate(0deg) saturate(1.05); }
+  to { filter: hue-rotate(-360deg) saturate(1.2); }
+}
+@keyframes orbBreathing {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  50% { filter: brightness(1.16); transform: scale(1.025); }
+}
+@keyframes orbBreathingIdle {
+  0%, 100% { filter: brightness(.72) saturate(.85); transform: scale(1); }
+  50% { filter: brightness(.86) saturate(.95); transform: scale(1.015); }
+}
+@keyframes orbAura {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50% { opacity: .85; transform: scale(1.06); }
+}
+@keyframes orbAuraIdle {
+  0%, 100% { opacity: .26; transform: scale(1); }
+  50% { opacity: .42; transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-breathe, .orb-img, .orb-aura { animation: none; }
+  [data-orb-active="false"] .orb-breathe { filter: brightness(.72) saturate(.85); }
+}

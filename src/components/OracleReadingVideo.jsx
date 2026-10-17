@@ -1,42 +1,32 @@
-import React, { useRef } from "react";
-import { ORACLE_ORB_VIDEO } from "@/lib/oracleFireAssets";
-import useOrbPalette from "@/components/oracle/useOrbPalette";
-import useOrbPlayback from "@/components/oracle/useOrbPlayback";
+import React from "react";
+import { ORACLE_ORB_IMAGE } from "@/lib/oracleFireAssets";
 
-// The reading is live through every one of these phases: the orb loops
-// through all of them, seamlessly. No phase machine, no clip transitions.
+// The reading is live through every one of these phases; everything else is
+// the calm idle state. Toggled purely by a class flip — no JS timing, no
+// audio hooks, no video element.
 const READING_PHASES = ["awakening", "thinking", "igniting", "speaking"];
 
 export default function OracleReadingVideo({ phase = "dormant" }) {
-  const videoRef = useRef(null);
-  const glowRef = useRef(null);
   const readingActive = READING_PHASES.includes(phase);
 
-  useOrbPlayback(videoRef, readingActive);
-
-  // The palette is independent of audio, including during silent pauses.
-  useOrbPalette(videoRef, glowRef, readingActive);
-
   return (
-    <div className="absolute inset-0 bg-reading-void" data-oracle-video-stage data-orb-active={readingActive}>
-      <video
-        ref={videoRef}
-        src={ORACLE_ORB_VIDEO}
-        loop
-        muted
-        playsInline
-        preload="auto"
-        aria-label="The Oracle's orb"
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ willChange: "filter, transform" }}
-      />
-      {/* A soft gold bloom follows the same gentle, timed breath. */}
-      <div
-        ref={glowRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-0"
-        style={{ background: "radial-gradient(circle at 50% 55%, rgba(212,175,55,.28), transparent 62%)" }}
-      />
+    <div
+      className="absolute inset-0 bg-reading-void"
+      data-oracle-video-stage
+      data-orb-active={readingActive}
+    >
+      {/* Soft fire-colored aura behind the ball; screen-blended, pure CSS. */}
+      <div className="orb-aura" aria-hidden="true" />
+      {/* Breathing layer: brightness + gentle scale, slow keyframes only. */}
+      <div className="orb-breathe">
+        <img
+          src={ORACLE_ORB_IMAGE}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="orb-img pointer-events-none select-none"
+        />
+      </div>
     </div>
   );
 }
