@@ -375,7 +375,7 @@ export default function Home() {
                 <div className="mt-[9px] flex items-center justify-center gap-2"
                   style={{
                     border: "1px solid var(--gold-leaf)",
-                    background: "linear-gradient(100deg, #6f4d0b, var(--gold-leaf), #8b1a2b)",
+                    background: "linear-gradient(100deg, #6f4d0b, var(--gold-leaf), #b8860b)",
                     color: "#050505",
                     padding: "6px 10px",
                     textTransform: "uppercase",
