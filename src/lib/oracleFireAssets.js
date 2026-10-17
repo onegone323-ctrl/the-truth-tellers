@@ -18,6 +18,6 @@ export const ORACLE_FIRE_FRAMES = {
 // stand with swirling fire, animated purely in CSS on top of this image.
 export const ORACLE_ORB_IMAGE = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/3a8f16d72_crystal-orb-still.jpg";
 
-// (Legacy) one looping orb video, calm at both ends,
-// so it loops cleanly and settles on the calm frame when she is done.
-export const ORACLE_ORB_VIDEO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/779c837f8_oracle-orb.mp4";
+// The Oracle's reading visual: a 24-second seamless loop of the crystal
+// ball with the colors cycling a full 360 degrees per loop.
+export const ORACLE_ORB_VIDEO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/6c0c588fa_oracle-crystal-ball-colorloop.mp4";

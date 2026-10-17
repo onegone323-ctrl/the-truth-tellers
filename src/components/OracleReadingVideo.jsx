@@ -1,38 +1,23 @@
 import React from "react";
-import { ORACLE_ORB_IMAGE } from "@/lib/oracleFireAssets";
-import { Image } from "@/components/ui/image";
-import OracleFlameMotion from "@/components/OracleFlameMotion";
+import { ORACLE_ORB_VIDEO } from "@/lib/oracleFireAssets";
 
-// The reading is live through every one of these phases; everything else is
-// the calm idle state. Toggled purely by a class flip — no JS timing, no
-// audio hooks, no video element.
-const READING_PHASES = ["awakening", "thinking", "igniting", "speaking"];
-
-export default function OracleReadingVideo({ phase = "dormant" }) {
-  const readingActive = READING_PHASES.includes(phase);
-
+// The reading visual: the crystal-ball color-loop video. It simply plays on
+// repeat for the whole reading — the colors cycle inside the footage itself.
+export default function OracleReadingVideo({ phase }) {
   return (
     <div
       className="absolute inset-0 bg-reading-void"
       data-oracle-video-stage
-      data-orb-active={readingActive}
+      data-orb-active="true"
     >
-      <div className="orb-scene">
-        <div className="orb-palette">
-          <div className="orb-breathe">
-            <Image
-              src={ORACLE_ORB_IMAGE}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              fittingType="fill"
-              className="orb-img pointer-events-none select-none"
-            />
-            <OracleFlameMotion />
-            <div className="orb-aura" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
+      <video
+        src={ORACLE_ORB_VIDEO}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
+      />
     </div>
   );
 }
