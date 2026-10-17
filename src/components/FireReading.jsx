@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Pause, Play, RotateCcw, RefreshCw, Volume2, X } from "lucide-react";
 import OracleFire from "@/components/OracleFire";
@@ -7,10 +8,10 @@ const tinyBtn = { padding: "5px 12px", fontSize: 12, minHeight: 34, letterSpacin
 
 export default function FireReading({ fireRef, aura, busy, voiceBusy, error, outOfCredits, onReset, onRetry }) {
   const [paused, setPaused] = useState(false);
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex h-[100dvh] flex-col items-center overflow-hidden bg-reading-void"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden bg-reading-void"
+      data-oracle-reading
     >
       <button
         onClick={onReset}
@@ -20,15 +21,16 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
       >
         <X className="w-3.5 h-3.5" />
       </button>
-      <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+      <div className="absolute inset-0">
         <OracleFire ref={fireRef} aura={aura} fill showVideo />
       </div>
       {error && !busy && (
-        <p className="relative px-6 pb-3 text-center" style={{ color: "#b1a38b", fontSize: 12, maxWidth: 420 }}>
+        <p className="absolute inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-md bg-background/90 p-3 text-center text-sm text-foreground">
           {error}
         </p>
       )}
-      <div className="relative flex flex-wrap items-center justify-center gap-2 pb-5 px-4">
+      <div className="absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-2 bg-gradient-to-t from-reading-void/90 to-transparent px-4 pt-8"
+        style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
         {voiceBusy && !error && (
           <>
             <button
@@ -79,6 +81,7 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

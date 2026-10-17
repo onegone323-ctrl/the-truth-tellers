@@ -3,6 +3,7 @@ import { ORACLE_FIRE_FRAMES } from "@/lib/oracleFireAssets";
 import { splitForSpeech, fetchClips, getSilentWavSrc } from "@/lib/oracleVoice";
 import { toSpokenText } from "@/lib/speechText";
 import { base44 } from "@/api/base44Client";
+import OracleReadingVideo from "@/components/OracleReadingVideo";
 
 const LAYERS = ["dormant", "open", "spark", "ignite", "gold", "red", "blue", "green", "purple", "simmer"];
 const FIRE_LAYERS = ["open", "spark", "ignite", "gold", "red", "blue", "green", "purple"];
@@ -52,12 +53,6 @@ const fire = {
   onCaption: null,
 };
 const imgRefs = {};
-// The synced Oracle video: her face while a reading is spoken, looping for
-// as long as the voice runs.
-const ORACLE_VIDEO =
-  "https://media.base44.com/videos/public/6a97b3175d08a6bc8bc635af/2da5d204c_oracle_synced_full.mp4";
-fire.opacity.video = 0;
-fire.z.video = 0;
 
 const fade = (layer, to, dur) => {
   // Whatever fades in goes on top, so crossfades read correctly.
@@ -312,22 +307,7 @@ const OracleFire = forwardRef(function OracleFire(
   ref
 ) {
   const stageRef = useRef(null);
-  const videoRef = useRef(null);
   const [state, setState] = useState(fire.state);
-
-  // In the reading view the synced video IS the Oracle: it plays for the
-  // whole reading screen, not just while the voice runs.
-  useEffect(() => {
-    if (!showVideo) return;
-    const el = videoRef.current;
-    if (el) {
-      imgRefs.video = el;
-      fire.z.video = ++fire.topZ;
-      el.style.zIndex = fire.z.video;
-      el.play().catch(() => {});
-    }
-    fade("video", 1, 900);
-  }, [showVideo]);
 
   // The latest mounted instance owns the shared listeners.
   useEffect(() => {
@@ -355,20 +335,6 @@ const OracleFire = forwardRef(function OracleFire(
     fire.aura = aura;
     if (fire.state === "speaking" && !fire.paused) advanceColor(performance.now());
   }, [aura]);
-
-  // Release the video fully on unmount — pausing alone still leaves a play()
-  // promise pending, which rejects as AbortError once the element leaves the
-  // document. Dropping the src first lets any pending play settle silently.
-  useEffect(() => {
-    const el = videoRef.current;
-    return () => {
-      try {
-        el?.pause();
-        el?.removeAttribute("src");
-        el?.load();
-      } catch (e) {}
-    };
-  }, []);
 
   // The single animation loop: crossfades, voice-reactive level, color cycle,
   // and the flicker/scale on the stage. Reduced motion keeps only crossfades.
@@ -512,7 +478,7 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {
@@ -526,18 +492,7 @@ const OracleFire = forwardRef(function OracleFire(
             style={{ opacity: fire.opacity[l], zIndex: fire.z[l] }}
           />
         ))}
-        <video
-          ref={videoRef}
-          src={ORACLE_VIDEO}
-          muted
-          loop
-          playsInline
-          preload={showVideo ? "auto" : "none"}
-          aria-hidden="true"
-          draggable={false}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          style={{ opacity: 0, zIndex: 0 }}
-        />
+
       </div>
     </div>
   );
