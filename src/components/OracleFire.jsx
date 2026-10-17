@@ -355,6 +355,9 @@ const OracleFire = forwardRef(function OracleFire(
     let lastFrame = 0;
     const frame = (now) => {
       raf = requestAnimationFrame(frame);
+      // Idle on the home screen — dormant, no video, nothing fading: skip all
+      // per-frame work. The loop still ticks, it just costs almost nothing.
+      if (fire.state === "dormant" && !showVideo && !fire.fades.length) return;
       const dt = Math.min(100, now - (lastFrame || now - 16));
       lastFrame = now;
       for (const f of fire.fades) {

@@ -7,12 +7,15 @@ import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleFire from "@/components/OracleFire";
 import FireReading from "@/components/FireReading";
 import CardFace from "@/components/CardFace";
-import DailyCard from "@/components/DailyCard";
-import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
+import GoldSpinner from "@/components/GoldSpinner";
 import { Link } from "react-router-dom";
 import { Mic, MicOff, Sparkles } from "lucide-react";
-import AmbientSound from "@/components/AmbientSound";
 import PullToRefresh from "@/components/PullToRefresh";
+
+// Heavy, not needed on first paint — loaded on demand.
+const DailyCard = React.lazy(() => import("@/components/DailyCard"));
+const OnboardingQuestionnaire = React.lazy(() => import("@/components/OnboardingQuestionnaire"));
+const AmbientSound = React.lazy(() => import("@/components/AmbientSound"));
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -272,8 +275,12 @@ export default function Home() {
         <div className="flex flex-col items-center text-center pt-4">
           <OracleFire width={170} />
         </div>
-        <OnboardingQuestionnaire onComplete={setProfile} defaultName={notEmailUsername(user?.full_name)} />
-        <AmbientSound />
+        <React.Suspense fallback={<GoldSpinner />}>
+          <OnboardingQuestionnaire onComplete={setProfile} defaultName={notEmailUsername(user?.full_name)} />
+        </React.Suspense>
+        <React.Suspense fallback={null}>
+          <AmbientSound />
+        </React.Suspense>
       </div>
     );
   }
@@ -328,7 +335,9 @@ export default function Home() {
       {phase === "setup" && (
         <PullToRefresh onRefresh={loadData}>
           <section className="enter delay1 mx-4 sm:mx-[54px] mb-6">
-            <DailyCard memory={memory} setMemory={setMemory} userName={seekerName} />
+            <React.Suspense fallback={<GoldSpinner />}>
+              <DailyCard memory={memory} setMemory={setMemory} userName={seekerName} />
+            </React.Suspense>
           </section>
 
           <section className="enter delay2 mx-4 sm:mx-[54px] mb-6">
@@ -520,7 +529,11 @@ export default function Home() {
           onRetry={handleRead}
         />
       )}
-      {phase !== "reading" && <AmbientSound />}
+      {phase !== "reading" && (
+        <React.Suspense fallback={null}>
+          <AmbientSound />
+        </React.Suspense>
+      )}
     </div>
   );
 }
