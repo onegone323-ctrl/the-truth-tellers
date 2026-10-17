@@ -509,7 +509,7 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {showVideo ? <OracleReadingVideo videoRef={videoRef} /> : LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo videoRef={videoRef} phase={state} /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {
