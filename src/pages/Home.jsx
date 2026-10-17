@@ -37,6 +37,7 @@ export default function Home() {
   const [readingsUsed, setReadingsUsed] = useState(0);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [spokenDone, setSpokenDone] = useState(false);
   const recogRef = useRef(null);
   const busyRef = useRef(false);
   // The Oracle's fire — one shared fire for the hero, the drawing view and
@@ -131,6 +132,8 @@ export default function Home() {
   // inside generateReading (before the reading is returned) so usage can't be
   // bypassed — the client must not duplicate it.
   const handleReadingComplete = async ({ reading: text, snippet, message }) => {
+    // She starts the reading on her own the moment it lands.
+    setPhase("reading");
     setReading(text);
     setReadingError("");
     setOutOfCredits(false);
@@ -205,6 +208,7 @@ export default function Home() {
   const handleDraw = () => {
     if (!question.trim() || busy || busyRef.current) return;
     busyRef.current = true;
+    setBusy(true);
     const drawn = drawSpread(spread).map((c) => ({
       ...c,
       cardDeck: blendDecks ? DECKS[Math.floor(Math.random() * DECKS.length)] : deck,
@@ -215,6 +219,7 @@ export default function Home() {
     setReading("");
     setReadingError("");
     setOutOfCredits(false);
+    setSpokenDone(false);
     // Submitting the question is the moment the fire awakens — and the
     // reading request starts right now, in parallel with the dealing.
     fireRef.current?.startOracle(buildPayload(question, drawn), {
@@ -223,6 +228,7 @@ export default function Home() {
       onVoiceStart: () => setVoiceBusy(true),
       onVoiceEnd: () => setVoiceBusy(false),
       onBlocked: () => {},
+      onDone: () => setSpokenDone(true),
     });
   };
 
@@ -234,7 +240,7 @@ export default function Home() {
 
   const reset = () => {
     fireRef.current?.reset();
-    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setQuestion(""); setVoiceBusy(false); setOutOfCredits(false);
+    setPhase("setup"); setCards([]); setReading(""); setReadingError(""); setQuestion(""); setVoiceBusy(false); setOutOfCredits(false); setSpokenDone(false);
   };
 
   // Names: the platform auto-fills the account name from the email address,
@@ -475,9 +481,13 @@ export default function Home() {
             <p className="font-serif italic">{spread.name} · {activeDeck.name}</p>
             <p className="mt-1">"{question}"</p>
           </div>
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <button onClick={() => setPhase("setup")} className="neo-pill px-6 py-2.5">Redraw Setup</button>
-            <button onClick={handleRead} className="neo-button px-8">Hear the Reading</button>
+            {busy && (
+              <p className="text-sm" style={{ color: "#b1a38b" }}>
+                The Oracle is preparing your reading…
+              </p>
+            )}
           </div>
           {readingError && (
             <div className="text-center">
@@ -501,6 +511,7 @@ export default function Home() {
           voiceBusy={voiceBusy}
           error={readingError}
           outOfCredits={outOfCredits}
+          done={spokenDone && !voiceBusy && !busy && !readingError}
           onReset={reset}
           onRetry={handleRead}
         />

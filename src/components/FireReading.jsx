@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { Pause, Play, RotateCcw, RefreshCw, Volume2, X } from "lucide-react";
+import { Pause, Play, RotateCcw, RefreshCw, X } from "lucide-react";
 import OracleFire from "@/components/OracleFire";
 
 const tinyBtn = { padding: "5px 12px", fontSize: 12, minHeight: 34, letterSpacing: 1.5 };
 
-export default function FireReading({ fireRef, aura, busy, voiceBusy, error, outOfCredits, onReset, onRetry }) {
+export default function FireReading({ fireRef, aura, busy, voiceBusy, error, outOfCredits, done, onReset, onRetry }) {
   const [paused, setPaused] = useState(false);
   return createPortal(
     <div
@@ -24,6 +24,12 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
       <div className="absolute inset-0">
         <OracleFire ref={fireRef} aura={aura} fill showVideo />
       </div>
+      {/* When she is done, the fire goes out: the stage fades to black. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-10 bg-reading-void transition-opacity duration-[2500ms] pointer-events-none"
+        style={{ opacity: done ? 1 : 0 }}
+      />
       {error && !busy && (
         <p className="absolute inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-md bg-background/90 p-3 text-center text-sm text-foreground">
           {error}
@@ -71,14 +77,9 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
           </>
         )}
         {!error && !busy && !voiceBusy && (
-          <>
-            <button onClick={() => fireRef.current?.play()} className="neo-button flex items-center gap-1.5" style={tinyBtn}>
-              <Volume2 className="w-3 h-3" /> Hear Her Voice
-            </button>
-            <button onClick={onReset} className="neo-pill flex items-center gap-1.5" style={tinyBtn}>
-              <RefreshCw className="w-3 h-3" /> Another Reading
-            </button>
-          </>
+          <button onClick={onReset} className="neo-pill flex items-center gap-1.5" style={tinyBtn}>
+            <RefreshCw className="w-3 h-3" /> Another Reading
+          </button>
         )}
       </div>
     </div>,

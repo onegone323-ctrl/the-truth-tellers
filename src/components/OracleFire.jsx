@@ -170,15 +170,14 @@ const runGeneration = async () => {
       throw new Error("The reading service returned no reading.");
     }
     fire.reading = text;
+    const snippet = !!res?.data?.snippet;
     fire.handlers?.onComplete?.({
       reading: text,
-      snippet: !!res?.data?.snippet,
+      snippet,
       message: res?.data?.message,
     });
-    if (fire.pendingPlay) {
-      fire.pendingPlay = false;
-      speakChain();
-    }
+    // She starts the reading herself — no tap needed.
+    if (!snippet) speakChain();
   } catch (e) {
     if (myRun !== fire.run) return;
     fire.reading = null;
@@ -217,16 +216,20 @@ const speakChain = async () => {
   fire.cycle = null;
   fire.captionParts = [];
   fire.onCaption?.([]);
-  setFireState("igniting");
-  fade("spark", 1, CROSS.spark);
-  fade("open", 0, CROSS.spark);
-  await wait(CROSS.spark);
-  if (myRun !== fire.run) return;
-  fade("ignite", 1, CROSS.ignite);
-  fade("spark", 0, CROSS.ignite);
-  await wait(CROSS.ignite);
-  if (myRun !== fire.run) return;
+  // She stays calm while her voice is fetched — the fire ignites the moment
+  // her voice is ready, not before.
   setFireState("thinking");
+
+  const igniteNow = () => {
+    setFireState("igniting");
+    fade("spark", 1, CROSS.spark);
+    fade("open", 0, CROSS.spark);
+    wait(CROSS.spark).then(() => {
+      if (myRun !== fire.run) return;
+      fade("ignite", 1, CROSS.ignite);
+      fade("spark", 0, CROSS.ignite);
+    });
+  };
 
   const spoken = toSpokenText(fire.reading || "");
   const parts = splitForSpeech(spoken);
@@ -241,6 +244,7 @@ const speakChain = async () => {
     if (i < parts.length && !pending[i]) pending[i] = fetchClips(parts[i]);
   };
   let started = false;
+  let ignited = false;
   const onPlaying = () => {
     if (!started) {
       started = true;
@@ -259,6 +263,11 @@ const speakChain = async () => {
     if (!clips) {
       missed.push(i);
       continue;
+    }
+    // The fire ignites as her first words land, and burns for the whole reading.
+    if (!ignited) {
+      ignited = true;
+      igniteNow();
     }
     pushCaption(parts[i]);
     for (let k = 0; k < clips.length; k++) {
@@ -285,6 +294,10 @@ const speakChain = async () => {
     const clips = await fetchClips(parts[i]);
     if (myRun !== fire.run) return;
     if (!clips) continue;
+    if (!ignited) {
+      ignited = true;
+      igniteNow();
+    }
     pushCaption(parts[i]);
     for (let k = 0; k < clips.length; k++) {
       const result = await playChunk("data:audio/mpeg;base64," + clips[k], onPlaying);
@@ -421,10 +434,12 @@ const OracleFire = forwardRef(function OracleFire(
       // Submitting the question: awaken, and start the reading request right
       // now, in parallel with the awakening crossfade.
       startOracle(payload, handlers) {
+        // Unlock her voice inside this tap, so she can start speaking on her
+        // own the moment the reading is ready — no second tap needed.
+        ensureAudioGraph();
         fire.payload = payload;
         fire.handlers = handlers || {};
         fire.reading = null;
-        fire.pendingPlay = false;
         setFireState("awakening");
         fade("open", 1, CROSS.open);
         fade("dormant", 0, CROSS.open);
@@ -437,7 +452,6 @@ const OracleFire = forwardRef(function OracleFire(
         if (fire.state === "igniting" || fire.state === "thinking" || fire.state === "speaking") return;
         ensureAudioGraph();
         if (fire.reading) speakChain();
-        else if (fire.generating) fire.pendingPlay = true;
         else this.startOracle(fire.payload, fire.handlers);
       },
       pause() {
@@ -460,7 +474,6 @@ const OracleFire = forwardRef(function OracleFire(
       reset() {
         fire.run++;
         fire.generating = false;
-        fire.pendingPlay = false;
         fire.cycle = null;
         fire.paused = false;
         fire.rewindFlag = false;
