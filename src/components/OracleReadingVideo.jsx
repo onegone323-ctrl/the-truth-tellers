@@ -54,11 +54,9 @@ export default function OracleReadingVideo({ phase = "dormant", getAnalyser }) {
         for (let i = 0; i < freq.length; i++) sum += freq[i];
         const energy = sum / (freq.length * 255);
         level += (Math.min(1, energy * 1.9) - level) * 0.12;
-        // Where the voice sits in the spectrum pushes the hue along the drift.
-        let highs = 0;
-        for (let i = Math.floor(freq.length * 0.45); i < freq.length; i++) highs += freq[i];
-        const ratio = sum > 0 ? highs / sum : 0;
-        hueTarget = ratio * 220;
+        // Her voice intensity sweeps the fire around the full wheel — gold,
+        // orange, magenta, violet, teal — and pauses ease it back to gold.
+        hueTarget = level * 265;
       } else {
         level += (0 - level) * 0.08;
         hueTarget = 0;
