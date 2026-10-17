@@ -5,16 +5,26 @@ const VIDEO_URL = "https://media.base44.com/videos/public/6a97b3175d08a6bc8bc635
 export default function OracleReadingVideo() {
   const videoRef = useRef(null);
   const [status, setStatus] = useState("loading");
+  // Play is always started from code with a caught promise — never the
+  // autoplay attribute, whose browser-initiated play() promise rejects as an
+  // uncaught AbortError if the element leaves the document mid-request.
   const play = () => videoRef.current?.play().catch(() => setStatus("blocked"));
   useEffect(() => {
     const video = videoRef.current;
     video.muted = true;
     play();
-    return () => { video.pause(); video.removeAttribute("src"); video.load(); };
+    return () => {
+      // Pause BEFORE dropping the src: clearing a src while a play() request
+      // is still being processed is what throws "media removed from the
+      // document" — with playback already stopped, the cleanup is silent.
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    };
   }, []);
   return (
     <div className="absolute inset-0 bg-reading-void" data-oracle-video-stage>
-      <video ref={videoRef} src={VIDEO_URL} autoPlay muted loop playsInline preload="auto"
+      <video ref={videoRef} src={VIDEO_URL} muted loop playsInline preload="auto"
         aria-label="Oracle reading video" className="absolute inset-0 h-full w-full object-cover"
         onPlaying={() => setStatus("playing")} onError={() => setStatus("error")} />
       {status === "loading" && <div className="absolute inset-0 flex items-center justify-center" role="status" aria-label="Loading fire">
