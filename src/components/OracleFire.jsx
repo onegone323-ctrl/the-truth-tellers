@@ -307,38 +307,33 @@ const speakChain = async () => {
   await toRest();
 };
 
-const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "dance", width, className = "" }, ref) {
+const OracleFire = forwardRef(function OracleFire(
+  { mode = "dormant", aura = "dance", width, fill = false, showVideo = false, className = "" },
+  ref
+) {
   const stageRef = useRef(null);
   const videoRef = useRef(null);
   const [state, setState] = useState(fire.state);
-  const [caption, setCaption] = useState(() => fire.captionParts.slice());
 
-  // The reading's face: the synced video takes over while her voice runs
-  // (looping for the whole reading), then hands back to the painted fire.
+  // In the reading view the synced video IS the Oracle: it plays for the
+  // whole reading screen, not just while the voice runs.
   useEffect(() => {
-    if (state === "speaking") {
-      const el = videoRef.current;
-      if (el) {
-        imgRefs.video = el;
-        fire.z.video = ++fire.topZ;
-        el.style.zIndex = fire.z.video;
-        el.play().catch(() => {});
-      }
-      fade("video", 1, 900);
-    } else {
-      fade("video", 0, 900);
-      const t = setTimeout(() => videoRef.current?.pause(), 1100);
-      return () => clearTimeout(t);
+    if (!showVideo) return;
+    const el = videoRef.current;
+    if (el) {
+      imgRefs.video = el;
+      fire.z.video = ++fire.topZ;
+      el.style.zIndex = fire.z.video;
+      el.play().catch(() => {});
     }
-  }, [state]);
+    fade("video", 1, 900);
+  }, [showVideo]);
 
   // The latest mounted instance owns the shared listeners.
   useEffect(() => {
     fire.onState = setState;
-    fire.onCaption = (parts) => setCaption(parts.slice());
     return () => {
       if (fire.onState === setState) fire.onState = null;
-      fire.onCaption = null;
     };
   }, []);
 
@@ -500,18 +495,18 @@ const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "da
   );
 
   return (
-    <div className={"flex flex-col items-center " + className}>
+    <div className={(fill ? "flex h-full w-full flex-col items-center " : "flex flex-col items-center ") + className}>
       <div
         ref={stageRef}
         role="img"
         aria-label={`The Oracle's fire, ${state}`}
         className="relative select-none overflow-hidden"
         style={{
-          width: width || "min(54vh, 92vw)",
-          aspectRatio: "2 / 3",
-          maxHeight: "84vh",
+          ...(fill
+            ? { width: "100%", height: "100%", maxHeight: "none" }
+            : { width: width || "min(54vh, 92vw)", aspectRatio: "2 / 3", maxHeight: "84vh" }),
           maxWidth: "100%",
-          borderRadius: 18,
+          borderRadius: fill ? 0 : 18,
           background: "#0b0614",
           transformOrigin: "50% 55%",
           willChange: "filter, transform",
@@ -537,24 +532,13 @@ const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "da
           muted
           loop
           playsInline
-          preload="auto"
+          preload={showVideo ? "auto" : "none"}
           aria-hidden="true"
           draggable={false}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ opacity: 0, zIndex: 0 }}
         />
       </div>
-      {caption.length > 0 && (
-        <div className="mt-4 w-full max-w-[560px] px-4" style={{ maxHeight: 132, overflowY: "auto", overscrollBehavior: "none" }}>
-          <p className="text-center" style={{ color: "#cdbfa4", fontSize: 13.5, lineHeight: 1.75 }}>
-            {caption.map((p, i) => (
-              <span key={i} style={{ animation: "captionFade .9s ease both" }}>
-                {p}{" "}
-              </span>
-            ))}
-          </p>
-        </div>
-      )}
     </div>
   );
 });

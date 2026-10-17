@@ -20,8 +20,8 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
       >
         <X className="w-3.5 h-3.5" />
       </button>
-      <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden px-3">
-        <OracleFire ref={fireRef} aura={aura} width="min(54vh, 92vw)" />
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+        <OracleFire ref={fireRef} aura={aura} fill showVideo />
       </div>
       {error && !busy && (
         <p className="relative px-6 pb-3 text-center" style={{ color: "#b1a38b", fontSize: 12, maxWidth: 420 }}>
