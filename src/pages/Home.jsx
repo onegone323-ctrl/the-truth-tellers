@@ -9,7 +9,6 @@ import FireReading from "@/components/FireReading";
 import CardFace from "@/components/CardFace";
 import DailyCard from "@/components/DailyCard";
 import OnboardingQuestionnaire from "@/components/OnboardingQuestionnaire";
-import OracleFirePicker from "@/components/OracleFirePicker";
 import { Link } from "react-router-dom";
 import { Mic, MicOff, Sparkles } from "lucide-react";
 import AmbientSound from "@/components/AmbientSound";
@@ -333,7 +332,6 @@ export default function Home() {
                 </button>
                 <span className="neo-note">Or type your question above.</span>
               </div>
-              <OracleFirePicker value={aura} onChange={setAura} />
             </div>
 
             {/* Deck selection */}
