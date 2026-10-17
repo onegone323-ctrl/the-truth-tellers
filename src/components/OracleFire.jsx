@@ -52,6 +52,12 @@ const fire = {
   onCaption: null,
 };
 const imgRefs = {};
+// The synced Oracle video: her face while a reading is spoken, looping for
+// as long as the voice runs.
+const ORACLE_VIDEO =
+  "https://media.base44.com/videos/public/6a97b3175d08a6bc8bc635af/2da5d204c_oracle_synced_full.mp4";
+fire.opacity.video = 0;
+fire.z.video = 0;
 
 const fade = (layer, to, dur) => {
   // Whatever fades in goes on top, so crossfades read correctly.
@@ -303,8 +309,28 @@ const speakChain = async () => {
 
 const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "dance", width, className = "" }, ref) {
   const stageRef = useRef(null);
+  const videoRef = useRef(null);
   const [state, setState] = useState(fire.state);
   const [caption, setCaption] = useState(() => fire.captionParts.slice());
+
+  // The reading's face: the synced video takes over while her voice runs
+  // (looping for the whole reading), then hands back to the painted fire.
+  useEffect(() => {
+    if (state === "speaking") {
+      const el = videoRef.current;
+      if (el) {
+        imgRefs.video = el;
+        fire.z.video = ++fire.topZ;
+        el.style.zIndex = fire.z.video;
+        el.play().catch(() => {});
+      }
+      fade("video", 1, 900);
+    } else {
+      fade("video", 0, 900);
+      const t = setTimeout(() => videoRef.current?.pause(), 1100);
+      return () => clearTimeout(t);
+    }
+  }, [state]);
 
   // The latest mounted instance owns the shared listeners.
   useEffect(() => {
@@ -491,6 +517,18 @@ const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "da
             style={{ opacity: fire.opacity[l], zIndex: fire.z[l] }}
           />
         ))}
+        <video
+          ref={videoRef}
+          src={ORACLE_VIDEO}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          style={{ opacity: 0, zIndex: 0 }}
+        />
       </div>
       {caption.length > 0 && (
         <div className="mt-4 w-full max-w-[560px] px-4" style={{ maxHeight: 132, overflowY: "auto", overscrollBehavior: "none" }}>
