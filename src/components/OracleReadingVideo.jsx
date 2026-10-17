@@ -54,9 +54,11 @@ export default function OracleReadingVideo({ phase = "dormant", getAnalyser }) {
         for (let i = 0; i < freq.length; i++) sum += freq[i];
         const energy = sum / (freq.length * 255);
         level += (Math.min(1, energy * 1.9) - level) * 0.12;
-        // Her voice intensity sweeps the fire around the full wheel — gold,
-        // orange, magenta, violet, teal — and pauses ease it back to gold.
-        hueTarget = level * 265;
+        // The orb video's base is green (~120deg on the wheel). Her voice
+        // pushes the rotation across the FULL span: -90deg (orange/gold end)
+        // up through teal (+60), violet (+150), magenta (+180) and around to
+        // orange (+270) and gold (+285) on emphasized words.
+        hueTarget = -90 + level * 375;
       } else {
         level += (0 - level) * 0.08;
         hueTarget = 0;
