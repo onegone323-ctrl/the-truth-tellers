@@ -365,7 +365,7 @@ const OracleFire = forwardRef(function OracleFire(
       }
       fire.fades = fire.fades.filter((f) => now - f.start < f.dur);
 
-      const active = !fire.paused && (fire.state === "igniting" || fire.state === "thinking" || fire.state === "speaking");
+      const active = !showVideo && !fire.paused && (fire.state === "igniting" || fire.state === "thinking" || fire.state === "speaking");
       let target = 0;
       if (active) {
         if (fire.analyser) {
@@ -397,11 +397,11 @@ const OracleFire = forwardRef(function OracleFire(
         }
       }
 
-      // The orb's live voice-reactive effects live in OracleReadingVideo.
+      // The video orb has its own time-driven palette, independent of this voice graph.
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [showVideo]);
 
   // The hidden hero hands off to the full-screen stage. Only leaving ALL
   // instances stops the shared voice; the handoff must never pause it.
@@ -498,7 +498,7 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {showVideo ? <OracleReadingVideo phase={state} getAnalyser={() => fire.analyser} /> : LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo phase={state} /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {
