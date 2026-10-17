@@ -331,7 +331,7 @@ export default function Home() {
             <DailyCard memory={memory} setMemory={setMemory} userName={seekerName} />
           </section>
 
-          <section className="enter delay2 mx-4 sm:mx-[54px] mb-6 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6">
+          <section className="enter delay2 mx-4 sm:mx-[54px] mb-6">
             {/* Question + voice — the box fills the panel, footer pinned to the bottom */}
             <div className="neo-panel flex flex-col" style={{ background: "linear-gradient(110deg, rgba(42,8,14,.9), rgba(5,5,7,.93))" }}>
               <h2 className="neo-label mt-0 mb-[18px]">Your Question</h2>
@@ -409,8 +409,8 @@ export default function Home() {
                   {spreadsInCat.map((s) => (
                     <button key={s.id} onClick={() => setSpread(s)}
                       className={`neo-spread-tile ${spread.id === s.id ? "is-active" : ""}`}>
-                      <strong className="block font-serif text-[13px] font-bold" style={{ color: "#000000" }}>{s.name}</strong>
-                      <span className="block mt-[3px] font-bold" style={{ color: "#000000", fontSize: 13 }}>{s.description}</span>
+                      <strong className="block font-serif text-[15px] font-bold">{s.name}</strong>
+                      <span className="block mt-[3px] font-bold text-[13px]">{s.description}</span>
                     </button>
                   ))}
                 </div>

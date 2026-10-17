@@ -292,22 +292,28 @@
     border-color: #e8354f; box-shadow: 0 0 15px rgba(232,53,79,.35); color: #e8354f;
   }
   .neo-art {
-    height: 75px; margin-bottom: 8px;
+    height: clamp(120px, 16vw, 175px); margin-bottom: 10px;
     background: url("https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/201911e08_7c0f89e3e_generated_bf7c5b16.jpg") center/cover;
     border: 1px solid rgba(255,250,225,.9); filter: saturate(1.35);
-    box-shadow: 0 0 10px rgba(255,250,220,.6), 0 0 24px rgba(212,175,55,.55), 0 0 44px rgba(139,26,43,.4), inset 0 0 12px rgba(0,0,0,.5);
+    box-shadow: 0 0 14px rgba(255,250,220,.8), 0 0 34px rgba(212,175,55,.75), 0 0 62px rgba(139,26,43,.55), inset 0 0 12px rgba(0,0,0,.5);
     animation: artSparkle 2.6s ease-in-out infinite;
   }
   /* the deck label under each picture — small and one fixed height so every
      picture sits on the same line */
   .neo-deck-name {
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; line-height: 1.15; letter-spacing: .5px;
+    font-size: 13px; line-height: 1.15; letter-spacing: .5px;
     min-height: 28px; color: var(--neo-ink);
   }
   @keyframes artSparkle {
-    0%, 100% { box-shadow: 0 0 8px rgba(255,250,220,.45), 0 0 18px rgba(212,175,55,.4), 0 0 36px rgba(139,26,43,.3), inset 0 0 12px rgba(0,0,0,.5); }
-    50% { box-shadow: 0 0 14px rgba(255,250,220,.8), 0 0 30px rgba(212,175,55,.75), 0 0 52px rgba(139,26,43,.5), inset 0 0 12px rgba(0,0,0,.5); }
+    0%, 100% { box-shadow: 0 0 12px rgba(255,250,220,.7), 0 0 26px rgba(212,175,55,.6), 0 0 48px rgba(139,26,43,.45), inset 0 0 12px rgba(0,0,0,.5); }
+    50% { box-shadow: 0 0 20px rgba(255,250,220,1), 0 0 42px rgba(212,175,55,.95), 0 0 68px rgba(139,26,43,.65), inset 0 0 12px rgba(0,0,0,.5); }
+  }
+  /* The chosen deck dims its lights — the rest keep shining. */
+  .neo-tile.is-active .neo-art {
+    filter: saturate(.5) brightness(.55);
+    box-shadow: 0 0 8px rgba(212,175,55,.25), inset 0 0 14px rgba(0,0,0,.65);
+    animation: none;
   }
   .neo-pill {
     cursor: pointer; transition: .25s;
@@ -338,11 +344,22 @@
   .neo-spread-tile:hover, .neo-spread-tile:focus-visible {
     box-shadow: 0 0 18px rgba(232,53,79,.55); border-color: #e8354f;
   }
-  /* the picked spread: the whole box lights up bright white, clearly separate from hover */
-  .neo-spread-tile.is-active {
-    border-color: #fff8e6; border-width: 2px;
-    box-shadow: 0 0 28px rgba(255,248,230,.8), 0 0 60px rgba(255,248,230,.45), inset 0 0 30px rgba(255,248,230,.35);
+  /* The picked option: red letters with a glow — a lit-up goal indicator.
+     Shared by spreads, clarifier counts and spread-category pills. */
+  .neo-spread-tile.is-active, .neo-count.is-active, .neo-pill-gold.is-active {
+    border-color: #e8354f;
+    color: #ff2b4d;
+    text-shadow: 0 0 8px rgba(255,43,77,.9), 0 0 24px rgba(255,43,77,.55);
   }
+  .neo-spread-tile.is-active strong, .neo-spread-tile.is-active span {
+    color: #ff2b4d;
+    text-shadow: 0 0 8px rgba(255,43,77,.9), 0 0 24px rgba(255,43,77,.55);
+  }
+  .neo-spread-tile.is-active {
+    box-shadow: 0 0 18px rgba(232,53,79,.5), inset 0 0 10px rgba(232,53,79,.15);
+  }
+  .neo-count.is-active { box-shadow: 0 0 16px rgba(232,53,79,.45); }
+  .neo-pill-gold.is-active { box-shadow: 0 0 16px rgba(232,53,79,.45); }
   .neo-count {
     cursor: pointer; transition: .25s; flex: 1;
     background: rgba(11,8,17,.85); border: 1px solid color-mix(in srgb, var(--gold-leaf) 40%, transparent);
