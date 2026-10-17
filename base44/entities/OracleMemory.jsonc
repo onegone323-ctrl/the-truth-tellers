@@ -8,6 +8,24 @@
     "summary": {
       "type": "string"
     },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "summary"
+        ]
+      }
+    },
     "recurring_themes": {
       "type": "array",
       "items": {

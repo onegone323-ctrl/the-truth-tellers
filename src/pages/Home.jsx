@@ -109,20 +109,10 @@ export default function Home() {
       deck_title: deckCardTitle((c.cardDeck || activeDeck).id, c.name),
       clarifiers: (c.clarifiers || []).map((x) => ({ name: x.name, reversed: x.reversed })),
     })),
-    profile: profile ? {
-      full_name: profile.full_name,
-      occupation: profile.occupation,
-      goals: profile.goals,
-      trigger: profile.trigger,
-      makes_happy: profile.makes_happy,
-      hard_memory: profile.hard_memory,
-    } : null,
     memory: memory ? {
       user_name: seekerName,
-      summary: memory.summary,
-      recurring_themes: memory.recurring_themes,
-      last_question: memory.last_question,
-      last_advice: memory.last_advice,
+      history: memory.history || [],
+      recurring_themes: memory.recurring_themes || [],
       reading_count: memory.reading_count,
     } : null,
   });
@@ -150,24 +140,38 @@ export default function Home() {
     busyRef.current = false;
     setBusy(false);
     try {
-      const adviceSnippet = text.slice(-280);
+      // True history: each reading appends one entry — the question asked plus
+      // the FULL 880-character reading in a single continuous block. The last
+      // 5 interactions are kept and sent to every new reading.
+      const historyEntry = { question, summary: text.slice(0, 880) };
+      const nextHistory = [...(memory?.history || []), historyEntry].slice(-5);
+      // Themes accumulate from every reading instead of being set once.
+      const nextThemes = [...new Set([...(memory?.recurring_themes || []), spread.category])].slice(0, 12);
       if (memory) {
         await base44.entities.OracleMemory.update(memory.id, {
-          summary: text.slice(0, 600),
+          summary: historyEntry.summary,
+          history: nextHistory,
+          recurring_themes: nextThemes,
           last_question: question,
-          last_advice: adviceSnippet,
+          last_advice: text.slice(-280),
           reading_count: (memory.reading_count || 0) + 1,
           user_name: seekerName,
           recurring_cards: [...new Set([...(memory.recurring_cards || []), ...cards.map((c) => c.name)])].slice(0, 12),
         });
+        // Keep the in-session memory current, so a second reading this
+        // session already knows the first.
+        setMemory((m) => (m
+          ? { ...m, summary: historyEntry.summary, history: nextHistory, recurring_themes: nextThemes, reading_count: (memory.reading_count || 0) + 1 }
+          : m));
       } else {
         const created = await base44.entities.OracleMemory.create({
           user_name: seekerName,
-          summary: text.slice(0, 600),
+          summary: historyEntry.summary,
+          history: [historyEntry],
           recurring_themes: [spread.category],
           recurring_cards: cards.map((c) => c.name).slice(0, 12),
           last_question: question,
-          last_advice: adviceSnippet,
+          last_advice: text.slice(-280),
           reading_count: 1,
         });
         setMemory(created);

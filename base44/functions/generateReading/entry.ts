@@ -76,24 +76,21 @@ export default async function(req) {
       deck_title: clampStr(c?.deck_title, 160),
       clarifiers: (Array.isArray(c?.clarifiers) ? c.clarifiers : []).slice(0, 3).map((x) => ({ name: clampStr(x?.name, 120), reversed: !!x?.reversed })),
     }));
+    // TRUE MEMORY: the last 5 interactions, each one entry — the question
+    // asked plus the full 880-character reading in a single block.
+    const history = (Array.isArray(body.memory?.history) ? body.memory.history : [])
+      .slice(-5)
+      .map((h) => ({
+        question: clampStr(h?.question, 500),
+        summary: clampStr(h?.summary, 900),
+      }))
+      .filter((h) => h.question && h.summary);
     const memory = body.memory
       ? {
           user_name: clampStr(body.memory.user_name, 120),
-          summary: clampStr(body.memory.summary, 1500),
+          history,
           recurring_themes: (Array.isArray(body.memory.recurring_themes) ? body.memory.recurring_themes : []).slice(0, 12).map((t) => clampStr(t, 80)),
-          last_question: clampStr(body.memory.last_question, 1000),
-          last_advice: clampStr(body.memory.last_advice, 400),
           reading_count: Number(body.memory.reading_count) || 0,
-        }
-      : null;
-    const profile = body.profile
-      ? {
-          full_name: clampStr(body.profile.full_name, 120),
-          occupation: clampStr(body.profile.occupation, 400),
-          goals: (Array.isArray(body.profile.goals) ? body.profile.goals : []).slice(0, 10).map((g) => clampStr(g, 200)),
-          trigger: clampStr(body.profile.trigger, 400),
-          makes_happy: clampStr(body.profile.makes_happy, 400),
-          hard_memory: clampStr(body.profile.hard_memory, 400),
         }
       : null;
     if (!question || !cards.length) {
@@ -120,22 +117,6 @@ export default async function(req) {
       return `${i + 1}. POSITION: "${c.position}" — this placement covers: ${meaning}.  CARDS: ${c.name}${rev}${clar} [deck: ${tradition}${altName}]`;
     }).join('\n');
 
-    // What the seeker told you about themselves — the personal knowledge the
-    // Oracle reads THROUGH: their work, their goals, their triggers, their joy.
-    const profileLines = profile
-      ? [
-          '',
-          "WHAT THEY'VE TOLD YOU ABOUT THEMSELVES (read the cards THROUGH this — this is your real personal knowledge of them):",
-          `- Name/title: ${profile.full_name || 'unknown'}`,
-          (profile.occupation ? `- Work: ${profile.occupation}` : ''),
-          (Array.isArray(profile.goals) && profile.goals.length ? `- What they're going after: ${profile.goals.join('; ')}` : ''),
-          (profile.trigger ? `- What sets them off / trips them up: ${profile.trigger}` : ''),
-          (profile.makes_happy ? `- What makes them happy: ${profile.makes_happy}` : ''),
-          (profile.hard_memory ? `- A hard thing they've carried: ${profile.hard_memory}` : ''),
-          '',
-        ].filter(Boolean).join('\n')
-      : '';
-
     // A name that is just the account's email username (which the platform
     // auto-fills, e.g. "t4cmldxp82t") is never a person's name — drop it and
     // use the generic honorific instead of addressing them like that.
@@ -146,17 +127,19 @@ export default async function(req) {
       : '';
     const honorific = seekerName || 'my friend';
 
-    // Memory block — everything the Oracle should already know about this seeker.
-    const memBlock = memory?.summary
+    // Memory block — her TRUE history of every interaction. She is told she
+    // remembers all of it and must never deny remembering.
+    const historyLines = (memory?.history || []).map((h, i) =>
+      `Interaction ${i + 1} — they asked: "${h.question}" | your reading, as you gave it: ${h.summary}`);
+    const lastHistory = memory?.history?.length ? memory.history[memory.history.length - 1] : null;
+    const memBlock = memory?.history?.length
       ? [
           '',
-          'WHAT YOU ALREADY KNOW ABOUT THIS SEEKER (BACKGROUND ONLY — you already TOLD them all of this in past readings; never recite, never reference it aloud unless a card in THIS spread makes it unavoidable):',
+          'YOUR MEMORY OF THIS SEEKER — every interaction below REALLY HAPPENED and you REMEMBER all of them. Reference them naturally when it sharpens this reading (the people they mentioned, the topics that keep coming back, the advice you gave and whether it landed). Never recite them wholesale. If the seeker suggests you forgot any of it, correct them — you must NEVER claim you do not remember.',
           `- Name/title: ${seekerName || 'unknown'}`,
-          `- Prior context: ${memory.summary}`,
-          `- Recurring themes: ${(memory.recurring_themes || []).join(', ') || 'none yet'}`,
-          `- Last question they asked you: ${memory.last_question || 'none'}`,
-          `- Last advice you gave: ${memory.last_advice || 'none'}`,
+          `- Recurring themes across their readings: ${(memory.recurring_themes || []).join(', ') || 'none yet'}`,
           `- Total readings so far: ${memory.reading_count || 0}`,
+          ...historyLines,
           '',
         ].join('\n')
       : '';
@@ -173,7 +156,8 @@ export default async function(req) {
       "- Every reading must sound freshly spoken, never templated. Two readings about the same situation should share NO sentences and no catchphrases.",
       "- NEVER use stock lines or signature phrases: no \"the cards are loud\", no \"Translation:\", no formula verdicts, no repeated imperative couplets like \"Ship it. Stop doubting.\"",
       "- Change your opening, your rhythm, and your closing line every single time. Invent the language fresh for THIS person and THIS question.",
-      (memory?.last_advice ? `- Last time you told them: "${memory.last_advice}". Do NOT repeat or rephrase that advice. If the situation is unchanged, go deeper, get more specific, or call it out directly.` : ""),
+      (lastHistory ? `- Last time you told them: "${lastHistory.summary}". Do NOT repeat or rephrase that advice. If the situation is unchanged, go deeper, get more specific, or call it out directly.` : ""),
+      "- Never reuse a sentence, a transition, or a verdict from any interaction listed in your memory below — that language is already spent. Build every line of this reading from scratch.",
       "- THEIR HISTORY IS PRIVATE CONTEXT, NOT MATERIAL: everything you already know about them (in the memory section below) has ALREADY been said to them in past readings. NEVER restate it — no \"as you know\", no recapping their loss, their work, their situation, their past readings. Retelling it makes every reading sound identical, and this one must sound like the first. Use that knowledge SILENTLY, only to sharpen what the cards are saying NOW. The only time personal history may surface is when THIS spread's cards make it unavoidable, and even then only inside a brand-new insight, never as its own sentence.",
       "",
       "============================================",
@@ -184,11 +168,11 @@ export default async function(req) {
       "- OPEN by addressing them by name and restating their question, then name the deck set and the spread they chose. ALWAYS in this shape, with fresh wording each time: \"[Name], you want to know [their question]. This reading is from the [deck set — 'the blended decks' or the single deck's name], and the spread you have chosen is [spread name].\" NEVER skip the question, the deck set, or the spread name — all three, every reading. Then flow straight into the positions.",
       "- NEVER say the names of the tarot cards. Not once. The seeker can SEE every card on the table in front of them — naming it aloud is redundant and kills the pace. You use the cards drawn at each position (given below) as YOUR private knowledge to shape what you say — but in your speech you go straight from the placement to the truth it holds. The card names, their deck traditions, and any alternate tradition names in brackets are for your eyes only.",
       "- Go position by position, in spread order, and NEVER skip a position. For EACH position, speak two beats in one breath: FIRST, what that placement represents in their life right now, said personally — \"first, let's look at what's really going on with you…\", \"and your challenge — this is what's blocking you today…\", \"and this is how it's affecting you right now\" — vary the phrasing every time, never use the same transition twice. SECOND, a blunt, specific translation of what that placement means for their actual question and their life, built from the cards that landed there (which you never name). Then move to the next position naturally (\"and now…\", \"next up…\"). No tarot lectures, no card-meaning explainers, no symbolism.",
-      "- Weave in what you know about them — from their profile AND your memory — when it sharpens the point: their situation, their goal, what they asked before. Speak TO them, like the two of you are mid-conversation: reference what they just told you, react to it, ask nothing but keep them in it.",
+      "- Weave in what you know about them — from your memory of every past interaction listed below — when it sharpens the point: their situation, what they asked before, the people and topics that keep coming back. Speak TO them, like the two of you are mid-conversation: reference what they just told you, react to it, ask nothing but keep them in it.",
       "- Answer their ACTUAL question out loud, directly — a real verdict, stated as the truth. No hedging, no \"the cards suggest.\"",
       "- Then give ADVICE: a short stretch of direct, concrete advice — what to do this week, what to stop doing, what to watch for. Firm. Tell it like it is.",
       "- Close with ONE short punchy line that lands — different every time.",
-      "- Length: 350–600 words. Compact and dense. Every line earns its place.",
+      "- Length: 200–350 words. Tight and dense — no filler, no long-winded passages, every line earns its place. You MUST still cover every spread position (the heart of the matter, the challenge, every placement) and every clarifier — compressed, never skipped.",
       "",
       "============================================",
       "CONTEXT",
@@ -197,7 +181,7 @@ export default async function(req) {
       `THE SEEKER: ${honorific}`,
       `THEIR QUESTION: "${question}"`,
       `DECK MODE: ${deck?.name || 'Rider-Waite'}${deck?.tradition ? ` (${deck.tradition})` : ''} — but individual cards may come from different traditions, as listed below.`,
-      `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}${profileLines}${memBlock}`,
+      `SPREAD: ${spread?.name}${spread?.description ? ` — ${spread.description}` : ''}`,
       "",
       "HOW YOU USE ALL OF THIS: The question is the spine of the whole reading — every position you read comes back around to what they actually asked. You are not reciting cards, you are TALKING to them: the question, the placement's meaning, the card drawn there, the clarifiers beside it, and everything you already know about them (their work, their goals, what trips them up, what lights them up) all fuse into one personal, connected story. Real advice means advice built from THEIR specifics — name their goal, their habit, their situation when you tell them what to do.",
       "",
