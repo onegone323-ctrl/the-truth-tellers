@@ -46,6 +46,10 @@ const fire = {
   reading: null,
   captionParts: [],
   audio: null,
+  mounts: 0,
+  videoMounted: false,
+  awakening: null,
+  resting: null,
   ctx: null,
   analyser: null,
   srcNode: null,
@@ -53,6 +57,14 @@ const fire = {
   onCaption: null,
 };
 const imgRefs = {};
+
+const videoCompletion = () => {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+};
+const finishAwakening = () => fire.awakening?.resolve();
+const finishResting = () => fire.resting?.resolve();
 
 const fade = (layer, to, dur) => {
   // Whatever fades in goes on top, so crossfades read correctly.
@@ -193,16 +205,19 @@ const toRest = async () => {
   const myRun = fire.run;
   fire.cycle = null;
   fire.handlers?.onVoiceEnd?.();
+  fire.resting = fire.videoMounted ? videoCompletion() : null;
   setFireState("simmering");
   fade("simmer", 1, CROSS.simmer);
   for (const l of FIRE_LAYERS) fade(l, 0, CROSS.simmer);
-  await wait(CROSS.simmer + 3200);
+  // Let the actual resting video's ended event finish the reading, not a timer.
+  if (fire.resting) await fire.resting.promise;
+  else await wait(CROSS.simmer + 3200);
   if (myRun !== fire.run) return;
   setFireState("resting");
   fade("dormant", 1, CROSS.dormant);
   fade("simmer", 0, CROSS.dormant);
   for (const l of FIRE_LAYERS) fire.opacity[l] = 0;
-  await wait(CROSS.dormant);
+  if (!fire.videoMounted) await wait(CROSS.dormant);
   if (myRun !== fire.run) return;
   setFireState("dormant");
   fire.handlers?.onDone?.();
@@ -216,8 +231,9 @@ const speakChain = async () => {
   fire.cycle = null;
   fire.captionParts = [];
   fire.onCaption?.([]);
-  // She stays calm while her voice is fetched — the fire ignites the moment
-  // her voice is ready, not before.
+  // Fetch the voice while awakening plays once. Its ended event releases the
+  // first word, so the speaking loop and the voice begin together.
+  fire.awakening = videoCompletion();
   setFireState("thinking");
 
   const igniteNow = () => {
@@ -266,6 +282,8 @@ const speakChain = async () => {
     }
     // The fire ignites as her first words land, and burns for the whole reading.
     if (!ignited) {
+      await fire.awakening.promise;
+      if (myRun !== fire.run) return;
       ignited = true;
       igniteNow();
     }
@@ -295,6 +313,8 @@ const speakChain = async () => {
     if (myRun !== fire.run) return;
     if (!clips) continue;
     if (!ignited) {
+      await fire.awakening.promise;
+      if (myRun !== fire.run) return;
       ignited = true;
       igniteNow();
     }
@@ -408,14 +428,23 @@ const OracleFire = forwardRef(function OracleFire(
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Leave things tidy if the page itself goes away mid-reading.
+  // The hidden hero hands off to the full-screen stage. Only leaving ALL
+  // instances stops the shared voice; the handoff must never pause it.
   useEffect(() => {
+    fire.mounts++;
+    if (showVideo) fire.videoMounted = true;
     return () => {
-      try {
+      fire.mounts--;
+      if (showVideo) fire.videoMounted = false;
+      queueMicrotask(() => {
+        if (fire.mounts) return;
+        fire.run++;
         fire.audio?.pause();
-      } catch (e) {}
+        finishAwakening();
+        finishResting();
+      });
     };
-  }, []);
+  }, [showVideo]);
 
   useImperativeHandle(
     ref,
@@ -462,6 +491,8 @@ const OracleFire = forwardRef(function OracleFire(
       },
       reset() {
         fire.run++;
+        finishAwakening();
+        finishResting();
         fire.generating = false;
         fire.cycle = null;
         fire.paused = false;
@@ -498,7 +529,8 @@ const OracleFire = forwardRef(function OracleFire(
           willChange: "filter, transform",
         }}
       >
-        {showVideo ? <OracleReadingVideo videoRef={videoRef} phase={state} /> : LAYERS.map((l) => (
+        {showVideo ? <OracleReadingVideo videoRef={videoRef} phase={state}
+          onAwakened={finishAwakening} onRested={finishResting} /> : LAYERS.map((l) => (
           <img
             key={l}
             ref={(el) => {
