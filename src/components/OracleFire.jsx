@@ -361,6 +361,20 @@ const OracleFire = forwardRef(function OracleFire({ mode = "dormant", aura = "da
     if (fire.state === "speaking" && !fire.paused) advanceColor(performance.now());
   }, [aura]);
 
+  // Release the video fully on unmount — pausing alone still leaves a play()
+  // promise pending, which rejects as AbortError once the element leaves the
+  // document. Dropping the src first lets any pending play settle silently.
+  useEffect(() => {
+    const el = videoRef.current;
+    return () => {
+      try {
+        el?.pause();
+        el?.removeAttribute("src");
+        el?.load();
+      } catch (e) {}
+    };
+  }, []);
+
   // The single animation loop: crossfades, voice-reactive level, color cycle,
   // and the flicker/scale on the stage. Reduced motion keeps only crossfades.
   useEffect(() => {
