@@ -1,7 +1,8 @@
 import React from "react";
-import { CARDS } from "@/lib/tarotData";
+import { CARDS, getCardByName } from "@/lib/tarotData";
+import { buildCardDescription, relatedCards } from "@/lib/cardSEO";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import useGoBack from "@/hooks/useGoBack";
 
 const SUIT_GLYPH = { Wands: "♣", Cups: "♥", Swords: "♠", Pentacles: "♦", Major: "✶" };
@@ -9,7 +10,9 @@ const SUIT_GLYPH = { Wands: "♣", Cups: "♥", Swords: "♠", Pentacles: "♦",
 export default function CardDetail() {
   const { name } = useParams();
   const goBack = useGoBack("/cards");
-  const card = CARDS.find((c) => c.name === name);
+  const card = getCardByName(name);
+  const description = buildCardDescription(card);
+  const related = relatedCards(card, CARDS);
 
   if (!card) {
     return (
@@ -34,7 +37,7 @@ export default function CardDetail() {
         <div className="flex items-center gap-3 mb-4">
           <span style={{ color: "#d4af37", fontSize: 32 }}>{SUIT_GLYPH[card.arcana === "Major" ? "Major" : card.suit]}</span>
           <div>
-            <h2 className="font-display text-2xl text-gold-leaf">{card.name}</h2>
+            <h1 className="font-display text-2xl text-gold-leaf">{card.name}</h1>
             <p className="text-sm text-muted-foreground uppercase tracking-wider">
               {card.arcana === "Major" ? "Major Arcana" : `${card.suit} · ${card.element}`}
             </p>
@@ -58,6 +61,28 @@ export default function CardDetail() {
           </div>
         </div>
       </div>
+
+      {/* Long-form meaning — searchable content for every card */}
+      <div className="lux-card rounded-xl p-6 space-y-3 text-sm">
+        <h2 className="text-gold-leaf text-sm uppercase tracking-widest">The Meaning of {card.name}</h2>
+        {description.map((p, i) => (
+          <p key={i} className="font-body text-foreground/85 leading-relaxed">{p}</p>
+        ))}
+      </div>
+
+      {related.length > 0 && (
+        <div className="lux-card rounded-xl p-6">
+          <h2 className="text-gold-leaf text-sm uppercase tracking-widest mb-3">Related Cards</h2>
+          <div className="flex flex-wrap gap-2">
+            {related.map((c) => (
+              <Link key={c.name} to={`/cards/${encodeURIComponent(c.name)}`}
+                className="text-sm px-3 py-1.5 rounded-full gold-pill text-muted-foreground hover:text-gold-leaf transition-colors min-h-[44px] flex items-center">
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
