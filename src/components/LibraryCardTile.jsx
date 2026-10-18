@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { getSilentWavSrc } from "@/lib/oracleVoice";
 import { Link } from "react-router-dom";
 import { Sparkles, Volume2 } from "lucide-react";
 
@@ -31,6 +32,13 @@ export default function LibraryCardTile({ card }) {
       stopAudio();
     } else {
       setFlipped(true);
+      // Unlock playback inside this tap — the same trick the Oracle's fire
+      // uses — so her voice is allowed to start once the clip arrives.
+      const el = audioRef.current || (audioRef.current = new Audio());
+      el.onended = null;
+      el.onerror = null;
+      el.src = getSilentWavSrc();
+      el.play().catch(() => {});
       speak();
     }
   };
