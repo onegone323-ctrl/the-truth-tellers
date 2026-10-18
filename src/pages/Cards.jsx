@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { CARDS } from "@/lib/tarotData";
-import { Search, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
-
-const SUIT_GLYPH = { Wands: "♣", Cups: "♥", Swords: "♠", Pentacles: "♦", Major: "✶" };
+import LibraryCardTile from "@/components/LibraryCardTile";
 
 export default function Cards() {
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
-  const navigate = useNavigate();
 
   const categories = ["All", "Major", "Wands", "Cups", "Swords", "Pentacles"];
   const list = CARDS.filter((c) => {
@@ -49,19 +46,7 @@ export default function Cards() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {list.map((c) => (
-          <button key={c.name} onClick={() => navigate(`/cards/${encodeURIComponent(c.name)}`)}
-            className="lux-card rounded-lg p-3 text-left hover:scale-[1.03] transition-transform">
-            <div className="flex items-center justify-between">
-              <span style={{ color: "#d4af37", fontSize: 18 }}>{SUIT_GLYPH[c.arcana === "Major" ? "Major" : c.suit]}</span>
-              {c.arcana === "Major" && <Sparkles className="w-3 h-3" style={{ color: "#d4af37" }} />}
-            </div>
-            <div className="mt-2 font-serif text-sm leading-tight" style={{ color: "#f0e6d2" }}>{c.name}</div>
-            <div className="text-sm text-muted-foreground mt-1 uppercase tracking-wider">
-              {c.arcana === "Major" ? "Major Arcana" : `${c.suit} · ${c.element}`}
-            </div>
-          </button>
-        ))}
+        {list.map((c) => <LibraryCardTile key={c.name} card={c} />)}
       </div>
 
     </div>
