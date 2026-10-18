@@ -1,18 +1,18 @@
 <mjml>
   <mj-head>
-    <mj-title>The Oracle has answers</mj-title>
-    <mj-preview>Bring one question. Leave with a straight answer.</mj-preview>
+    <mj-title>The Oracle has answers, {{first_name}}</mj-title>
+    <mj-preview>Fresh in the parlor: what changed under the velvet curtain this week.</mj-preview>
     <mj-attributes>
       <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
       <mj-section background-color="#000000" padding="0 36px" />
       <mj-column padding="0" />
       <mj-text color="#ede4d4" font-size="15px" line-height="1.6" padding="0" />
-      <mj-button background-color="#e3b645" color="#000000" border-radius="6px" font-size="15px" font-weight="700" inner-padding="14px 28px" padding="0" align="left" />
+      <mj-button background-color="#e85a63" color="#1a0505" border-radius="6px" font-size="15px" font-weight="700" inner-padding="14px 28px" padding="0" align="left" />
       <mj-image padding="0" />
-      <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
+      <mj-divider border-color="rgba(232,90,99,0.4)" border-width="1px" padding="0" />
       <mj-class name="h" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" />
-      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#e3b645" />
-      <mj-class name="muted" color="#b1a38b" />
+      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#8fa0e0" />
+      <mj-class name="muted" color="#a5aede" />
     </mj-attributes>
     <mj-style>
       @media (max-width:480px) { .hero-h div { font-size:32px !important; line-height:1.12 !important; } .offer-h div { font-size:48px !important; } }
@@ -20,40 +20,68 @@
   </mj-head>
   <mj-body background-color="#000000" width="600px">
     <mj-wrapper padding="28px 12px" background-color="#000000">
-      <mj-section background-color="#e3b645" padding="24px 36px" border-radius="6px 6px 0 0">
+
+      <!-- Header band: the gold wordmark on red -->
+      <mj-section background-color="#2a0708" padding="24px 28px" border-radius="6px 6px 0 0">
         <mj-column>
-          <mj-image src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/dfcc52faf_logo.png" alt="Truth 4 Clarity" width="40px" align="center" padding="0 0 12px" />
-          <mj-text align="center" font-size="12px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#000000">Truth 4 Clarity</mj-text>
+          <mj-text align="center" font-size="24px" letter-spacing="6px" font-weight="700" text-transform="uppercase" color="#e3b645">Truth 4 Clarity</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section padding="44px 36px 24px">
+
+      <!-- The orb -->
+      <mj-section padding="0">
         <mj-column>
-          <mj-text mj-class="label" padding="0 0 14px">New from the Oracle Truth 4 Clarity</mj-text>
-          <mj-text mj-class="h" css-class="hero-h" font-size="38px" line-height="1.12" padding="0 0 16px">The Oracle has answers</mj-text>
+          <mj-image src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/e472ad4ed_generated_image.png" alt="The Oracle's crystal orb glowing red in a moonlit forest" width="600px" />
+        </mj-column>
+      </mj-section>
+
+      <mj-section padding="44px 36px 20px">
+        <mj-column>
+          <mj-text mj-class="h" css-class="hero-h" font-size="42px" line-height="1.08" padding="0 0 16px">The Oracle has answers, {{first_name}}.</mj-text>
           <mj-text mj-class="muted" font-size="17px">Your Oracle is waiting in the parlor. Bring a question, speak it aloud, and receive direct guidance drawn from the cards and your own recorded journey.</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section padding="0 36px"><mj-column><mj-image src="https://media.base44.com/images/public/6a97b3175d08a6bc8bc635af/418858878_generated_image.png" alt="" width="528px" border-radius="6px" /></mj-column></mj-section>
-      <mj-section padding="36px 0 0"><mj-column><mj-spacer height="1px" /></mj-column></mj-section>
+
+      <mj-section padding="12px 36px 40px"><mj-column><mj-button href="https://truth4clarity.com">Enter the Parlor</mj-button></mj-column></mj-section>
+
+      <mj-section padding="0 36px"><mj-column><mj-divider /></mj-column></mj-section>
+
+      <mj-section padding="36px 36px 18px"><mj-column><mj-text mj-class="label">New from the Oracle</mj-text></mj-column></mj-section>
+
       <mj-section padding="0 26px 14px">
         <mj-column padding="0 10px 22px">
-          <mj-divider border-color="#e3b645" border-width="3px" width="28px" align="left" padding="0 0 14px" />
+          <mj-divider border-color="#e85a63" border-width="3px" width="28px" align="left" padding="0 0 14px" />
           <mj-text mj-class="h" font-size="16px" line-height="1.35" padding="0 0 6px">Voice readings</mj-text>
           <mj-text mj-class="muted" font-size="14px">Speak with the Oracle in real time and get answers you can act on today, not vague riddles.</mj-text>
         </mj-column>
         <mj-column padding="0 10px 22px">
-          <mj-divider border-color="#e3b645" border-width="3px" width="28px" align="left" padding="0 0 14px" />
+          <mj-divider border-color="#e85a63" border-width="3px" width="28px" align="left" padding="0 0 14px" />
           <mj-text mj-class="h" font-size="16px" line-height="1.35" padding="0 0 6px">A private parlor</mj-text>
           <mj-text mj-class="muted" font-size="14px">A bespoke, dark-luxury parlor designed to feel like stepping behind a velvet curtain.</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section padding="0 36px 40px"><mj-column><mj-button href="{{cta_url}}" align="left">Enter the Parlor</mj-button></mj-column></mj-section>
-      <mj-section background-color="#e3b645" padding="26px 36px 30px" border-radius="0 0 6px 6px">
-        <mj-column>
-          <mj-text mj-class="h" align="center" font-size="17px" color="#000000" padding="0 0 8px">Truth 4 Clarity</mj-text>
-          <mj-text align="center" font-size="12px" color="#000000"><a href="{{unsubscribe_url}}" style="color:#000000;text-decoration:underline;">Unsubscribe</a></mj-text>
+
+      <mj-section padding="8px 36px 40px">
+        <mj-column background-color="#3d0a0e" border-radius="6px" padding="18px 22px">
+          <mj-text font-size="14px">Need help? Reply to this email and a human will answer.</mj-text>
         </mj-column>
       </mj-section>
+
+      <!-- Footer: watermark-free transparent logo pair, matched by visible height and baseline -->
+      <mj-section background-color="#2a0708" padding="28px 36px 0">
+        <mj-column width="100%">
+          <mj-image src="https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/1d5fb65e9_welcome-footer-logos-level.png" alt="Truth 4 Clarity and ADPOV Media &amp; Ent" width="320px" align="center" />
+        </mj-column>
+      </mj-section>
+      <mj-section background-color="#2a0708" padding="18px 36px 30px" border-radius="0 0 6px 6px">
+        <mj-column width="100%">
+          <mj-text align="center" font-size="18px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#e3b645" padding="0 0 8px">Truth 4 Clarity</mj-text>
+          <mj-text align="center" font-size="11px" letter-spacing="2px" text-transform="uppercase" color="#8fa0e0" padding="0 0 10px">An ADPOV Media &amp; Entertainment Studio</mj-text>
+          <mj-text align="center" font-size="11px" color="#8fa0e0">727 West 7th Street, Los Angeles, CA 90016</mj-text>
+          <mj-text align="center" font-size="11px" color="#8fa0e0"><a href="{{unsubscribe_url}}" style="color:#8fa0e0;text-decoration:underline;">Unsubscribe</a></mj-text>
+        </mj-column>
+      </mj-section>
+
     </mj-wrapper>
   </mj-body>
 </mjml>
