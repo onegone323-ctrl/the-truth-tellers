@@ -422,6 +422,11 @@
     color: var(--ivory); font-size: 58px; line-height: 1.02; letter-spacing: 9px;
     text-transform: uppercase; font-weight: 300; text-shadow: 0 0 24px rgba(212,175,55,.25);
   }
+  /* Phones only: a smaller, tighter hero heading so no word nears the edge.
+     Desktop keeps the original size. */
+  @media (max-width: 639px) {
+    .neo-h1 { font-size: 26px; letter-spacing: 2px; line-height: 1.12; }
+  }
   .neo-eyebrow { color: #f5e6b8; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; }
   .neo-note { color: var(--neo-muted); font-size: 14px; font-style: italic; }
 
