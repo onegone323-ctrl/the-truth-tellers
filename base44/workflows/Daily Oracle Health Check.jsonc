@@ -1,6 +1,29 @@
 {
   "name": "Daily Oracle Health Check",
-  "description": "Every morning at 8am, tests the Oracle's text generation, his voice, and the data layer, saves the report, and emails the admins.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "daily_oracle_health_check",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_checks": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "dailyHealthCheck",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Run the full daily check",
+            "description": "AI, voice, paywall, data, GitHub \u2014 report saved and emailed"
+          }
+        }
+      }
+    ]
+  },
   "trigger": {
     "condition": null,
     "config": {
@@ -18,27 +41,5 @@
       "ends_after_count": null
     }
   },
-  "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "daily_oracle_health_check",
-      "version": "1.0",
-      "namespace": "base44"
-    },
-    "do": [
-      {
-        "run_health_check": {
-          "call": "invoke_backend_function",
-          "with": {
-            "function_name": "dailyHealthCheck"
-          },
-          "then": "end",
-          "x-base44": {
-            "title": "Run daily health check",
-            "description": "Text, voice and data checks, then report"
-          }
-        }
-      }
-    ]
-  }
+  "description": "Every morning at 8:00 AM (Pacific), runs the full Oracle health check: reading generation, the Oracle's voice, the paywall and checkout, every data entity, and the GitHub connector \u2014 then saves and emails the report."
 }

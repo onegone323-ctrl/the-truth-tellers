@@ -1,12 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
+import { PRODUCTS } from '../../shared/products.ts';
 
 // Daily Oracle health check — runs from the scheduled "Daily Oracle Health
-// Check" workflow (and can be invoked from the dashboard). It verifies the
-// three things the app can't work without and reports the results:
+// Check" workflow (and can be invoked from the dashboard). It verifies every
+// surface the app can't work without and reports the results:
 //   1. Oracle text generation  (OpenAI chat — same primary model as readings)
-//   2. The Oracle's voice      (OpenAI TTS — same model/voice/speed as speakReading)
-//   3. The data layer          (every core entity answers a read)
+//   2. The Oracle's voice      (ElevenLabs primary + OpenAI fallback TTS)
+//   3. The paywall             (product catalog, Wix secrets, a real checkout
+//                               session construct, entitlement + purchase data)
+//   4. The data layer          (every core entity answers a read)
+//   5. The GitHub connector    (token resolves and the API answers)
 // The report is saved to DailyHealthCheck and emailed to the app's admins.
 export default async function(req) {
   try {
@@ -61,39 +65,127 @@ export default async function(req) {
       }
     }
 
-    // ---- 2. The Oracle's voice (same configuration as speakReading) ----
-    const model = secrets.get('OPENAI_TTS_MODEL') || 'gpt-4o-mini-tts';
-    const voice = secrets.get('OPENAI_TTS_VOICE') || 'ash';
-    const speedRaw = parseFloat(secrets.get('OPENAI_TTS_SPEED') || '1.0');
-    const speed = Number.isFinite(speedRaw) && speedRaw >= 0.25 && speedRaw <= 4 ? speedRaw : 1.0;
+    // ---- 2. The Oracle's voice — ElevenLabs primary (same config as speakReading) ----
+    const elevenKey = secrets.get('ELEVEN_LABS_API_KEY');
+    if (!elevenKey) {
+      checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: 'ELEVEN_LABS_API_KEY secret is missing.' });
+    } else {
+      try {
+        const res = await fetch(
+          'https://api.elevenlabs.io/v1/text-to-speech/hvhlTWefioYsKeeQjLfm?output_format=mp3_44100_128',
+          {
+            method: 'POST',
+            headers: { 'xi-api-key': elevenKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: 'The cards are awake.',
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
+            }),
+            signal: AbortSignal.timeout(30000),
+          },
+        );
+        if (res.ok) {
+          const bytes = await res.arrayBuffer();
+          checks.push({
+            name: "Oracle voice (ElevenLabs)",
+            ok: bytes.byteLength > 1000,
+            detail: `eleven_turbo_v2_5 synthesized ${Math.round(bytes.byteLength / 1024)} KB of audio.`,
+          });
+        } else {
+          const raw = await res.text();
+          checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: `ElevenLabs -> ${res.status}: ${raw.slice(0, 200)}` });
+        }
+      } catch (e) {
+        checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: e?.message || String(e) });
+      }
+    }
+
+    // ---- 2b. Voice fallback (OpenAI TTS) ----
     if (!apiKey) {
-      checks.push({ name: 'Oracle voice (TTS)', ok: false, detail: 'OPENAI_API_KEY secret is missing.' });
+      checks.push({ name: 'Voice fallback (OpenAI TTS)', ok: false, detail: 'OPENAI_API_KEY secret is missing.' });
     } else {
       try {
         const res = await fetch('https://api.openai.com/v1/audio/speech', {
           method: 'POST',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, voice, input: 'The cards are awake.', response_format: 'mp3', speed }),
+          body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'sage', input: 'The cards are awake.', response_format: 'mp3', speed: 0.94 }),
           signal: AbortSignal.timeout(30000),
         });
         if (res.ok) {
           const bytes = await res.arrayBuffer();
           checks.push({
-            name: 'Oracle voice (TTS)',
+            name: 'Voice fallback (OpenAI TTS)',
             ok: bytes.byteLength > 1000,
-            detail: `${model} / voice "${voice}" synthesized ${Math.round(bytes.byteLength / 1024)} KB of audio.`,
+            detail: `gpt-4o-mini-tts / "sage" synthesized ${Math.round(bytes.byteLength / 1024)} KB of audio.`,
           });
         } else {
           const raw = await res.text();
-          checks.push({ name: 'Oracle voice (TTS)', ok: false, detail: `TTS ${model} -> ${res.status}: ${raw.slice(0, 200)}` });
+          checks.push({ name: 'Voice fallback (OpenAI TTS)', ok: false, detail: `TTS -> ${res.status}: ${raw.slice(0, 200)}` });
         }
       } catch (e) {
-        checks.push({ name: 'Oracle voice (TTS)', ok: false, detail: e?.message || String(e) });
+        checks.push({ name: 'Voice fallback (OpenAI TTS)', ok: false, detail: e?.message || String(e) });
       }
     }
 
-    // ---- 3. The data layer — every core entity answers a read ----
-    for (const entityName of ['JournalEntry', 'OracleMemory', 'SeekerProfile', 'DailyHealthCheck']) {
+    // ---- 3a. Paywall config: product catalog + Wix secrets ----
+    const productIds = Object.keys(PRODUCTS);
+    const badPrices = productIds.filter((id) => !(parseFloat(PRODUCTS[id].price) >= 0.5));
+    checks.push({
+      name: 'Paywall: product catalog',
+      ok: productIds.length > 0 && badPrices.length === 0,
+      detail: productIds.length === 0
+        ? 'The product catalog is empty — nothing can be bought.'
+        : badPrices.length
+          ? `Products under the 0.50 minimum: ${badPrices.join(', ')}.`
+          : `${productIds.length} products resolve (${productIds.join(', ')}), every price at or above 0.50.`,
+    });
+
+    const wixSecrets = ['WIX_CHECKOUT_API_KEY', 'WIX_CHECKOUT_SITE_ID', 'WIX_CHECKOUT_APP_URL', 'WIX_CHECKOUT_WEBHOOK_PUBLIC_KEY'];
+    const missingWix = wixSecrets.filter((name) => !secrets.get(name));
+    checks.push({
+      name: 'Paywall: payment configuration',
+      ok: missingWix.length === 0,
+      detail: missingWix.length ? `Missing secrets: ${missingWix.join(', ')}.` : 'All four payment secrets are present.',
+    });
+
+    // ---- 3b. Paywall: a real checkout session construct (nothing is persisted
+    // and nothing is charged — we only verify Wix accepts a session for the
+    // cheapest product and hands back a session id + redirect) ----
+    const WIX_API_KEY = secrets.get('WIX_CHECKOUT_API_KEY');
+    const WIX_SITE_ID = secrets.get('WIX_CHECKOUT_SITE_ID');
+    const WIX_APP_URL = secrets.get('WIX_CHECKOUT_APP_URL');
+    if (!WIX_API_KEY || !WIX_SITE_ID || !WIX_APP_URL) {
+      checks.push({ name: 'Paywall: checkout session', ok: false, detail: 'Skipped — payment configuration is incomplete.' });
+    } else {
+      try {
+        const res = await fetch('https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct', {
+          method: 'POST',
+          headers: { Authorization: WIX_API_KEY, 'wix-site-id': WIX_SITE_ID, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cart: { items: [{ name: PRODUCTS['single-reading'].name, quantity: 1, price: PRODUCTS['single-reading'].price }] },
+            callbackUrls: { thankYouPageUrl: `${WIX_APP_URL}/ThankYou`, postFlowUrl: `${WIX_APP_URL}/` },
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const ok = Boolean(data?.checkoutSession?.id && data?.checkoutSession?.redirectUrl);
+          checks.push({
+            name: 'Paywall: checkout session',
+            ok,
+            detail: ok ? 'Wix accepted the session — checkout can start for a real buyer.' : 'Wix responded but returned no session id or redirect.',
+          });
+        } else {
+          const raw = await res.text();
+          checks.push({ name: 'Paywall: checkout session', ok: false, detail: `Wix construct -> ${res.status}: ${raw.slice(0, 200)}` });
+        }
+      } catch (e) {
+        checks.push({ name: 'Paywall: checkout session', ok: false, detail: e?.message || String(e) });
+      }
+    }
+
+    // ---- 4. The data layer — every core entity answers a read ----
+    for (const entityName of ['JournalEntry', 'OracleMemory', 'SeekerProfile', 'Entitlement', 'EntitlementGrant', 'Base44Purchase', 'OracleUsage', 'ContactMessage', 'HealthCheckSettings', 'DailyHealthCheck']) {
       try {
         const entity = base44.asServiceRole.entities[entityName];
         const page = await entity.filter({}, { limit: 1 });
@@ -101,6 +193,22 @@ export default async function(req) {
       } catch (e) {
         checks.push({ name: `Data: ${entityName}`, ok: false, detail: e?.message || String(e) });
       }
+    }
+
+    // ---- 5. The GitHub connector (token resolves, the API answers) ----
+    try {
+      const { accessToken } = await base44.asServiceRole.connectors.getConnection('github');
+      const res = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/vnd.github+json', 'User-Agent': 'truth4clarity-healthcheck' },
+        signal: AbortSignal.timeout(15000),
+      });
+      checks.push({
+        name: 'GitHub connector',
+        ok: res.ok,
+        detail: res.ok ? 'Token resolves and the GitHub API answers.' : `GitHub /user -> ${res.status} — reconnect the connector.`,
+      });
+    } catch (e) {
+      checks.push({ name: 'GitHub connector', ok: false, detail: e?.message || String(e) });
     }
 
     const failed = checks.filter((c) => !c.ok);
@@ -126,7 +234,7 @@ export default async function(req) {
           .join('');
         await base44.asServiceRole.integrations.Core.SendEmail({
           to,
-          subject: `Truth with Clarity daily check — ${status.toUpperCase()}`,
+          subject: `Truth 4 Clarity daily check — ${status.toUpperCase()}`,
           html: `<p>Today's Oracle health check finished with status <strong>${status}</strong>.</p><ul>${rows}</ul><p>— The automated daily check</p>`,
         });
         emailed = true;
