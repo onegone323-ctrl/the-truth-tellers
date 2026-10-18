@@ -17,6 +17,7 @@ const NAV = [
   { to: "/pricing", label: "Pricing" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+  { to: "/blog", label: "Blog" },
 ];
 
 export default function Layout() {
@@ -41,7 +42,7 @@ export default function Layout() {
     const card = p.match(/^\/cards\/(.+)$/);
     if (card) return decodeURIComponent(card[1]);
     if (/^\/journal\/.+/.test(p)) return "Journal Entry";
-    const named = { "/settings": "Settings", "/pricing": "Pricing", "/admin": "Admin", "/pulls": "Pull Requests", "/issues": "Issues", "/about": "About", "/contact": "Contact" };
+    const named = { "/settings": "Settings", "/pricing": "Pricing", "/admin": "Admin", "/pulls": "Pull Requests", "/issues": "Issues", "/about": "About", "/contact": "Contact", "/blog": "Blog" };
     return named[p] || p.split("/").filter(Boolean).slice(-1)[0] || "Back";
   })();
   const goBack = useGoBack(

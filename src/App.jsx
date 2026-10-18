@@ -27,6 +27,8 @@ const ThankYou = React.lazy(() => import('@/pages/ThankYou'));
 const AdminPanel = React.lazy(() => import('@/pages/AdminPanel'));
 const About = React.lazy(() => import('@/pages/About'));
 const Contact = React.lazy(() => import('@/pages/Contact'));
+const Blog = React.lazy(() => import('@/pages/Blog'));
+const BlogPost = React.lazy(() => import('@/pages/BlogPost'));
 
 // Gold spinner shown while a lazy page chunk loads.
 const RouteSplash = () => (
@@ -88,6 +90,16 @@ const AuthenticatedApp = () => {
       <Route path="/contact" element={
         <React.Suspense fallback={<RouteSplash />}>
           <Contact />
+        </React.Suspense>
+      } />
+      <Route path="/blog" element={
+        <React.Suspense fallback={<RouteSplash />}>
+          <Blog />
+        </React.Suspense>
+      } />
+      <Route path="/blog/:slug" element={
+        <React.Suspense fallback={<RouteSplash />}>
+          <BlogPost />
         </React.Suspense>
       } />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
