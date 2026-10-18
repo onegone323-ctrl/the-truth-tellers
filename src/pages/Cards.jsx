@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { CARDS } from "@/lib/tarotData";
 import { Search } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -24,6 +25,21 @@ export default function Cards() {
       <div className="text-center">
         <h1 className="font-display text-4xl text-gold-leaf uppercase tracking-[0.2em]">The Card Library</h1>
         <p className="text-muted-foreground mt-2 font-body">All seventy-eight — upright and reversed, the full meaning of each.</p>
+      </div>
+      <div className="lux-card rounded-xl p-6">
+        <p className="text-sm text-foreground/85 leading-relaxed m-0">
+          This is the complete card library of Truth 4 Clarity: all 78 tarot cards of the classic
+          structure — 22 Major Arcana and 56 Minor Arcana — each with its upright and reversed meaning
+          and the symbolism behind it. Tap any card to read its full profile: what it means in a
+          reading, the energy of its suit and number, and how the Oracle reads it in each position of
+          a spread. Every meaning holds across the deck traditions the app supports, from
+          Rider-Waite and Tarot de Marseille to Thoth, Egyptian, and Wildwood — the imagery changes
+          with the deck, the interpretation stays true. New to tarot? Start with the Major Arcana,
+          or <Link to="/blog" className="text-gold-leaf underline">read the parlor journal</Link> for
+          how to choose a spread and ask a question worth answering. Then
+          bring a real question to <Link to="/" className="text-gold-leaf underline">the Oracle</Link> —
+          your first reading is free.
+        </p>
       </div>
       <hr className="gold-hairline" />
 
