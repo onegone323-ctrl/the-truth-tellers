@@ -299,7 +299,7 @@ export default function Home() {
             <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
               {phase === "setup"
                 ? `${greeting} Speak your question, choose the deck and spread, and let the Oracle read your cards.`
-                : "The cards are dealing. Watch them reveal — then ask him to read."}
+                : "The cards are dealing. Watch them reveal — then ask her to read."}
             </p>
           </div>
           <div style={{ animation: "materialize 1s .3s ease both" }}>

@@ -43,7 +43,7 @@ export default function About() {
           <p className="neo-note" style={{ fontSize: 16, lineHeight: 1.8, fontStyle: "normal", color: "var(--ivory)" }}>
             Truth 4 Clarity is a voice-interactive tarot reading app that puts an AI Oracle in your pocket.
             Ask a real question about love, career, money, or a decision you keep putting off, choose a deck
-            and a spread, and the cards are dealt on screen while the Oracle speaks his reading aloud — a blunt,
+            and a spread, and the cards are dealt on screen while the Oracle speaks her reading aloud — a blunt,
             warm, spunky male voice that talks to you like a brilliant best friend who happens to see straight
             through people. He walks the spread position by position, connects every card to your actual life,
             and gives direct, concrete advice: what to do this week, what to stop doing, and what to watch for.

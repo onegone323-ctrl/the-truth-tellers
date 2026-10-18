@@ -154,7 +154,7 @@ export default function Memory() {
           <div className="neo-eyebrow mb-5">Memory Parlor</div>
           <h1 className="neo-h1 m-0 text-[30px] tracking-[4px] sm:text-[44px] sm:tracking-[7px]">Ask Your Past</h1>
           <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "20px 0 0" }}>
-            After time has passed, come back and ask him: what lesson am I not seeing? He reads every reading he ever gave you — and hands you the hard truth.
+            After time has passed, come back and ask her: what lesson am I not seeing? She reads every reading she ever gave you — and hands you the hard truth.
           </p>
         </div>
         <div className="hidden sm:flex justify-center">

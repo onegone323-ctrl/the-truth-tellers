@@ -75,7 +75,7 @@ export default function VoicePlayButton({ text }) {
   return (
     <button onClick={play} className="neo-pill flex items-center gap-1.5 px-2.5 py-1"
       style={{ fontSize: 11, minHeight: 34, marginTop: 6 }}
-      aria-label={playing ? "Stop his voice" : "Play his voice"}>
+      aria-label={playing ? "Stop her voice" : "Play her voice"}>
       {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : playing ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
       {playing ? "Stop" : "Play"}
     </button>
