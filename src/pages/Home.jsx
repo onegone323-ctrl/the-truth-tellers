@@ -310,7 +310,7 @@ export default function Home() {
               <div className="flex justify-center">
                 <div className="logo-star-wrap">
                   <Image
-                    src="https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/c745bf5c6_DOWNSIZET4C.png"
+                    src="/logo-transparent.png"
                     alt="Truth 4 Clarity"
                     fittingType="fit"
                     className="w-[280px]"
