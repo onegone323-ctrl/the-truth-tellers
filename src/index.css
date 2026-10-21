@@ -377,14 +377,18 @@
     color: #050505;
     box-shadow: 0 0 18px rgba(212,175,55,.55);
   }
-  .neo-count.is-active { box-shadow: 0 0 14px rgba(240,235,220,.35); }
+  .neo-count.is-active {
+    background: linear-gradient(100deg, #6f4d0b, var(--gold-leaf), #b8860b);
+    color: #050505;
+    box-shadow: 0 0 18px rgba(212,175,55,.55);
+  }
   .neo-count {
     cursor: pointer; transition: .25s; flex: 1;
-    background: rgba(11,8,17,.85); border: 1px solid color-mix(in srgb, var(--gold-leaf) 40%, transparent);
+    background: transparent; border: 1px solid color-mix(in srgb, var(--gold-leaf) 60%, transparent);
     padding: 10px; text-align: center; color: var(--gold-leaf); font-size: 14px; min-height: 44px;
   }
-  .neo-count:hover, .neo-count:focus-visible, .neo-count.is-active {
-    border-color: #e8354f; box-shadow: 0 0 14px rgba(232,53,79,.3);
+  .neo-count:hover, .neo-count:focus-visible {
+    color: #f5e6b8; border-color: #f5e6b8; box-shadow: 0 0 14px rgba(212,175,55,.4);
   }
   .neo-toggle {
     cursor: pointer; transition: .25s;

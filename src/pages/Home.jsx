@@ -432,20 +432,17 @@ export default function Home() {
                 <p className="neo-note" style={{ margin: 0, flex: 1, minWidth: 200 }}>
                   {clarifyOn ? `${clarifyCount} clarifier card${clarifyCount > 1 ? "s" : ""} will be drawn beside each card, adding nuance.` : "Off — each card stands alone."}
                 </p>
-                {clarifyOn && (
-                  <div className="flex gap-[9px]">
-                    {[1, 2, 3].map((n) => (
-                      <button key={n} onClick={() => setClarifyCount(n)}
-                        className={`neo-count ${clarifyCount === n ? "is-active" : ""}`}
-                        style={{ flex: "none", padding: "6px 14px" }}>{n}</button>
-                    ))}
-                  </div>
-                )}
-                <button onClick={() => setClarifyOn((v) => !v)}
-                  type="button"
-                  aria-label="Clarification Cards"
-                  aria-pressed={clarifyOn}
-                  className={`neo-toggle ${clarifyOn ? "on" : ""}`}><i /></button>
+                <div className="flex gap-[9px]">
+                  {[1, 2, 3].map((n) => (
+                    <button key={n}
+                      onClick={() => {
+                        if (clarifyOn && clarifyCount === n) setClarifyOn(false);
+                        else { setClarifyCount(n); setClarifyOn(true); }
+                      }}
+                      className={`neo-count ${clarifyOn && clarifyCount === n ? "is-active" : ""}`}
+                      style={{ flex: "none", padding: "6px 14px" }}>{n}</button>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
