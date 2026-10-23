@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Image } from "@/components/ui/image";
+import HeroLogo from "@/components/HeroLogo";
 import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/tarotData";
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
@@ -308,18 +308,7 @@ export default function Home() {
                 wired for the draw. */}
             {phase === "setup" && (
               <div className="flex justify-center">
-                <div className="logo-star-wrap">
-                  <Image
-                    src="/logo-transparent.png"
-                    alt="Truth 4 Clarity"
-                    fittingType="fit"
-                    className="w-[280px]"
-                    draggable={false}
-                  />
-                  {/* The logo's center star blinks: a long, bright bloom of
-                      light over the star's own glow. */}
-                  <span className="logo-star" aria-hidden="true" />
-                </div>
+                <HeroLogo />
               </div>
             )}
             <div style={phase === "setup" ? { display: "none" } : undefined}>
