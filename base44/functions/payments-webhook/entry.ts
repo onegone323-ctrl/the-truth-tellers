@@ -160,9 +160,42 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
     if (!hasTarget) {
       console.error("payments-webhook: no fulfillment target for purchase", { purchaseId: purchase.id });
     } else {
-      // IDEMPOTENCY MARKER: Wix can deliver duplicates CONCURRENTLY, so the
-      // "pending" check above is not a lock. One EntitlementGrant row per
-      // purchase — a duplicate delivery finds it and skips the grant.
+      // IDEMPOTENCY: Wix can deliver duplicates CONCURRENTLY, so the "pending"
+      // check and the grant pre-check below are not locks (TOCTOU). The
+      // compare-and-set on the purchase status IS: exactly one concurrent
+      // delivery can move "pending" → "fulfilling" (updated === 1); every
+      // loser ACKs without granting. A loser may also be a LATER retry of a
+      // run that claimed but died mid-grant — that recovery path re-claims
+      // "fulfilling" below; the grant pre-check keeps a completed grant from
+      // ever being applied twice.
+      const appliedCount = (res: any) => {
+        if (!res) return 0;
+        return typeof res.updated === "number" ? res.updated : (res.count ?? res.modifiedCount ?? 0);
+      };
+      const claim = await db.entities.Base44Purchase.updateMany(
+        { checkoutSessionId: purchase.checkoutSessionId, status: "pending" },
+        { $set: { status: "fulfilling" } },
+      );
+      if (appliedCount(claim) === 0) {
+        const fresh = await db.entities.Base44Purchase.filter({ checkoutSessionId: purchase.checkoutSessionId });
+        const st: string = fresh?.[0]?.status ?? purchase.status;
+        const grants = await db.entities.EntitlementGrant.filter({ purchase_id: purchase.id });
+        if (st !== "fulfilling" || (grants && grants.length)) {
+          // Already terminal, or another run granted (or is granting) — done.
+          console.log("payments-webhook: duplicate delivery, skipping", { purchaseId: purchase.id, status: st });
+          return new Response("OK", { status: 200 });
+        }
+        // Recovery: a previous run claimed but never finished. Re-claim and finish.
+        const reClaim = await db.entities.Base44Purchase.updateMany(
+          { checkoutSessionId: purchase.checkoutSessionId, status: { $in: ["pending", "fulfilling"] } },
+          { $set: { status: "fulfilling" } },
+        );
+        if (appliedCount(reClaim) === 0) {
+          console.log("payments-webhook: claim lost on recovery, skipping", { purchaseId: purchase.id });
+          return new Response("OK", { status: 200 });
+        }
+      }
+      // This point is reached by exactly one delivery per purchase claim.
       const grants = await db.entities.EntitlementGrant.filter({ purchase_id: purchase.id });
       if (grants && grants.length) {
         console.log("payments-webhook: grant already exists, skipping", { purchaseId: purchase.id });
@@ -192,10 +225,12 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
             status: "active",
           });
         } else {
-          // Credit pack / single reading: add N credits per unit purchased.
-          await db.entities.Entitlement.update(ent.id, {
-            credits: (ent.credits || 0) + product.credits * (purchase.quantity || 1),
-          });
+          // Credit pack / single reading: add N credits per unit purchased —
+          // atomic $inc, so an increment can never be lost or double-read.
+          await db.entities.Entitlement.updateMany(
+            { id: ent.id },
+            { $inc: { credits: product.credits * (purchase.quantity || 1) } },
+          );
         }
         console.log("payments-webhook: granted", { purchaseId: purchase.id, kind: purchase.productId });
       }
