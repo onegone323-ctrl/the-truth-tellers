@@ -20,4 +20,4 @@ export const ORACLE_ORB_IMAGE = "https://base44.app/api/apps/6a97b3175d08a6bc8bc
 
 // The Oracle's reading visual: a 24-second seamless loop of the crystal
 // ball with the colors cycling a full 360 degrees per loop.
-export const ORACLE_ORB_VIDEO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/859a4b26b_portal-crystal-loop.mp4";
+export const ORACLE_ORB_VIDEO = "https://base44.app/api/apps/6a97b3175d08a6bc8bc635af/files/mp/public/6a97b3175d08a6bc8bc635af/2830f4697_portal-crystal-colors.mp4";
