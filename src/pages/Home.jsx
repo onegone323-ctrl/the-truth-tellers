@@ -5,6 +5,7 @@ import { DECKS, BLENDED_DECK, SPREADS, drawSpread, drawClarifiers } from "@/lib/
 import { deckCardTitle } from "@/lib/deckCardNames";
 import CustomSpreadBuilder from "@/components/CustomSpreadBuilder";
 import OracleFire from "@/components/OracleFire";
+import ReadingVideoPreload from "@/components/ReadingVideoPreload";
 import FireReading from "@/components/FireReading";
 import CardFace from "@/components/CardFace";
 import GoldSpinner from "@/components/GoldSpinner";
@@ -287,6 +288,9 @@ export default function Home() {
 
   return (
     <div>
+      {/* The reading's crystal-ball video preloads from the very first paint,
+          so it's already cached and playing when the reading view opens. */}
+      <ReadingVideoPreload />
       {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section

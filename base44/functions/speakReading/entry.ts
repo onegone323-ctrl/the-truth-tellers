@@ -73,7 +73,7 @@ export default async function(req) {
     // The voice the seeker chose in ElevenLabs, with a model that keeps
     // latency low and delivery expressive.
     const model = 'eleven_turbo_v2_5';
-    const voice = 'hvhlTWefioYsKeeQjLfm';
+    const voice = 'uYXf8XasLslADfZ2MB4u';
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
@@ -132,7 +132,7 @@ async function speakWithElevenLabs(chunk) {
   if (!apiKey) return null;
   try {
     const res = await fetch(
-      'https://api.elevenlabs.io/v1/text-to-speech/hvhlTWefioYsKeeQjLfm?output_format=mp3_44100_128',
+      'https://api.elevenlabs.io/v1/text-to-speech/uYXf8XasLslADfZ2MB4u?output_format=mp3_44100_128',
       {
         method: 'POST',
         headers: {
@@ -149,7 +149,7 @@ async function speakWithElevenLabs(chunk) {
             similarity_boost: 0.8,
             style: 0.3,
             use_speaker_boost: true,
-            speed: 1.2,
+            speed: 1.0,
           },
         }),
         signal: AbortSignal.timeout(60000),
