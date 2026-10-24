@@ -245,6 +245,8 @@ export default async function(req) {
 
     return Response.json({ status, checks, emailed, run_date: runDate });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    // Log the real cause server-side; never echo internal details to callers.
+    console.error("dailyHealthCheck: unhandled error", error);
+    return Response.json({ error: "internal_error" }, { status: 500 });
   }
 }

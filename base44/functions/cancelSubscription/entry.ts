@@ -67,7 +67,8 @@ export default async function(req) {
     });
     return Response.json({ ok: true, mode: "soft" });
   } catch (err) {
+    // Log the real cause server-side; never echo internal details to callers.
     console.error("cancelSubscription: unhandled error", err);
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json({ error: "internal_error" }, { status: 500 });
   }
 }

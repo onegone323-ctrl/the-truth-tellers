@@ -366,7 +366,9 @@ export default async function(req) {
     }
     return Response.json({ reading: text, model: usedModel });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    // Log the real cause server-side; never echo internal details to callers.
+    console.error("generateReading: unhandled error", error);
+    return Response.json({ error: "internal_error" }, { status: 500 });
   }
 }
 
