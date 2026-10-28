@@ -493,6 +493,10 @@
   margin: 24px auto 0;
   color: #cdbf9f; font-size: 15px; line-height: 1.8;
 }
+/* Phones: the welcome line sits a step larger so it reads easily. */
+@media (max-width: 639px) {
+  .hero-typed { font-size: 18px; line-height: 1.65; min-height: 3.4em; }
+}
 .hero-caret {
   display: inline-block; width: 2px; height: 1em; margin-left: 2px;
   background: var(--gold-leaf); vertical-align: -2px;
