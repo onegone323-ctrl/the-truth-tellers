@@ -82,6 +82,11 @@ export default function JournalDetail() {
             </div>
             <h2 className="font-serif text-xl text-gold-leaf mt-1">"{entry.question}"</h2>
             <p className="text-sm uppercase tracking-widest text-muted-foreground mt-1">{entry.deck} · {entry.spread}</p>
+            {entry.is_teaser && (
+              <p className="text-sm px-2.5 py-1 rounded-full gold-pill text-muted-foreground inline-block mt-2">
+                Teaser — only the opening was given
+              </p>
+            )}
           </div>
           <button onClick={handleDelete} aria-label="Delete this reading"
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-muted-foreground hover:text-red-400 transition-colors">

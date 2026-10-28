@@ -389,6 +389,8 @@ export default async function(req) {
         })),
         interpretation: text,
         audio_url: null,
+        // A teaser is kept, but marked: it is only the opening, cut off.
+        is_teaser: snippetMode,
       });
     } catch (logError) {
       // Fail closed: an unlogged reading is an unpaid reading.

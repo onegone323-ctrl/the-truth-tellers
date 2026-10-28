@@ -64,7 +64,14 @@ export default function Journal() {
                   <Calendar className="w-3.5 h-3.5" />
                   {fmtDate(e.created_date)}
                 </div>
-                <span className="text-sm uppercase tracking-widest text-gold-leaf/70">{e.spread}</span>
+                <div className="flex items-center gap-2">
+                  {e.is_teaser && (
+                    <span className="text-sm px-2.5 py-1 rounded-full gold-pill text-muted-foreground whitespace-nowrap">
+                      Teaser
+                    </span>
+                  )}
+                  <span className="text-sm uppercase tracking-widest text-gold-leaf/70">{e.spread}</span>
+                </div>
               </div>
               <p className="mt-2 font-serif text-base text-foreground/90 line-clamp-2">"{e.question}"</p>
               <div className="flex flex-wrap gap-1 mt-2">

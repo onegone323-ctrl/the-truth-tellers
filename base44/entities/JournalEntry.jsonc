@@ -51,6 +51,10 @@
     },
     "audio_url": {
       "type": "string"
+    },
+    "is_teaser": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
