@@ -18,6 +18,8 @@
 //   per-minute throttle:                { user_id, day: <minute key> }
 //   GLOBAL daily free readings:         { user_id: '__global__', day: today }
 //   GLOBAL daily free-tier voice chars: { user_id: '__global__', day: 'v-<today>' }
+//   daily teaser budget:                { user_id, day: <today> }  .readings
+//   GLOBAL daily teasers:               { user_id: '__global__', day: 't-<today>' }
 
 // Everyone's first reading is free, metered server-side. After it, a seeker
 // with no premium plan and no credits still gets a reading — but only the
@@ -37,11 +39,20 @@ export const SNIPPET_VOICE_CHARS = 400;
 // premium users ~15+.
 export const TTS_DAILY_CAP_CHARS = { free: 12000, premium: 60000 };
 
+// Daily VOICE REQUEST budget per user. A whole reading is spoken in a handful
+// of small requests, so this never touches a real listener — it only stops
+// hammering, where characters alone would allow endless tiny calls.
+export const TTS_DAILY_CAP_CALLS = { free: 120, premium: 600 };
+
 // GLOBAL daily ceilings on FREE-TIER usage (premium subscribers and bought
 // credits bypass them). They cap what a fleet of farmed free accounts can
 // drain from the app's AI budget in one day.
 export const GLOBAL_DAILY_FREE_READINGS = 500;
 export const GLOBAL_DAILY_VOICE_CHARS = 500000;
+
+// A teaser (the cut-off opening a spent seeker gets) is still a paid AI call.
+export const TEASER_DAILY_CAP = 10;
+export const GLOBAL_DAILY_TEASERS = 200;
 
 // Concurrent sibling claims need this long to land before the audit read.
 const CLAIM_SETTLE_MS = 350;
@@ -186,6 +197,43 @@ export async function claimFreeReading(base44, user) {
   return ok;
 }
 
+// Claims one TEASER — the cut-off opening a seeker with no free reading and no
+// credits gets. It still runs a paid AI call, so it is bounded twice: a daily
+// budget per seeker, and a global daily ceiling across everyone. The per-user
+// count rides on that day's voice meter row (its `readings` field is otherwise
+// unused); the global count gets its own `t-<today>` row so it never collides
+// with the global free-reading meter.
+export async function claimTeaser(base44, user) {
+  const sr = base44.asServiceRole;
+  const today = new Date().toISOString().slice(0, 10);
+  const globalKey = { user_id: '__global__', day: `t-${today}` };
+  await ensureDailyMeter(sr, '__global__', `t-${today}`);
+  const globalOk = await claimWithinCap(
+    sr.entities.OracleUsage,
+    globalKey,
+    { readings: { $lt: GLOBAL_DAILY_TEASERS } },
+    { $inc: { readings: 1 } },
+    (r) => (r.readings || 0) <= GLOBAL_DAILY_TEASERS,
+  );
+  if (!globalOk) {
+    await clampMeter(sr.entities.OracleUsage, globalKey, 'readings', GLOBAL_DAILY_TEASERS);
+    return false;
+  }
+  await ensureDailyMeter(sr, user.id, today);
+  const userKey = { user_id: user.id, day: today };
+  const ok = await claimWithinCap(
+    sr.entities.OracleUsage,
+    userKey,
+    { readings: { $lt: TEASER_DAILY_CAP } },
+    { $inc: { readings: 1 } },
+    (r) => (r.readings || 0) <= TEASER_DAILY_CAP,
+  );
+  if (!ok) {
+    await clampMeter(sr.entities.OracleUsage, userKey, 'readings', TEASER_DAILY_CAP);
+  }
+  return ok;
+}
+
 // Atomically spends one credit: the decrement only applies while credits are
 // still >= 1, and the request is admitted only if the settled balance is
 // still >= 0 — two concurrent requests with one credit cannot both succeed,
@@ -217,19 +265,20 @@ export async function spendCredit(base44, userId) {
 // oversized requests fails closed instead of sharing the pre-burst total.
 // When globalCap is set, the request must ALSO fit the global free-tier
 // daily voice ceiling (paid voice passes globalCap: null).
-export async function reserveVoice(base44, userId, len, cap, globalCap) {
+export async function reserveVoice(base44, userId, len, cap, globalCap, callsCap) {
   const sr = base44.asServiceRole;
   const day = new Date().toISOString().slice(0, 10);
   await ensureDailyMeter(sr, userId, day);
   const ok = await claimWithinCap(
     sr.entities.OracleUsage,
     { user_id: userId, day },
-    { tts_chars: { $lte: cap - len } },
+    { tts_chars: { $lte: cap - len }, tts_calls: { $lt: callsCap } },
     { $inc: { tts_chars: len, tts_calls: 1 } },
-    (r) => (r.tts_chars || 0) <= cap,
+    (r) => (r.tts_chars || 0) <= cap && (r.tts_calls || 0) <= callsCap,
   );
   if (!ok) {
     await clampMeter(sr.entities.OracleUsage, { user_id: userId, day }, 'tts_chars', cap);
+    await clampMeter(sr.entities.OracleUsage, { user_id: userId, day }, 'tts_calls', callsCap);
     return false;
   }
   if (globalCap == null) return true;

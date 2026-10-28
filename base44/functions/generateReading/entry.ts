@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, claimFreeReading, spendCredit, checkRateLimit, FREE_READINGS, SNIPPET_MAX_CHARS } from '../../shared/gate.ts';
+import { getGateState, claimFreeReading, spendCredit, claimTeaser, checkRateLimit, FREE_READINGS, SNIPPET_MAX_CHARS } from '../../shared/gate.ts';
 
 // redeploy marker: picks up the shared gate fix (minute meter row creation)
 // The Oracle generates a full tarot reading on OpenAI.
@@ -47,7 +47,19 @@ export default async function(req) {
         const spent = entitlement && entitlement.credits >= 1
           ? await spendCredit(base44, user.id)
           : false;
-        if (!spent) snippetMode = true;
+        if (!spent) {
+          snippetMode = true;
+          // A teaser still runs a paid AI call — bound how many one seeker,
+          // and everyone together, can trigger in a day. Over the cap they get
+          // the pricing message with no generation at all.
+          const teaserOk = await claimTeaser(base44, user);
+          if (!teaserOk) {
+            return Response.json({
+              error: 'out_of_credits',
+              message: "You've had all of today's glimpses. Open Pricing to hear the whole reading.",
+            }, { status: 402 });
+          }
+        }
       }
     }
 
