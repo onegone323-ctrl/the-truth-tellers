@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, claimFreeReading, spendCredit, claimTeaser, checkRateLimit, FREE_READINGS, SNIPPET_MAX_CHARS } from '../../shared/gate.ts';
+import { getGateState, claimFreeReading, spendCredit, claimTeaser, checkRateLimit, releaseFreeReading, releaseTeaser, refundCredit, FREE_READINGS, SNIPPET_MAX_CHARS } from '../../shared/gate.ts';
 
 // redeploy marker: picks up the shared gate fix (minute meter row creation)
 // The Oracle generates a full tarot reading on OpenAI.
@@ -33,36 +33,6 @@ export default async function(req) {
         return Response.json({ error: 'rate_limited', message: 'Slow down — one reading at a time.' }, { status: 429 });
       }
     }
-    const { ent: entitlement, freeLeft } = isAdmin
-      ? { ent: null, freeLeft: FREE_READINGS }
-      : await getGateState(base44, user);
-    if (!isAdmin && entitlement?.plan !== 'premium') {
-      // Reserve BEFORE any paid work: atomically claim a free slot, or
-      // atomically spend a credit. Each is a conditional increment verified
-      // by its own applied count — the guard is checked against the live row
-      // at write time, so a burst of concurrent requests can never share one
-      // snapshot. If neither lands, refuse.
-      const claimedFree = await claimFreeReading(base44, user);
-      if (!claimedFree) {
-        const spent = entitlement && entitlement.credits >= 1
-          ? await spendCredit(base44, user.id)
-          : false;
-        if (!spent) {
-          snippetMode = true;
-          // A teaser still runs a paid AI call — bound how many one seeker,
-          // and everyone together, can trigger in a day. Over the cap they get
-          // the pricing message with no generation at all.
-          const teaserOk = await claimTeaser(base44, user);
-          if (!teaserOk) {
-            return Response.json({
-              error: 'out_of_credits',
-              message: "You've had all of today's glimpses. Open Pricing to hear the whole reading.",
-            }, { status: 402 });
-          }
-        }
-      }
-    }
-
     const body = await req.json();
     // Input ceilings: bound the prompt size (and so the cost per call) and
     // keep oversized or malformed payloads out of generation.
@@ -108,6 +78,60 @@ export default async function(req) {
     if (!question || !cards.length) {
       return Response.json({ error: 'Question and cards are required' }, { status: 400 });
     }
+
+    // ===== ACCESS + QUOTA GATE =====
+    // Claimed only AFTER the request proves valid — a rejected call must never
+    // cost a free reading or a credit. `charge` remembers what this request
+    // reserved, so it can be handed back if no reading reaches the seeker.
+    let charge = null; // 'free' | 'credit' | 'teaser'
+    const { ent: entitlement, freeLeft } = isAdmin
+      ? { ent: null, freeLeft: FREE_READINGS }
+      : await getGateState(base44, user);
+    if (!isAdmin && entitlement?.plan !== 'premium') {
+      // Reserve BEFORE any paid work: atomically claim a free slot, or
+      // atomically spend a credit. Each is a conditional increment verified
+      // by its own applied count — the guard is checked against the live row
+      // at write time, so a burst of concurrent requests can never share one
+      // snapshot. If neither lands, refuse.
+      const claimedFree = await claimFreeReading(base44, user);
+      if (claimedFree) {
+        charge = 'free';
+      } else {
+        const spent = entitlement && entitlement.credits >= 1
+          ? await spendCredit(base44, user.id)
+          : false;
+        if (spent) {
+          charge = 'credit';
+        } else {
+          snippetMode = true;
+          // A teaser still runs a paid AI call — bound how many one seeker,
+          // and everyone together, can trigger in a day. Over the cap they get
+          // the pricing message with no generation at all.
+          const teaserOk = await claimTeaser(base44, user);
+          if (!teaserOk) {
+            return Response.json({
+              error: 'out_of_credits',
+              message: "You've had all of today's glimpses. Open Pricing to hear the whole reading.",
+            }, { status: 402 });
+          }
+          charge = 'teaser';
+        }
+      }
+    }
+
+    // A reservation is only earned by a reading that arrives — a provider
+    // outage or an unsaved reading must not cost a free read or a credit.
+    const releaseCharge = async () => {
+      if (!charge) return;
+      try {
+        if (charge === 'free') await releaseFreeReading(base44, user);
+        else if (charge === 'credit') await refundCredit(base44, user.id);
+        else await releaseTeaser(base44, user);
+      } catch (e) {
+        console.error('generateReading: could not release the reserved charge', e?.message || e);
+      }
+      charge = null;
+    };
 
     // Build a compact one-liner per position. EVERY card carries its deck
     // tradition (and that tradition's own name for the card), so the Oracle
@@ -227,6 +251,7 @@ export default async function(req) {
     // Keep the provider credential server-side in Base44 secrets.
     const apiKey = secrets.get('OPENAI_API_KEY');
     if (!apiKey) {
+      await releaseCharge();
       return Response.json({ error: 'OpenAI is not configured — missing API key.' }, { status: 500 });
     }
 
@@ -295,6 +320,7 @@ export default async function(req) {
         // can carry model ids and account identifiers. It is logged here
         // instead; the client gets a stable, generic error.
         console.error('generateReading: provider rejected request', { model: modelId, status: aiRes.status, body: raw.slice(0, 500) });
+        await releaseCharge();
         return Response.json(
           { error: 'provider_error', message: "The Oracle couldn't finish the reading — try again in a moment." },
           { status: 502 },
@@ -316,6 +342,7 @@ export default async function(req) {
       // Same rule for the exhausted-fallback path: raw provider detail stays
       // server-side; a busy provider gets its own friendlier message.
       console.error('generateReading: all models failed', lastErrorDetail.slice(0, 600));
+      await releaseCharge();
       return Response.json(
         {
           error: lastWasBusy ? 'provider_busy' : 'provider_error',
@@ -335,6 +362,7 @@ export default async function(req) {
 
     if (!text.trim()) {
       console.error('generateReading: no reading content', JSON.stringify(Object.keys(data || {})).slice(0, 200));
+      await releaseCharge();
       return Response.json(
         { error: 'provider_error', message: "The Oracle couldn't finish the reading — try again in a moment." },
         { status: 502 },
@@ -365,6 +393,7 @@ export default async function(req) {
     } catch (logError) {
       // Fail closed: an unlogged reading is an unpaid reading.
       console.error('generateReading: could not record journal entry', logError);
+      await releaseCharge();
       return Response.json({ error: 'Could not record the reading — try again.' }, { status: 500 });
     }
 

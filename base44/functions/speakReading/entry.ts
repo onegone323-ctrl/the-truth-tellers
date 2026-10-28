@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, reserveVoice, TTS_DAILY_CAP_CHARS, TTS_DAILY_CAP_CALLS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
+import { getGateState, reserveVoice, releaseVoice, TTS_DAILY_CAP_CHARS, TTS_DAILY_CAP_CALLS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
 
 // The Oracle's voice: ElevenLabs primary (the seeker's chosen voice), with
 // OpenAI as the backup voice. "engine: openai" speaks with OpenAI only —
@@ -53,12 +53,16 @@ export default async function(req) {
     // OpenAI spend. The reserve is a conditional increment verified by its
     // own applied count — a burst of concurrent requests each reserves its
     // own characters; none of them pass on a stale pre-burst total.
+    // True when this request's characters were also charged against the
+    // global free-tier ceiling — the refund below must mirror the reservation.
+    let voiceGlobal = false;
     if (!isAdmin) {
       const cap = ent?.plan === 'premium' ? TTS_DAILY_CAP_CHARS.premium : TTS_DAILY_CAP_CHARS.free;
       const callsCap = ent?.plan === 'premium' ? TTS_DAILY_CAP_CALLS.premium : TTS_DAILY_CAP_CALLS.free;
       // The global daily ceiling applies only to free-tier voice — premium
       // subscribers and bought credits have already paid for their audio.
       const globalCap = ent?.plan === 'premium' || (ent?.credits || 0) >= 1 ? null : GLOBAL_DAILY_VOICE_CHARS;
+      voiceGlobal = globalCap != null;
       const reserved = await reserveVoice(base44, user.id, text.length, cap, globalCap, callsCap);
       if (!reserved) {
         return Response.json({ error: 'daily_voice_limit', message: "You've reached today's voice limit — her voice rests until tomorrow." }, { status: 429 });
@@ -92,6 +96,7 @@ export default async function(req) {
     // The WHOLE reading gets spoken, start to finish — bounded by the
     // per-request ceiling and the daily budget above.
     const audio = [];
+    let spokenChars = 0;
     for (const chunk of chunks) {
       const bytes = engine === 'openai'
         ? await speakWithOpenAI(chunk)
@@ -100,13 +105,21 @@ export default async function(req) {
         // The provider's raw body stays server-side — it can carry model ids
         // and account identifiers. The client gets a stable, generic error.
         console.error('speakReading: voice providers failed', { engine });
+        // Nothing unspoken was voiced, so its characters go back — a provider
+        // outage must not eat the day's budget.
+        if (!isAdmin) await releaseVoice(base44, user.id, text.length - spokenChars, voiceGlobal);
         return Response.json(
           { error: 'provider_error', message: "The Oracle's voice couldn't be created — try again in a moment." },
           { status: 502 },
         );
       }
       audio.push(arrayBufferToBase64(bytes));
+      spokenChars += chunk.length;
     }
+
+    // The budget is charged for what was actually voiced, not for the
+    // whitespace the sentence split removed.
+    if (!isAdmin) await releaseVoice(base44, user.id, text.length - spokenChars, voiceGlobal);
 
     return Response.json({ chunks: audio, model, voice, spoken_chunks: chunks.length });
   } catch (error) {

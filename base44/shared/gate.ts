@@ -164,13 +164,31 @@ export async function checkRateLimit(base44, userId, maxPerMinute) {
 }
 
 // Claims one free reading BEFORE any paid work. Returns true only if this
-// request is admitted — first under the GLOBAL daily free-reading ceiling
-// (bounds what farmed free accounts can drain per day), then under the
-// user's own 3-reading meter. The claim is consumed even if generation later
-// fails — same as credits.
+// request is admitted — under the user's own lifetime meter first, then under
+// the GLOBAL daily free-reading ceiling (which bounds what farmed free
+// accounts can drain per day). A seeker who has already used theirs is refused
+// without touching the shared pool: that pool belongs to people still owed a
+// first reading.
 export async function claimFreeReading(base44, user) {
   const sr = base44.asServiceRole;
-  await ensureLifetimeMeter(base44, user.id);
+  const rows = await ensureLifetimeMeter(base44, user.id);
+  const used = rows.reduce((m, r) => Math.max(m, r.readings || 0), 0);
+  // Already spent: answer now, instead of paying a claim's settle wait and
+  // burning a slice of the shared daily pool on every teaser attempt.
+  if (used >= FREE_READINGS) return false;
+
+  const ok = await claimWithinCap(
+    sr.entities.OracleUsage,
+    { user_id: user.id, day: 'lifetime' },
+    { readings: { $lt: FREE_READINGS } },
+    { $inc: { readings: 1 } },
+    (r) => (r.readings || 0) <= FREE_READINGS,
+  );
+  if (!ok) {
+    await clampMeter(sr.entities.OracleUsage, { user_id: user.id, day: 'lifetime' }, 'readings', FREE_READINGS);
+    return false;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   await ensureDailyMeter(sr, '__global__', today);
   const globalOk = await claimWithinCap(
@@ -182,19 +200,27 @@ export async function claimFreeReading(base44, user) {
   );
   if (!globalOk) {
     await clampMeter(sr.entities.OracleUsage, { user_id: '__global__', day: today }, 'readings', GLOBAL_DAILY_FREE_READINGS);
+    // Their slot came out of the shared pool — put it back before refusing.
+    await releaseFreeReading(base44, user);
     return false;
   }
-  const ok = await claimWithinCap(
-    sr.entities.OracleUsage,
-    { user_id: user.id, day: 'lifetime' },
-    { readings: { $lt: FREE_READINGS } },
-    { $inc: { readings: 1 } },
-    (r) => (r.readings || 0) <= FREE_READINGS,
+  return true;
+}
+
+// Hands a free-reading claim back when no reading reached the seeker (the
+// provider failed, or the entry couldn't be saved). Guarded at zero, so a
+// double release can never mint usage.
+export async function releaseFreeReading(base44, user) {
+  const sr = base44.asServiceRole;
+  const today = new Date().toISOString().slice(0, 10);
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: user.id, day: 'lifetime', readings: { $gt: 0 } },
+    { $inc: { readings: -1 } },
   );
-  if (!ok) {
-    await clampMeter(sr.entities.OracleUsage, { user_id: user.id, day: 'lifetime' }, 'readings', FREE_READINGS);
-  }
-  return ok;
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: '__global__', day: today, readings: { $gt: 0 } },
+    { $inc: { readings: -1 } },
+  );
 }
 
 // Claims one TEASER — the cut-off opening a seeker with no free reading and no
@@ -259,6 +285,28 @@ export async function spendCredit(base44, userId) {
   return ok;
 }
 
+// Hands a teaser slot back, on both the seeker's daily count and the global one.
+export async function releaseTeaser(base44, user) {
+  const sr = base44.asServiceRole;
+  const today = new Date().toISOString().slice(0, 10);
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: user.id, day: today, readings: { $gt: 0 } },
+    { $inc: { readings: -1 } },
+  );
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: '__global__', day: `t-${today}`, readings: { $gt: 0 } },
+    { $inc: { readings: -1 } },
+  );
+}
+
+// Gives a spent credit back when the reading it paid for never arrived.
+export async function refundCredit(base44, userId) {
+  await base44.asServiceRole.entities.Entitlement.updateMany(
+    { user_id: userId },
+    { $inc: { credits: 1 } },
+  );
+}
+
 // Reserves voice characters against the daily cap. The increment only applies
 // to a meter that can still fit this request, and the request is admitted
 // only if the settled total is still within the cap — a concurrent burst of
@@ -296,4 +344,23 @@ export async function reserveVoice(base44, userId, len, cap, globalCap, callsCap
     return false;
   }
   return true;
+}
+
+// Hands voice characters back that never produced audio — a provider failure,
+// or the whitespace lost when the text was split into chunks. `includeGlobal`
+// must match how the characters were reserved (free-tier voice is also
+// charged against the global ceiling).
+export async function releaseVoice(base44, userId, chars, includeGlobal = false) {
+  if (!(chars > 0)) return;
+  const sr = base44.asServiceRole;
+  const day = new Date().toISOString().slice(0, 10);
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: userId, day, tts_chars: { $gte: chars } },
+    { $inc: { tts_chars: -chars } },
+  );
+  if (!includeGlobal) return;
+  await sr.entities.OracleUsage.updateMany(
+    { user_id: '__global__', day: `v-${day}`, tts_chars: { $gte: chars } },
+    { $inc: { tts_chars: -chars } },
+  );
 }
