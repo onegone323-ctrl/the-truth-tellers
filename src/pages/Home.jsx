@@ -16,7 +16,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 // Heavy, not needed on first paint — loaded on demand.
 const DailyCard = React.lazy(() => import("@/components/DailyCard"));
 const OnboardingQuestionnaire = React.lazy(() => import("@/components/OnboardingQuestionnaire"));
-const AmbientSound = React.lazy(() => import("@/components/AmbientSound"));
+
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -279,9 +279,6 @@ export default function Home() {
         <React.Suspense fallback={<GoldSpinner />}>
           <OnboardingQuestionnaire onComplete={setProfile} defaultName={notEmailUsername(user?.full_name)} />
         </React.Suspense>
-        <React.Suspense fallback={null}>
-          <AmbientSound />
-        </React.Suspense>
       </div>
     );
   }
@@ -516,11 +513,6 @@ export default function Home() {
           onReset={reset}
           onRetry={handleRead}
         />
-      )}
-      {phase !== "reading" && (
-        <React.Suspense fallback={null}>
-          <AmbientSound />
-        </React.Suspense>
       )}
     </div>
   );
