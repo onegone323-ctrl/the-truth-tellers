@@ -365,9 +365,10 @@ export default function Home() {
                     className={`neo-toggle ${blendDecks ? "on" : ""}`}><i /></button>
                 </span>
               </div>
-              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-[9px] mt-[17px] transition-opacity ${blendDecks ? "opacity-40 pointer-events-none" : ""}`}>
-                {DECKS.map((d) => (
+              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-[9px] mt-[17px] ${blendDecks ? "deck-chase pointer-events-none" : ""}`}>
+                {DECKS.map((d, i) => (
                   <button key={d.id} onClick={() => { setDeck(d); setBlendDecks(false); }}
+                    style={{ "--deck-i": String(i) }}
                     className={`neo-tile ${!blendDecks && deck.id === d.id ? "is-active" : ""}`}>
                     <div className="neo-art" style={{ backgroundImage: `url(${d.art})` }} />
                     <span className="neo-deck-name">{d.name}</span>
