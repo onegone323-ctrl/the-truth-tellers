@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { normalizeRepo, githubGet } from '../../shared/githubRepo.ts';
 
 // Lists open issues for the Oracle codebase via the GitHub connector.
 // The connector is the builder's shared account, so this is admin-only.
@@ -10,28 +11,19 @@ export default async function(req) {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await req.json();
-    const repo = String(body?.repo || 'onegone323-ctrl/the-truth-tellers');
-    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) {
+    const repo = normalizeRepo(body?.repo, 'onegone323-ctrl/the-truth-tellers');
+    if (!repo) {
       return Response.json({ error: 'Invalid repo name' }, { status: 400 });
     }
 
-    const { accessToken } = await base44.asServiceRole.connectors.getConnection('github');
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/issues?state=open&sort=updated&direction=desc&per_page=30`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/vnd.github+json',
-          'User-Agent': 'truth-teller-oracle',
-        },
-        signal: AbortSignal.timeout(15000),
-      }
+    const raw = await githubGet(
+      base44,
+      `/repos/${repo}/issues?state=open&sort=updated&direction=desc&per_page=30`,
+      'getGithubIssues',
     );
-    if (!res.ok) {
-      const detail = await res.text();
-      return Response.json({ error: 'GitHub API ' + res.status + ': ' + detail.slice(0, 300) }, { status: 502 });
+    if (!raw) {
+      return Response.json({ error: 'GitHub is not answering right now.' }, { status: 502 });
     }
-    const raw = await res.json();
     // Pull requests also appear here — filter them out.
     const issues = raw.filter((i) => !i.pull_request);
 
