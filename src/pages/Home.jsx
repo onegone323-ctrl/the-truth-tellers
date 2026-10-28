@@ -12,6 +12,8 @@ import GoldSpinner from "@/components/GoldSpinner";
 import { Link } from "react-router-dom";
 import { Mic, MicOff, Sparkles } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
+import HeroBackdrop from "@/components/HeroBackdrop";
+import HeroSequence from "@/components/HeroSequence";
 
 // Heavy, not needed on first paint — loaded on demand.
 const DailyCard = React.lazy(() => import("@/components/DailyCard"));
@@ -259,7 +261,6 @@ export default function Home() {
   const emailLocal = (user?.email || "").split("@")[0].toLowerCase();
   const notEmailUsername = (n) => (n && n.trim().toLowerCase() !== emailLocal ? n.trim() : "");
   const seekerName = notEmailUsername(profile?.full_name) || notEmailUsername(memory?.user_name) || notEmailUsername(user?.full_name);
-  const greeting = seekerName ? `Welcome back, ${seekerName.split(" ")[0]}.` : "Welcome, seeker.";
 
   if (!profileLoaded) {
     return (
@@ -291,19 +292,24 @@ export default function Home() {
       {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section
-          className="neo-hero grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
+          className="neo-hero relative overflow-hidden grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
         >
-          <div className="text-center" style={{ animation: "materialize 1s .12s ease both" }}>
-            <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[560px] px-1 text-[26px] tracking-[2px] sm:px-0 sm:text-[46px] sm:tracking-[4px]">
-              {phase === "setup" ? "Let the Oracle Deliver the Message the Universe Wants You to Know" : "The Cards Are Drawn"}
-            </h1>
-            <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
-              {phase === "setup"
-                ? `${greeting} Speak your question, choose the deck and spread, and let the Oracle read your cards.`
-                : "The cards are dealing. Watch them reveal — then ask her to read."}
-            </p>
+          <HeroBackdrop />
+          <div className="relative z-10 text-center" style={{ animation: "materialize 1s .12s ease both" }}>
+            {phase === "setup" ? (
+              <HeroSequence name={seekerName} />
+            ) : (
+              <>
+                <h1 className="neo-h1 text-gold-ember mx-auto m-0 max-w-[560px] px-1 text-[26px] tracking-[2px] sm:px-0 sm:text-[46px] sm:tracking-[4px]">
+                  The Cards Are Drawn
+                </h1>
+                <p style={{ maxWidth: 460, color: "#b5ad99", fontSize: 15, lineHeight: 1.7, margin: "24px auto 0" }}>
+                  The cards are dealing. Watch them reveal — then ask her to read.
+                </p>
+              </>
+            )}
           </div>
-          <div style={{ animation: "materialize 1s .3s ease both" }}>
+          <div className="relative z-10" style={{ animation: "materialize 1s .3s ease both" }}>
             {/* The home-page hero: the Oracle's own card, large and still. The
                 fire stays mounted but hidden — its reading engine must stay
                 wired for the draw. */}
