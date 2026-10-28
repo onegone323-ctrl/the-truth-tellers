@@ -13,7 +13,7 @@ export default function HeroSequence({ name }) {
 
   const first = FIRST_NAME(name);
   const welcome = first ? `Welcome back, ${first}.` : "Welcome, seeker.";
-  const line = `${welcome} Choose a question — speak it or type it in.`;
+  const line = `${welcome} What truth do you seek?`;
 
   useEffect(() => {
     // Respect reduced motion: land on the finished state with no theatre.
