@@ -147,8 +147,14 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   // Grant what the buyer paid for: premium-monthly → premium plan, the credit
   // packs → N reading credits. Runs BEFORE the purchase is marked paid, so a
   // failure leaves it "pending" and Wix's retry re-runs this grant.
-  const product = PRODUCTS[purchase.productId];
-  if (!product) {
+  // Merchandise orders (productId prefixed "merch:") are physical goods — no
+  // digital grant, just record the paid order. Everything else resolves from
+  // the PRODUCTS map to grant reading access.
+  const isMerch = String(purchase.productId || "").startsWith("merch:");
+  const product = isMerch ? null : PRODUCTS[purchase.productId];
+  if (isMerch) {
+    console.log("payments-webhook: merch order paid", { purchaseId: purchase.id, productId: purchase.productId });
+  } else if (!product) {
     console.error("payments-webhook: unknown productId on purchase", { purchaseId: purchase.id, productId: purchase.productId });
   } else {
     // Fulfillment target: the signed-in app user; otherwise the email the buyer

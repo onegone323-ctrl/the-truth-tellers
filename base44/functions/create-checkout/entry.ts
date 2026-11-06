@@ -79,28 +79,55 @@ Deno.serve(async (req: Request) => {
     // integer BEFORE using it — do NOT Math.trunc first, or a fractional POST (e.g. 1.9) silently
     // passes as 1 and charges a quantity the UI never allowed. For a plan / fixed-entitlement product,
     // hard-code `1` and ignore the body; for a genuine multi-unit product, also enforce YOUR own max.
-    // Every product here is a fixed-entitlement item (a plan or a credit pack),
-    // so the buyer-controlled quantity is ignored: one unit per purchase, always.
-    const quantity = 1;
+    // Digital entitlements are one unit per purchase; merchandise allows a buyer-chosen
+    // quantity (1–10), validated against the raw integer before use.
+    let quantity: number;
+    if (productId.startsWith("merch:")) {
+      const raw = body.quantity;
+      quantity = Number.isInteger(raw) && raw >= 1 && raw <= 10 ? raw : 1;
+    } else {
+      quantity = 1;
+    }
     // Example — replace with your real trusted product source:
     //   const product = (await base44.asServiceRole.entities.Product.filter({ id: productId }))[0];
     //   if (!product) return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400 });
     //   const productName = product.name; const price = String(product.price); const currency = product.currency ?? "USD";
-    const product = PRODUCTS[productId];
-    if (!product) {
-      return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400 });
+    // Digital products (readings/credits) live in the PRODUCTS map; physical
+    // merchandise lives in the Merchandise entity, referenced as "merch:<id>".
+    // Prices are ALWAYS resolved server-side — the client sends only an id.
+    let productName: string;
+    let price: string;
+    let currency = "USD";
+    let subscriptionInfo: any = null;
+    if (productId.startsWith("merch:")) {
+      const merchId = productId.slice(5);
+      const merch = await base44.entities.Merchandise.get(merchId).catch(() => null);
+      if (!merch) {
+        return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400 });
+      }
+      if (merch.in_stock === false) {
+        return new Response(JSON.stringify({ error: "This item is out of stock" }), { status: 400 });
+      }
+      productName = merch.name;
+      price = String(merch.price);
+      currency = merch.currency || "USD";
+    } else {
+      const product = PRODUCTS[productId];
+      if (!product) {
+        return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400 });
+      }
+      productName = product.name;
+      price = product.price;
+      currency = "USD";
+      // Premium Monthly is the one subscription item; everything else is one-time.
+      subscriptionInfo = product.subscription
+        ? {
+            subscriptionSettings: { frequency: "MONTH" },
+            title: product.name,
+            description: "Unlimited Oracle readings, billed monthly. Cancel anytime.",
+          }
+        : null;
     }
-    const productName = product.name;
-    const price = product.price;
-    const currency = "USD";
-    // Premium Monthly is the one subscription item; everything else is one-time.
-    const subscriptionInfo = product.subscription
-      ? {
-          subscriptionSettings: { frequency: "MONTH" },
-          title: product.name,
-          description: "Unlimited Oracle readings, billed monthly. Cancel anytime.",
-        }
-      : null;
     // Where Wix returns the buyer. Both MUST be real, PUBLICLY reachable routes in this app: the
     // returning buyer is often anonymous, so a missing or login-gated route strands a paid customer.
     // Match your router exactly — `/ThankYou`, not `/thank-you`.

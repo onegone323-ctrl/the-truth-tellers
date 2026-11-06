@@ -1,0 +1,72 @@
+{
+  "name": "Merchandise",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "price": {
+      "type": "string",
+      "description": "USD major units, e.g. \"34.00\". Wix rejects under 0.50."
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Apparel",
+        "Home",
+        "Stationery",
+        "Accessories",
+        "Prints"
+      ],
+      "default": "Apparel",
+      "enumColors": [
+        "blue",
+        "green",
+        "purple",
+        "pink",
+        "yellow"
+      ]
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "in_stock": {
+      "type": "boolean",
+      "default": true
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "price"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
