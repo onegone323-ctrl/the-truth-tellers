@@ -53,6 +53,23 @@
     "canceledAt": {
       "type": "string",
       "format": "date-time"
+    },
+    "shipping_address": {
+      "type": "string",
+      "description": "JSON of the buyer's shipping address (merch orders), captured at webhook time so fulfillment can be retried."
+    },
+    "fulfillment_id": {
+      "type": "string",
+      "description": "Printful order id once a merch order is sent to fulfillment."
+    },
+    "fulfillment_status": {
+      "type": "string",
+      "enum": [
+        "",
+        "sent",
+        "failed"
+      ],
+      "default": ""
     }
   },
   "required": [

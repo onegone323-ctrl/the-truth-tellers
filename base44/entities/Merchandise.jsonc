@@ -38,6 +38,10 @@
     "image_url": {
       "type": "string"
     },
+    "printful_variant_id": {
+      "type": "string",
+      "description": "The Printful variant this product fulfills as. Use the numeric sync_variant_id from your Printful store product, or the external_variant_id you set on it. Required for automatic fulfillment."
+    },
     "in_stock": {
       "type": "boolean",
       "default": true

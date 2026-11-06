@@ -13,6 +13,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk";
 import { importSPKI, jwtVerify } from "npm:jose@5.9.6";
 import { PRODUCTS } from "../../shared/products.ts";
+import { buildRecipient, createPrintfulOrder } from "../../shared/printful.ts";
 
 // Wix event types (verbatim from Wix docs).
 const ORDER_APPROVED = "wix.ecom.v1.order_approved";
@@ -153,7 +154,45 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   const isMerch = String(purchase.productId || "").startsWith("merch:");
   const product = isMerch ? null : PRODUCTS[purchase.productId];
   if (isMerch) {
-    console.log("payments-webhook: merch order paid", { purchaseId: purchase.id, productId: purchase.productId });
+    // Physical merchandise: auto-fulfill through Printful the moment the order
+    // is confirmed paid. Best-effort — the payment is real, so the purchase is
+    // marked paid regardless and any failure is flagged for manual retry via the
+    // fulfill-merch-order function. external_id (purchase id) dedupes retries.
+    const claimRes = await db.entities.Base44Purchase.updateMany(
+      { checkoutSessionId: purchase.checkoutSessionId, status: "pending" },
+      { $set: { status: "fulfilling" } },
+    );
+    const claimApplied = !claimRes ? 0 : typeof claimRes.updated === "number" ? claimRes.updated : (claimRes.count ?? claimRes.modifiedCount ?? 0);
+    if (claimApplied === 0) {
+      console.log("payments-webhook: merch duplicate delivery, skipping", { purchaseId: purchase.id });
+      return new Response("OK", { status: 200 });
+    }
+    const merchId = String(purchase.productId || "").slice(5);
+    const recipient = buildRecipient(order, buyerEmail);
+    let fulfillResult: { id: string } | null = null;
+    try {
+      const merch = await db.entities.Merchandise.get(merchId).catch(() => null);
+      if (!merch || !merch.printful_variant_id) {
+        console.error("payments-webhook: merch not mapped to a Printful variant", { purchaseId: purchase.id, merchId });
+      } else if (!recipient) {
+        console.error("payments-webhook: no shipping address for merch order", { purchaseId: purchase.id });
+      } else {
+        fulfillResult = await createPrintfulOrder({
+          apiKey: Deno.env.get("PRINTFUL_API_KEY") || "",
+          externalId: purchase.id,
+          recipient,
+          items: [{ variantId: String(merch.printful_variant_id), quantity: purchase.quantity || 1, name: merch.name }],
+        });
+      }
+    } catch (e) {
+      console.error("payments-webhook: fulfillment attempt errored", { purchaseId: purchase.id, error: e?.message || e });
+    }
+    await db.entities.Base44Purchase.update(purchase.id, {
+      shipping_address: JSON.stringify(recipient || {}),
+      fulfillment_id: fulfillResult?.id || "",
+      fulfillment_status: fulfillResult?.id ? "sent" : "failed",
+    });
+    console.log("payments-webhook: merch fulfillment", { purchaseId: purchase.id, status: fulfillResult?.id ? "sent" : "failed", printfulId: fulfillResult?.id || null });
   } else if (!product) {
     console.error("payments-webhook: unknown productId on purchase", { purchaseId: purchase.id, productId: purchase.productId });
   } else {
