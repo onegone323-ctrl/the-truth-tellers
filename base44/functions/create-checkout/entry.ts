@@ -16,6 +16,7 @@
 
 import { createClientFromRequest } from "npm:@base44/sdk";
 import { PRODUCTS } from "../../shared/products.ts";
+import { checkRateLimit } from "../../shared/gate.ts";
 
 const CONSTRUCT_URL = "https://www.wixapis.com/payments/platform/v1/checkout-sessions/construct";
 
@@ -65,6 +66,23 @@ Deno.serve(async (req: Request) => {
       appUser = await base44.auth.me();
     } catch (_) {
       appUser = null;
+    }
+
+    // Rate-limit checkout starts per caller so a stranger can't spam Wix
+    // checkout sessions and pile up pending purchase rows. Logged-in buyers
+    // key on their user id; anonymous buyers key on their IP. Real buyers
+    // never hit 6 starts/minute; only a scripted burst would.
+    let callerKey = "anon";
+    if (appUser?.id) {
+      callerKey = `u:${appUser.id}`;
+    } else {
+      const fwd = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "";
+      const ip = fwd.split(",")[0].trim();
+      if (ip) callerKey = `ip:${ip}`;
+    }
+    const allowed = await checkRateLimit(base44, callerKey, 6);
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Too many checkout attempts. Try again in a moment." }), { status: 429 });
     }
 
     const body = await req.json().catch(() => ({}));
