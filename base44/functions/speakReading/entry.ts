@@ -2,13 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 import { getGateState, reserveVoice, releaseVoice, TTS_DAILY_CAP_CHARS, TTS_DAILY_CAP_CALLS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
 
-// The Oracle's voice: ElevenLabs primary (the seeker's chosen voice), with
-// OpenAI as the backup voice. "engine: openai" speaks with OpenAI only —
-// that is the Memory Parlor player's voice.
+// The Oracle's voice: Speechify primary (Simba 3.5, the seeker's chosen
+// voice), with OpenAI as the backup voice. "engine: openai" speaks with
+// OpenAI only — that is the Memory Parlor player's voice.
 // The reading arrives as already-cleaned spoken text; we split it into
-// sentence-sized chunks (the TTS input cap is ~4096 chars), synthesize each
-// chunk, and return the base64 MP3 pieces so the app can play them back to
-// back as one continuous voice.
+// sentence-sized chunks (Speechify's spoken-text cap is 2,000 chars),
+// synthesize each chunk, and return the base64 MP3 pieces so the app can
+// play them back to back as one continuous voice.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -70,21 +70,21 @@ export default async function(req) {
     }
     // ===== END GATE =====
 
-    const engine = body?.engine === 'openai' ? 'openai' : 'elevenlabs';
-    if (engine === 'elevenlabs' && !secrets.get('ELEVEN_LABS_API_KEY')) {
-      return Response.json({ error: 'ElevenLabs is not configured — missing API key.' }, { status: 500 });
+    const engine = body?.engine === 'openai' ? 'openai' : 'speechify';
+    if (engine === 'speechify' && !secrets.get('SPEECHIFY_API_KEY')) {
+      return Response.json({ error: 'Speechify is not configured — missing API key.' }, { status: 500 });
     }
 
-    // The voice the seeker chose in ElevenLabs, with a model that keeps
-    // latency low and delivery expressive.
-    const model = 'eleven_turbo_v2_5';
-    const voice = 'uYXf8XasLslADfZ2MB4u';
+    // Speechify Simba 3.5 — streaming-native, expressive, low-latency.
+    // The voice id is the Oracle's chosen Speechify voice (SPEECHIFY_VOICE_ID).
+    const model = 'simba-3.5';
+    const voice = secrets.get('SPEECHIFY_VOICE_ID') || '';
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
     let buf = '';
     for (const part of text.split(/(?<=[.!?])\s+/)) {
-      if ((buf + ' ' + part).length > 3000 && buf) {
+      if ((buf + ' ' + part).length > 2000 && buf) {
         chunks.push(buf.trim());
         buf = part;
       } else {
@@ -100,7 +100,7 @@ export default async function(req) {
     for (const chunk of chunks) {
       const bytes = engine === 'openai'
         ? await speakWithOpenAI(chunk)
-        : (await speakWithElevenLabs(chunk) ?? await speakWithOpenAI(chunk));
+        : (await speakWithSpeechify(chunk) ?? await speakWithOpenAI(chunk));
       if (bytes === null) {
         // The provider's raw body stays server-side — it can carry model ids
         // and account identifiers. The client gets a stable, generic error.
@@ -141,46 +141,58 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-// Primary voice: ElevenLabs, the seeker's chosen voice. Returns raw MP3
-// bytes, or null when the provider refuses — then OpenAI takes over.
-async function speakWithElevenLabs(chunk) {
-  const apiKey = secrets.get('ELEVEN_LABS_API_KEY');
-  if (!apiKey) return null;
-  try {
-    const res = await fetch(
-      'https://api.elevenlabs.io/v1/text-to-speech/uYXf8XasLslADfZ2MB4u?output_format=mp3_44100_128',
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: chunk,
-          model_id: 'eleven_turbo_v2_5',
-          // Even-out stability, strong clone similarity, a touch of style —
-          // warm and grounded, never theatrical.
-          voice_settings: {
-            stability: 0.45,
-            similarity_boost: 0.8,
-            style: 0.3,
-            use_speaker_boost: true,
-            speed: 1.0,
-          },
-        }),
-        signal: AbortSignal.timeout(60000),
-      },
-    );
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('speakReading: ElevenLabs rejected request', { status: res.status, body: errText.slice(0, 300) });
-      return null;
-    }
-    return await res.arrayBuffer();
-  } catch (error) {
-    console.error('speakReading: ElevenLabs request failed', String(error).slice(0, 200));
+// Primary voice: Speechify (Simba 3.5), the Oracle's chosen voice. Returns
+// raw MP3 bytes decoded from the base64 audio_data in the JSON response, or
+// null when the provider refuses — then OpenAI takes over.
+async function speakWithSpeechify(chunk) {
+  const apiKey = secrets.get('SPEECHIFY_API_KEY');
+  const voiceId = secrets.get('SPEECHIFY_VOICE_ID');
+  if (!apiKey || !voiceId) {
+    console.error('speakReading: Speechify not configured', { hasKey: !!apiKey, hasVoice: !!voiceId });
     return null;
   }
+  try {
+    const res = await fetch('https://api.speechify.ai/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: chunk,
+        voice_id: voiceId,
+        audio_format: 'mp3',
+        model: 'simba-3.5',
+        language: 'en-US',
+        output_format: 'mp3_24000_128',
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('speakReading: Speechify rejected request', { status: res.status, body: errText.slice(0, 300) });
+      return null;
+    }
+    const data = await res.json();
+    const b64 = data?.audio_data;
+    if (!b64) {
+      console.error('speakReading: Speechify returned no audio_data');
+      return null;
+    }
+    return base64ToArrayBuffer(b64);
+  } catch (error) {
+    console.error('speakReading: Speechify request failed', String(error).slice(0, 200));
+    return null;
+  }
+}
+
+// Decode a base64 string into an ArrayBuffer — Speechify returns the audio
+// as base64 inside a JSON body, not as raw bytes.
+function base64ToArrayBuffer(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
 }
 
 // Backup voice: the same warm older-woman delivery the Oracle always had.
