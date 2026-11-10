@@ -70,17 +70,13 @@ Deno.serve(async (req: Request) => {
 
     // Rate-limit checkout starts per caller so a stranger can't spam Wix
     // checkout sessions and pile up pending purchase rows. Logged-in buyers
-    // key on their user id; anonymous buyers key on their IP. Real buyers
-    // never hit 6 starts/minute; only a scripted burst would.
-    let callerKey = "anon";
-    if (appUser?.id) {
-      callerKey = `u:${appUser.id}`;
-    } else {
-      const fwd = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "";
-      const ip = fwd.split(",")[0].trim();
-      if (ip) callerKey = `ip:${ip}`;
-    }
-    const allowed = await checkRateLimit(base44, callerKey, 6);
+    // key on their user id (6 starts/minute). Anonymous buyers all share ONE
+    // meter — we deliberately do NOT trust the client-supplied
+    // X-Forwarded-For / x-real-ip headers, which a script can rotate on every
+    // call to bypass a per-IP cap. The shared cap is loose enough that real
+    // buyers never collide, but a scripted burst is still bounded.
+    const callerKey = appUser?.id ? `u:${appUser.id}` : "anon";
+    const allowed = await checkRateLimit(base44, callerKey, appUser?.id ? 6 : 30);
     if (!allowed) {
       return new Response(JSON.stringify({ error: "Too many checkout attempts. Try again in a moment." }), { status: 429 });
     }
