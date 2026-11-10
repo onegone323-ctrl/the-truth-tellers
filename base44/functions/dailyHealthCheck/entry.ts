@@ -6,7 +6,7 @@ import { PRODUCTS } from '../../shared/products.ts';
 // Check" workflow (and can be invoked from the dashboard). It verifies every
 // surface the app can't work without and reports the results:
 //   1. Oracle text generation  (OpenAI chat — same primary model as readings)
-//   2. The Oracle's voice      (ElevenLabs primary + OpenAI fallback TTS)
+//   2. The Oracle's voice      (Speechify primary + OpenAI fallback TTS)
 //   3. The paywall             (product catalog, Wix secrets, a real checkout
 //                               session construct, entitlement + purchase data)
 //   4. The data layer          (every core entity answers a read)
@@ -65,38 +65,41 @@ export default async function(req) {
       }
     }
 
-    // ---- 2. The Oracle's voice — ElevenLabs primary (same config as speakReading) ----
-    const elevenKey = secrets.get('ELEVEN_LABS_API_KEY');
-    if (!elevenKey) {
-      checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: 'ELEVEN_LABS_API_KEY secret is missing.' });
+    // ---- 2. The Oracle's voice — Speechify primary (same config as speakReading) ----
+    const speechifyKey = secrets.get('SPEECHIFY_API_KEY');
+    const speechifyVoice = secrets.get('SPEECHIFY_VOICE_ID');
+    if (!speechifyKey || !speechifyVoice) {
+      checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: !speechifyKey ? 'SPEECHIFY_API_KEY secret is missing.' : 'SPEECHIFY_VOICE_ID secret is missing.' });
     } else {
       try {
-        const res = await fetch(
-          'https://api.elevenlabs.io/v1/text-to-speech/hvhlTWefioYsKeeQjLfm?output_format=mp3_44100_128',
-          {
-            method: 'POST',
-            headers: { 'xi-api-key': elevenKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: 'The cards are awake.',
-              model_id: 'eleven_turbo_v2_5',
-              voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
-            }),
-            signal: AbortSignal.timeout(30000),
-          },
-        );
+        const res = await fetch('https://api.speechify.ai/v1/audio/speech', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${speechifyKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: 'The cards are awake.',
+            voice_id: speechifyVoice,
+            audio_format: 'mp3',
+            model: 'simba-3.5',
+            language: 'en-US',
+            output_format: 'mp3_24000_128',
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
         if (res.ok) {
-          const bytes = await res.arrayBuffer();
+          const data = await res.json();
+          const b64 = data?.audio_data || '';
+          const ok = b64.length > 1400; // ~1KB of base64 ≈ 1KB of audio
           checks.push({
-            name: "Oracle voice (ElevenLabs)",
-            ok: bytes.byteLength > 1000,
-            detail: `eleven_turbo_v2_5 synthesized ${Math.round(bytes.byteLength / 1024)} KB of audio.`,
+            name: "Oracle voice (Speechify)",
+            ok,
+            detail: `simba-3.5 synthesized ${Math.round((b64.length * 3) / 4 / 1024)} KB of audio.`,
           });
         } else {
           const raw = await res.text();
-          checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: `ElevenLabs -> ${res.status}: ${raw.slice(0, 200)}` });
+          checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: `Speechify -> ${res.status}: ${raw.slice(0, 200)}` });
         }
       } catch (e) {
-        checks.push({ name: "Oracle voice (ElevenLabs)", ok: false, detail: e?.message || String(e) });
+        checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: e?.message || String(e) });
       }
     }
 
