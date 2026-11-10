@@ -67,9 +67,9 @@ export default async function(req) {
 
     // ---- 2. The Oracle's voice — Speechify primary (same config as speakReading) ----
     const speechifyKey = secrets.get('SPEECHIFY_API_KEY');
-    const speechifyVoice = secrets.get('SPEECHIFY_VOICE_ID');
-    if (!speechifyKey || !speechifyVoice) {
-      checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: !speechifyKey ? 'SPEECHIFY_API_KEY secret is missing.' : 'SPEECHIFY_VOICE_ID secret is missing.' });
+    const speechifyVoice = secrets.get('SPEECHIFY_VOICE_ID') || 'beatrice_32';
+    if (!speechifyKey) {
+      checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: 'SPEECHIFY_API_KEY secret is missing.' });
     } else {
       try {
         const res = await fetch('https://api.speechify.ai/v1/audio/speech', {

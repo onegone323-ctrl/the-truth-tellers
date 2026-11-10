@@ -78,7 +78,10 @@ export default async function(req) {
     // Speechify Simba 3.5 — streaming-native, expressive, low-latency.
     // The voice id is the Oracle's chosen Speechify voice (SPEECHIFY_VOICE_ID).
     const model = 'simba-3.5';
-    const voice = secrets.get('SPEECHIFY_VOICE_ID') || '';
+    // The Oracle's voice: Beatrice. voice_id is a public catalog id (not a
+    // credential), so the default is safe to hardcode; SPEECHIFY_VOICE_ID
+    // overrides it if the builder later picks a different voice.
+    const voice = secrets.get('SPEECHIFY_VOICE_ID') || 'beatrice_32';
 
     // Split into chunks under ~3000 chars at sentence boundaries.
     const chunks = [];
@@ -146,9 +149,9 @@ function arrayBufferToBase64(buffer) {
 // null when the provider refuses — then OpenAI takes over.
 async function speakWithSpeechify(chunk) {
   const apiKey = secrets.get('SPEECHIFY_API_KEY');
-  const voiceId = secrets.get('SPEECHIFY_VOICE_ID');
-  if (!apiKey || !voiceId) {
-    console.error('speakReading: Speechify not configured', { hasKey: !!apiKey, hasVoice: !!voiceId });
+  const voiceId = secrets.get('SPEECHIFY_VOICE_ID') || 'beatrice_32';
+  if (!apiKey) {
+    console.error('speakReading: Speechify not configured (missing API key)');
     return null;
   }
   try {
