@@ -11,7 +11,7 @@ export default async function(req) {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await req.json();
-    const repo = normalizeRepo(body?.repo, 'ADPOV-MEDIA-ENT/the-truth-teller');
+    const repo = normalizeRepo(body?.repo, 'onegone323-ctrl/the-truth-tellers');
     if (!repo) {
       return Response.json({ error: 'Invalid repo name' }, { status: 400 });
     }
