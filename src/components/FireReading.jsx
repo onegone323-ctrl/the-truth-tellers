@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { Pause, Play, RotateCcw, RefreshCw, X } from "lucide-react";
+import { Pause, Play, RotateCcw, RefreshCw, Square, X } from "lucide-react";
 import OracleFire from "@/components/OracleFire";
 
 const tinyBtn = { padding: "5px 12px", fontSize: 12, minHeight: 34, letterSpacing: 1.5 };
@@ -37,6 +37,16 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
       )}
       <div className="absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-2 bg-gradient-to-t from-reading-void/90 to-transparent px-4 pt-8"
         style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>
+        {busy && !voiceBusy && !error && (
+          <>
+            <p className="text-sm" style={{ color: "#b1a38b" }}>
+              The Oracle is preparing your reading…
+            </p>
+            <button onClick={onReset} className="neo-pill flex items-center gap-1.5" style={tinyBtn}>
+              <Square className="w-3 h-3" /> End Reading
+            </button>
+          </>
+        )}
         {voiceBusy && !error && (
           <>
             <button
@@ -57,6 +67,9 @@ export default function FireReading({ fireRef, aura, busy, voiceBusy, error, out
             </button>
             <button onClick={() => fireRef.current?.rewind()} className="neo-pill flex items-center gap-1.5" style={tinyBtn}>
               <RotateCcw className="w-3 h-3" /> Rewind
+            </button>
+            <button onClick={onReset} className="neo-pill flex items-center gap-1.5" style={tinyBtn}>
+              <Square className="w-3 h-3" /> End Reading
             </button>
           </>
         )}
