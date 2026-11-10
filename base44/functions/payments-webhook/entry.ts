@@ -144,6 +144,39 @@ async function handleOrderApproved(db: any, eventData: any): Promise<Response> {
   // (the only identity an anonymous buyer has). Persisted below and used by the grant block.
   const buyerEmail: string | null = purchase.buyerEmail ?? extractBuyerEmail(order);
 
+  // CONFIRM PAYMENT BEFORE GRANTING. An ORDER_APPROVED event alone is not
+  // enough: require the order to be complete (APPROVED) and actually paid
+  // (paymentStatus PAID), and require the paid total + currency to match what
+  // create-checkout recorded (the expected amount it sent to Wix). A merch
+  // order may carry shipping/tax on top of the item price, so the paid total
+  // only needs to be at least the expected amount; a digital order's total
+  // equals it exactly. Any mismatch leaves the purchase "pending" and
+  // retriable — access is never granted on an unconfirmed payment.
+  const paidTotal = parseFloat(order?.priceSummary?.total?.amount);
+  const expectedTotal = parseFloat(purchase.amount);
+  const paidCurrency = String(order?.currency || "").toUpperCase();
+  const expectedCurrency = String(purchase.currency || "USD").toUpperCase();
+  const paymentConfirmed =
+    order?.status === "APPROVED" &&
+    order?.paymentStatus === "PAID" &&
+    Number.isFinite(paidTotal) &&
+    Number.isFinite(expectedTotal) &&
+    paidTotal >= expectedTotal - 0.01 &&
+    paidCurrency === expectedCurrency;
+  if (!paymentConfirmed) {
+    console.error("payments-webhook: payment not confirmed, leaving purchase pending", {
+      purchaseId: purchase.id,
+      checkoutId,
+      orderStatus: order?.status,
+      paymentStatus: order?.paymentStatus,
+      paidTotal,
+      expectedTotal,
+      paidCurrency,
+      expectedCurrency,
+    });
+    return new Response("Payment not confirmed", { status: 500 });
+  }
+
   // ===== APP-SPECIFIC =====
   // Grant what the buyer paid for: premium-monthly → premium plan, the credit
   // packs → N reading credits. Runs BEFORE the purchase is marked paid, so a
