@@ -67,7 +67,10 @@ export default async function(req) {
 
     // ---- 2. The Oracle's voice — Speechify primary (same config as speakReading) ----
     const speechifyKey = secrets.get('SPEECHIFY_API_KEY');
-    const speechifyVoice = secrets.get('SPEECHIFY_VOICE_ID') || 'beatrice_32';
+    // Hardcoded to match speakReading exactly. The SPEECHIFY_VOICE_ID secret
+    // holds an invalid id that 404s, so reading it here made this check report
+    // a voice outage the app never actually had.
+    const speechifyVoice = 'beatrice_32';
     if (!speechifyKey) {
       checks.push({ name: "Oracle voice (Speechify)", ok: false, detail: 'SPEECHIFY_API_KEY secret is missing.' });
     } else {
