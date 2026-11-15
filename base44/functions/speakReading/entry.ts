@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
-import { getGateState, reserveVoice, releaseVoice, TTS_DAILY_CAP_CHARS, TTS_DAILY_CAP_CALLS, GLOBAL_DAILY_VOICE_CHARS, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
+import { getGateState, checkRateLimit, reserveVoice, releaseVoice, TTS_DAILY_CAP_CHARS, TTS_DAILY_CAP_CALLS, GLOBAL_DAILY_VOICE_CHARS, VOICE_CALLS_PER_MIN, SNIPPET_VOICE_CHARS } from '../../shared/gate.ts';
 
 // The Oracle's voice: Speechify primary (Simba 3.5, the seeker's chosen
 // voice), with OpenAI as the backup voice. "engine: openai" speaks with
@@ -29,11 +29,19 @@ export default async function(req) {
 
     // ===== ACCESS + QUOTA GATE =====
     const isAdmin = user?.role === 'admin';
-    // No per-minute throttle here: a spoken reading is inherently a burst of
-    // small chunk calls, and the shared 4/minute cap (shared with
-    // generateReading) was cutting readings off mid-flow. Voice consumption
-    // is still bounded below by the per-user daily character budget and the
-    // global free-tier ceiling — the throttle is not the guard that matters.
+    // Per-minute throttle on its OWN meter. It cannot share generateReading's
+    // 4/minute counter: a spoken reading arrives as a burst of small chunk
+    // calls and that cap cut real readings off mid-flow. This one sits above a
+    // whole reading's burst but still stops a script from looping the voice.
+    if (!isAdmin) {
+      const throttled = !(await checkRateLimit(base44, `v:${user.id}`, VOICE_CALLS_PER_MIN));
+      if (throttled) {
+        return Response.json({
+          error: 'rate_limited',
+          message: 'Slow down — her voice needs a moment.',
+        }, { status: 429 });
+      }
+    }
     const { ent, freeLeft } = await getGateState(base44, user);
     // Voice is part of the reading experience: premium subscribers, credit
     // holders, and anyone still inside their free readings may synthesize.

@@ -35,24 +35,31 @@ export const SNIPPET_MAX_CHARS = 320;
 export const SNIPPET_VOICE_CHARS = 400;
 
 // Daily voice-synthesis budget per user, in characters. A full spoken reading
-// is ~2,000-4,000 chars, so free users get ~3 readings of voice a day,
-// premium users ~15+.
-export const TTS_DAILY_CAP_CHARS = { free: 12000, premium: 60000 };
+// is ~2,000-4,000 chars. A free seeker gets one full reading plus teasers, so
+// the free budget covers that with room to spare; premium is ~15 readings.
+export const TTS_DAILY_CAP_CHARS = { free: 8000, premium: 60000 };
 
 // Daily VOICE REQUEST budget per user. A whole reading is spoken in a handful
 // of small requests, so this never touches a real listener — it only stops
 // hammering, where characters alone would allow endless tiny calls.
 export const TTS_DAILY_CAP_CALLS = { free: 120, premium: 600 };
 
+// Per-minute VOICE REQUEST ceiling, kept on its OWN meter (see speakReading).
+// One reading arrives as a burst of small chunk calls — the player asks for up
+// to three pieces at once — so this sits well above a whole reading while
+// still stopping a script from hammering the provider. Deliberately NOT the
+// shared 4/minute reading throttle: that would stall real playback.
+export const VOICE_CALLS_PER_MIN = 20;
+
 // GLOBAL daily ceilings on FREE-TIER usage (premium subscribers and bought
 // credits bypass them). They cap what a fleet of farmed free accounts can
 // drain from the app's AI budget in one day.
-export const GLOBAL_DAILY_FREE_READINGS = 500;
-export const GLOBAL_DAILY_VOICE_CHARS = 500000;
+export const GLOBAL_DAILY_FREE_READINGS = 100;
+export const GLOBAL_DAILY_VOICE_CHARS = 150000;
 
 // A teaser (the cut-off opening a spent seeker gets) is still a paid AI call.
-export const TEASER_DAILY_CAP = 10;
-export const GLOBAL_DAILY_TEASERS = 200;
+export const TEASER_DAILY_CAP = 5;
+export const GLOBAL_DAILY_TEASERS = 60;
 
 // Concurrent sibling claims need this long to land before the audit read.
 const CLAIM_SETTLE_MS = 350;
