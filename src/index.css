@@ -589,51 +589,64 @@
   to { opacity: 1; }
 }
 
-/* ===== Homepage hero logo: five moon phases, lit one at a time ===== */
-/* The moons start dim; they brighten with a soft glow in quick succession
-   (red, white, red, white, red), all stay lit for a beat, then the loop
-   repeats. Shapes and wordmark live in src/components/HeroLogo.jsx. */
-.hero-moon-logo { width: 280px; max-width: 100%; }
-.hero-moon-row { display: flex; justify-content: center; align-items: center; gap: 12px; }
-.hero-moon { width: 48px; height: 48px; opacity: 0.3; filter: brightness(0.7); }
-.hero-moon-word {
-  margin-top: 18px; text-align: center; white-space: nowrap;
-  color: #fff; font-family: var(--font-body); font-size: 15px;
-  font-weight: 500; letter-spacing: 0.3em; text-indent: 0.3em;
+/* ===== Homepage hero wordmark: TRUTH 4 CLARITY in a rising gold wave ===== */
+/* Each letter swells, brightens and lifts a beat after the one before it, so
+   the light travels across the word and then rests. The letters live in
+   src/components/HeroLogo.jsx; only the timing and glow are here. */
+.hero-word-logo {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
 }
-.hero-moon-word .hero-moon-four { color: #d4af37; }
-
-.hero-moon1 { animation: heroMoon1 3.6s ease-in-out infinite; }
-.hero-moon2 { animation: heroMoon2 3.6s ease-in-out infinite; }
-.hero-moon3 { animation: heroMoon3 3.6s ease-in-out infinite; }
-.hero-moon4 { animation: heroMoon4 3.6s ease-in-out infinite; }
-.hero-moon5 { animation: heroMoon5 3.6s ease-in-out infinite; }
-
-@keyframes heroMoon1 {
-  0%, 26% { opacity: 0.3; filter: brightness(0.7); }
-  28%, 86% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 8px rgba(232,53,79,.8)) drop-shadow(0 0 20px rgba(232,53,79,.45)); }
-  96%, 100% { opacity: 0.3; filter: brightness(0.7); }
+.hero-word {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(20px, 5.4vw, 44px);
+  line-height: 1.15;
+  letter-spacing: clamp(1px, 0.45vw, 5px);
+  text-transform: uppercase;
 }
-@keyframes heroMoon2 {
-  0%, 34% { opacity: 0.3; filter: brightness(0.7); }
-  36%, 86% { opacity: 1; filter: brightness(1.5) drop-shadow(0 0 8px rgba(255,255,255,.8)) drop-shadow(0 0 20px rgba(255,255,255,.4)); }
-  96%, 100% { opacity: 0.3; filter: brightness(0.7); }
+.hero-letter {
+  display: inline-block;
+  transform-origin: 50% 85%;
+  background: linear-gradient(180deg, #faf1d0 0%, #e8cd7c 34%, #d4af37 58%, #a87718 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: heroLetterWave 3.6s cubic-bezier(.4, 0, .2, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 0.085s);
+  will-change: transform, filter;
 }
-@keyframes heroMoon3 {
-  0%, 42% { opacity: 0.3; filter: brightness(0.7); }
-  44%, 86% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 8px rgba(232,53,79,.8)) drop-shadow(0 0 20px rgba(232,53,79,.45)); }
-  96%, 100% { opacity: 0.3; filter: brightness(0.7); }
+.hero-letter-four {
+  background: linear-gradient(180deg, #ffa394 0%, #e8354f 48%, #8b1a2b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  margin: 0 0.05em;
 }
-@keyframes heroMoon4 {
-  0%, 50% { opacity: 0.3; filter: brightness(0.7); }
-  52%, 86% { opacity: 1; filter: brightness(1.5) drop-shadow(0 0 8px rgba(255,255,255,.8)) drop-shadow(0 0 20px rgba(255,255,255,.4)); }
-  96%, 100% { opacity: 0.3; filter: brightness(0.7); }
+.hero-letter-space {
+  display: inline-block;
+  width: 0.34em;
 }
-@keyframes heroMoon5 {
-  0%, 58% { opacity: 0.3; filter: brightness(0.7); }
-  60%, 86% { opacity: 1; filter: brightness(1.6) drop-shadow(0 0 8px rgba(232,53,79,.8)) drop-shadow(0 0 20px rgba(232,53,79,.45)); }
-  96%, 100% { opacity: 0.3; filter: brightness(0.7); }
+@keyframes heroLetterWave {
+  0%, 52%, 100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(.72) drop-shadow(0 0 0 rgba(212, 175, 55, 0));
+  }
+  9% {
+    transform: translateY(-0.13em) scale(1.2);
+    filter: brightness(1.85) drop-shadow(0 0 12px rgba(232, 201, 111, .9));
+  }
+  20% {
+    transform: translateY(0) scale(1.02);
+    filter: brightness(1.18) drop-shadow(0 0 5px rgba(212, 175, 55, .45));
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-moon { animation: none; opacity: 1; filter: none; }
+  .hero-letter { animation: none; filter: none; }
 }
