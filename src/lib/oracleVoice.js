@@ -151,7 +151,9 @@ export function createOraclePlayer() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-        if (!sourceNode) {
+        // Only route through Web Audio once the context is running — a
+        // suspended graph would play her silently.
+        if (!sourceNode && audioCtx.state === "running") {
           sourceNode = audioCtx.createMediaElementSource(audio());
           analyserNode = audioCtx.createAnalyser();
           analyserNode.fftSize = 256;

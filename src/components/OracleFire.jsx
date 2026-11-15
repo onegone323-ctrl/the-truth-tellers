@@ -89,7 +89,11 @@ const ensureAudioGraph = () => {
   try {
     if (!fire.ctx) fire.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (fire.ctx.state === "suspended") fire.ctx.resume().catch(() => {});
-    if (!fire.srcNode) {
+    // Route her voice through the analyser ONLY once the context is actually
+    // running. Attaching it while suspended sends the audio into a dead graph:
+    // play() still resolves, so nothing reports an error and she is silently
+    // mute. Without the graph the element plays straight to the device.
+    if (!fire.srcNode && fire.ctx.state === "running") {
       fire.srcNode = fire.ctx.createMediaElementSource(el);
       fire.analyser = fire.ctx.createAnalyser();
       fire.analyser.fftSize = 256;
@@ -177,8 +181,11 @@ const runGeneration = async () => {
       snippet,
       message: res?.data?.message,
     });
-    // She starts the reading herself — no tap needed.
-    if (!snippet) speakChain();
+    // She starts the reading herself — no tap needed. A teaser is spoken too:
+    // those few seconds of her voice ARE the teaser (the voice service allows a
+    // snippet's worth of speech for exactly this), and staying silent read to
+    // seekers as "the app is broken".
+    speakChain();
   } catch (e) {
     if (myRun !== fire.run) return;
     fire.reading = null;
@@ -278,6 +285,9 @@ const speakChain = async () => {
         missed.push(i);
         break;
       }
+      // A clip that played to its end but was never audible (device muted, or
+      // her output routed away) still counts as "she spoke" for the UI.
+      if (result === "ended") onPlaying();
       if (fire.rewindFlag) {
         fire.rewindFlag = false;
         if (k === 0) k = -1;

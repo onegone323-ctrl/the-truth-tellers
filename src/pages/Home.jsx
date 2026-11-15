@@ -237,7 +237,12 @@ export default function Home() {
       onError: handleReadingError,
       onVoiceStart: () => setVoiceBusy(true),
       onVoiceEnd: () => setVoiceBusy(false),
-      onBlocked: () => {},
+      // A browser (iOS most of all) can refuse playback until a fresh tap.
+      // Never swallow that: show it, with the button that fixes it.
+      onBlocked: () => {
+        setVoiceBusy(false);
+        setReadingError("Your device blocked the sound — tap Try Again to hear her.");
+      },
       onDone: () => setSpokenDone(true),
     });
   };
