@@ -292,7 +292,7 @@ export default function Home() {
       {/* Hero — the orb suspended in its gyroscope over the nebula */}
       {phase !== "reading" && (
         <section
-          className="neo-hero relative overflow-hidden grid grid-cols-1 md:grid-cols-2 items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]"
+          className={`neo-hero relative overflow-hidden grid grid-cols-1 ${phase === "setup" ? "md:grid-cols-2" : ""} items-center gap-[30px] px-4 sm:px-[54px] pt-10 pb-12 sm:pt-[54px] sm:pb-[46px] min-h-[60vh] sm:min-h-[530px]`}
         >
           <HeroBackdrop />
           <div className="relative z-10 text-center" style={{ animation: "materialize 1s .12s ease both" }}>
@@ -310,15 +310,15 @@ export default function Home() {
             )}
           </div>
           <div className="relative z-10" style={{ animation: "materialize 1s .3s ease both" }}>
-            {/* The home-page hero: the Oracle's own card, large and still. The
-                fire stays mounted but hidden — its reading engine must stay
-                wired for the draw. */}
+            {/* Setup hero: the gold wordmark. */}
             {phase === "setup" && (
               <div className="flex justify-center">
                 <HeroLogo />
               </div>
             )}
-            <div style={phase === "setup" ? { display: "none" } : undefined}>
+            {/* Mounted but never shown: the fire's reading engine must stay
+                wired for the draw, but the old Oracle card no longer appears. */}
+            <div style={{ display: "none" }}>
               <OracleFire ref={fireRef} mode={listening ? "open" : "dormant"} aura={aura} width={300} />
             </div>
           </div>
